@@ -6,10 +6,10 @@ const Index = () => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-16">
       <img src={logoImg} alt="Lootera" className="h-24 w-auto mb-6 lg:h-32" />
       <p className="text-muted-foreground mb-10 text-center max-w-md">
-        Escolha uma das duas variações de layout para a homepage do marketplace.
+        Escolha uma das variações de layout para a homepage do marketplace.
       </p>
 
-      <div className="grid gap-6 w-full max-w-2xl lg:grid-cols-2">
+      <div className="grid gap-6 w-full max-w-4xl lg:grid-cols-2">
         <Link
           to="/variation-1"
           className="group flex flex-col items-center rounded-xl border border-border bg-card p-8 text-center transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
@@ -33,6 +33,32 @@ const Index = () => {
           <h2 className="font-display text-lg font-semibold text-brand-gold mb-2">Fantasy Premium Medieval</h2>
           <p className="text-sm text-muted-foreground">
             Layout autoral com identidade fantasy. Dourado e roxo, visual imersivo.
+          </p>
+        </Link>
+
+        <Link
+          to="/variation-3"
+          className="group flex flex-col items-center rounded-xl border border-brand-gold/20 bg-card p-8 text-center transition-all hover:border-brand-gold/50 hover:shadow-lg hover:shadow-brand-gold/10"
+        >
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-brand-gold/10 text-brand-gold">
+            <span className="text-2xl font-bold font-display">3</span>
+          </div>
+          <h2 className="font-display text-lg font-semibold text-brand-gold mb-2">V1 Estrutura + V2 Estilo</h2>
+          <p className="text-sm text-muted-foreground">
+            Base estrutural da V1 (contida, arredondada) com identidade visual fantasy da V2 e nova imagem de fundo.
+          </p>
+        </Link>
+
+        <Link
+          to="/variation-4"
+          className="group flex flex-col items-center rounded-xl border border-border bg-card p-8 text-center transition-all hover:border-primary/50 hover:shadow-lg hover:shadow-primary/10"
+        >
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <span className="text-2xl font-bold font-display">4</span>
+          </div>
+          <h2 className="font-display text-lg font-semibold text-foreground mb-2">V2 Estrutura + V1 Estilo</h2>
+          <p className="text-sm text-muted-foreground">
+            Base estrutural da V2 (full bleed, imersiva) com identidade visual comercial da V1 e nova imagem de fundo.
           </p>
         </Link>
       </div>
