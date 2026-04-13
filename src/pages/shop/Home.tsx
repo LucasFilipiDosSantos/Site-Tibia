@@ -68,24 +68,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Trust */}
-      <section className="border-t border-border bg-secondary py-10">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-2 gap-6 text-center lg:grid-cols-4">
-            {[
-              { num: "10k+", label: "Transações" },
-              { num: "99%", label: "Satisfação" },
-              { num: "24/7", label: "Suporte" },
-              { num: "5 min", label: "Entrega média" },
-            ].map((s) => (
-              <div key={s.label}>
-                <p className="text-2xl font-bold text-primary lg:text-3xl">{s.num}</p>
-                <p className="mt-1 text-sm text-muted-foreground">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
     </PublicLayout>
   );
 };
