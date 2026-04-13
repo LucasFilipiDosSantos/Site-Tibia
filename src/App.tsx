@@ -6,37 +6,30 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 
-// Layout variations (original)
-import Index from "./pages/Index.tsx";
-import Variation1 from "./pages/Variation1.tsx";
-import Variation2 from "./pages/Variation2.tsx";
-import Variation3 from "./pages/Variation3.tsx";
-import Variation4 from "./pages/Variation4.tsx";
-
 // Shop pages
-import Home from "./pages/shop/Home.tsx";
-import Products from "./pages/shop/Products.tsx";
-import ProductDetail from "./pages/shop/ProductDetail.tsx";
-import Cart from "./pages/shop/Cart.tsx";
-import Checkout from "./pages/shop/Checkout.tsx";
+import Home from "./pages/shop/Home";
+import Products from "./pages/shop/Products";
+import ProductDetail from "./pages/shop/ProductDetail";
+import Cart from "./pages/shop/Cart";
+import Checkout from "./pages/shop/Checkout";
 
 // Auth pages
-import Login from "./pages/auth/Login.tsx";
-import Register from "./pages/auth/Register.tsx";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
 
 // User pages
-import Profile from "./pages/user/Profile.tsx";
-import OrderHistory from "./pages/user/OrderHistory.tsx";
+import Profile from "./pages/user/Profile";
+import OrderHistory from "./pages/user/OrderHistory";
 
 // Admin pages
-import Dashboard from "./pages/admin/Dashboard.tsx";
-import AdminProducts from "./pages/admin/AdminProducts.tsx";
-import AdminOrders from "./pages/admin/AdminOrders.tsx";
-import AdminUsers from "./pages/admin/AdminUsers.tsx";
-import AdminInventory from "./pages/admin/AdminInventory.tsx";
-import AdminSettings from "./pages/admin/AdminSettings.tsx";
+import Dashboard from "./pages/admin/Dashboard";
+import AdminProducts from "./pages/admin/AdminProducts";
+import AdminOrders from "./pages/admin/AdminOrders";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminInventory from "./pages/admin/AdminInventory";
+import AdminSettings from "./pages/admin/AdminSettings";
 
-import NotFound from "./pages/NotFound.tsx";
+import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
@@ -49,25 +42,18 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
             <Routes>
-              {/* Layout variations */}
-              <Route path="/variacoes" element={<Index />} />
-              <Route path="/variation-1" element={<Variation1 />} />
-              <Route path="/variation-2" element={<Variation2 />} />
-              <Route path="/variation-3" element={<Variation3 />} />
-              <Route path="/variation-4" element={<Variation4 />} />
-
-              {/* E-commerce */}
+              {/* Loja */}
               <Route path="/" element={<Home />} />
               <Route path="/produtos" element={<Products />} />
               <Route path="/produto/:id" element={<ProductDetail />} />
               <Route path="/carrinho" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
 
-              {/* Auth */}
+              {/* Autenticação */}
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Register />} />
 
-              {/* User */}
+              {/* Usuário */}
               <Route path="/perfil" element={<Profile />} />
               <Route path="/pedidos" element={<OrderHistory />} />
 
