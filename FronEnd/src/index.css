@@ -1,0 +1,76 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 216 38% 9%;
+    --foreground: 0 0% 100%;
+
+    --card: 216 36% 15%;
+    --card-foreground: 0 0% 100%;
+
+    --popover: 216 36% 15%;
+    --popover-foreground: 0 0% 100%;
+
+    --primary: 210 100% 56%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 216 38% 17%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 214 25% 22%;
+    --muted-foreground: 214 18% 71%;
+
+    --accent: 44 79% 47%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 216 30% 20%;
+    --input: 216 36% 17%;
+    --ring: 210 100% 56%;
+
+    --radius: 0.5rem;
+
+    --header: 216 42% 11%;
+    --brand-purple: 280 40% 11%;
+    --brand-gold: 44 79% 47%;
+
+    --sidebar-background: 216 38% 9%;
+    --sidebar-foreground: 214 18% 71%;
+    --sidebar-primary: 210 100% 56%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 216 36% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 216 30% 20%;
+    --sidebar-ring: 210 100% 56%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', serif;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: 'Cinzel', serif;
+  }
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+}
