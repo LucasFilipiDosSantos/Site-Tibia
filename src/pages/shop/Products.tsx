@@ -8,8 +8,11 @@ import { ShoppingCart, Star, SlidersHorizontal, X } from "lucide-react";
 const Products = () => {
   const { addItem } = useCart();
   const [searchParams] = useSearchParams();
-  const initialCat = searchParams.get("cat") || "";
-  const [category, setCategory] = useState(initialCat);
+  const catParam = searchParams.get("cat") || "";
+  const [category, setCategory] = useState(catParam);
+  
+  // Sync category with URL param
+  useMemo(() => { setCategory(catParam); }, [catParam]);
   const [server, setServer] = useState("");
   const [sortBy, setSortBy] = useState("popular");
   const [showFilters, setShowFilters] = useState(false);
