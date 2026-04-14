@@ -11,6 +11,7 @@ using System.Text;
 
 namespace UnitTests.Identity;
 
+[Trait("Category", "IdentitySecurity")]
 public sealed class AdminJwtAuthorizationTests
 {
     [Fact]
@@ -52,7 +53,7 @@ public sealed class AdminJwtAuthorizationTests
     }
 
     [Fact]
-    public async Task JwtValidation_WrongIssuerOrAudience_ReturnsUnauthorizedForAdminProbe()
+    public async Task JwtValidation_WrongIssuer_ReturnsUnauthorizedForAdminProbe()
     {
         using var factory = new ApiFactory();
         using var client = factory.CreateClient();
@@ -67,6 +68,13 @@ public sealed class AdminJwtAuthorizationTests
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", wrongIssuerToken);
         var wrongIssuerResponse = await client.GetAsync("/auth/admin/probe");
         Assert.Equal(HttpStatusCode.Unauthorized, wrongIssuerResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task JwtValidation_WrongAudience_ReturnsUnauthorizedForAdminProbe()
+    {
+        using var factory = new ApiFactory();
+        using var client = factory.CreateClient();
 
         var wrongAudienceToken = BuildJwt(
             issuer: ApiFactory.Issuer,
