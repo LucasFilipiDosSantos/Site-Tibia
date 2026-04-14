@@ -11,8 +11,7 @@ const Products = () => {
   const catParam = searchParams.get("cat") || "";
   const [category, setCategory] = useState(catParam);
   
-  // Sync category with URL param
-  useMemo(() => { setCategory(catParam); }, [catParam]);
+  useEffect(() => { setCategory(catParam); }, [catParam]);
   const [server, setServer] = useState("");
   const [sortBy, setSortBy] = useState("popular");
   const [showFilters, setShowFilters] = useState(false);
