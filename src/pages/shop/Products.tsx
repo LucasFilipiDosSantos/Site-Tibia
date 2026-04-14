@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { products, categories, servers } from "@/data/mockData";
