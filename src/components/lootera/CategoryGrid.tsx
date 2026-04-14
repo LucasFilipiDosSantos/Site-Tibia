@@ -15,6 +15,7 @@ const categories = [
 
 const CategoryGrid = ({ variant = "commercial" }: CategoryGridProps) => {
   const isFantasy = variant === "fantasy";
+  const navigate = useNavigate();
 
   return (
     <section className="py-8 lg:py-12">
