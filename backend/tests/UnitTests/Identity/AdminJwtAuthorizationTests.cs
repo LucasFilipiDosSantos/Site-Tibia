@@ -12,6 +12,7 @@ using System.Text;
 namespace UnitTests.Identity;
 
 [Trait("Category", "IdentitySecurity")]
+[Trait("Requirement", "AUTH-03")]
 public sealed class AdminJwtAuthorizationTests
 {
     [Fact]
