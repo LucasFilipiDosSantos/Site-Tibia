@@ -1,8 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
-import { useAuth } from "@/contexts/AuthContext";
-import logoImg from "@/assets/lootera-logo.svg";
+import { useAuth } from "@/features/auth/context/AuthContext";
+import logoImg from "@/assets/lootera-logo.png";
 
 const Login = () => {
   const { login, isAuthenticated } = useAuth();
@@ -15,9 +15,10 @@ const Login = () => {
     return null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (login(email, password)) {
+    const success = await login(email, password);
+    if (success) {
       navigate("/");
     }
   };

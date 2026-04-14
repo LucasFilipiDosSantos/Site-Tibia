@@ -2,7 +2,7 @@ import { type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { LayoutDashboard, Package, ShoppingBag, Users, BarChart3, Settings, ArrowLeft, Menu, X } from "lucide-react";
 import { useState } from "react";
-import logoImg from "@/assets/lootera-logo.svg";
+import logoImg from "@/assets/lootera-logo.png";
 
 const navItems = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },

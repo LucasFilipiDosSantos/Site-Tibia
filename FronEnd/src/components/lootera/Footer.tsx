@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import logoImg from "@/assets/lootera-logo.svg";
+import logoImg from "@/assets/lootera-logo.png";
 
 const Footer = () => {
   return (

@@ -3,8 +3,8 @@ import { Link } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/contexts/CartContext";
-import { useAuth } from "@/contexts/AuthContext";
-import logoImg from "@/assets/lootera-logo.svg";
+import { useAuth } from "@/features/auth/context/AuthContext";
+import logoImg from "@/assets/lootera-logo.png";
 import Footer from "./Footer";
 import FloatingSupport from "./FloatingSupport";
 

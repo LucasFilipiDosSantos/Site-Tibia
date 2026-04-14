@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { useCart } from "@/contexts/CartContext";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/features/auth/context/AuthContext";
 import { toast } from "sonner";
 import { CreditCard, QrCode, Loader2, CheckCircle2, Lock } from "lucide-react";
 

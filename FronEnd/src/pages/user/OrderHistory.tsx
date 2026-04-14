@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/features/auth/context/AuthContext";
 import { orders } from "@/data/mockData";
 
 const statusColors: Record<string, string> = {
