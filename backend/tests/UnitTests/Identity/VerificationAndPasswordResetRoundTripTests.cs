@@ -162,6 +162,7 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Development");
+            SeedDefaultUser();
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IUserRepository>();
@@ -180,6 +181,17 @@ public sealed class VerificationAndPasswordResetRoundTripTests
                 services.AddSingleton<ISystemClock>(_clock);
                 services.AddSingleton<IIdentityTokenDelivery>(TokenDelivery);
             });
+        }
+
+        private void SeedDefaultUser()
+        {
+            if (_users.Users.Any())
+            {
+                return;
+            }
+
+            var user = new UserAccount("verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
+            _users.Users.Add(user);
         }
 
         public override async ValueTask DisposeAsync()
