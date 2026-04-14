@@ -24,6 +24,7 @@ const CategoryGrid = ({ variant = "commercial" }: CategoryGridProps) => {
           {categories.map((cat) => (
             <button
               key={cat.name}
+              onClick={() => navigate(`/produtos?cat=${encodeURIComponent(cat.name)}`)}
               className="group flex flex-col items-center gap-2 transition-all"
             >
               <div
