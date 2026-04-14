@@ -38,7 +38,7 @@ Plans:
 - [x] 01-01-PLAN.md — Define identity domain/application contracts with token, password, lockout invariants and unit tests.
 - [x] 01-02-PLAN.md — Implement EF persistence, repositories, JWT and password hashing adapters with DI wiring.
 - [x] 01-03-PLAN.md — Expose auth endpoints and enforce RBAC, verification gates, throttling/lockout, HTTPS hardening.
-- [ ] 01-04-PLAN.md — Close AUTH-02 gap by wiring verification/reset token delivery channel and round-trip tests.
+- [x] 01-04-PLAN.md — Close AUTH-02 gap by wiring verification/reset token delivery channel and round-trip tests.
 - [ ] 01-05-PLAN.md — Close AUTH-03 gap by configuring JWT bearer validation and admin positive-path authorization tests.
 
 ### Phase 2: Catalog & Product Governance
