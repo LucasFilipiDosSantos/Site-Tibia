@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { CartProvider } from "@/contexts/CartContext";
 import { AuthProvider } from "@/features/auth/context/AuthContext";
+import { ProtectedRoute } from "@/routes/ProtectedRoute";
+import { AdminRoute } from "@/routes/AdminRoute";
 
 // Shop pages
 import Home from "./pages/shop/Home";
@@ -47,23 +49,23 @@ const App = () => (
               <Route path="/produtos" element={<Products />} />
               <Route path="/produto/:id" element={<ProductDetail />} />
               <Route path="/carrinho" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/checkout" element={<ProtectedRoute><Checkout /></ProtectedRoute>} />
 
               {/* Autenticação */}
               <Route path="/login" element={<Login />} />
               <Route path="/cadastro" element={<Register />} />
 
               {/* Usuário */}
-              <Route path="/perfil" element={<Profile />} />
-              <Route path="/pedidos" element={<OrderHistory />} />
+              <Route path="/perfil" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/pedidos" element={<ProtectedRoute><OrderHistory /></ProtectedRoute>} />
 
               {/* Admin */}
-              <Route path="/admin" element={<Dashboard />} />
-              <Route path="/admin/produtos" element={<AdminProducts />} />
-              <Route path="/admin/pedidos" element={<AdminOrders />} />
-              <Route path="/admin/usuarios" element={<AdminUsers />} />
-              <Route path="/admin/estoque" element={<AdminInventory />} />
-              <Route path="/admin/configuracoes" element={<AdminSettings />} />
+              <Route path="/admin" element={<AdminRoute><Dashboard /></AdminRoute>} />
+              <Route path="/admin/produtos" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+              <Route path="/admin/pedidos" element={<AdminRoute><AdminOrders /></AdminRoute>} />
+              <Route path="/admin/usuarios" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+              <Route path="/admin/estoque" element={<AdminRoute><AdminInventory /></AdminRoute>} />
+              <Route path="/admin/configuracoes" element={<AdminRoute><AdminSettings /></AdminRoute>} />
 
               <Route path="*" element={<NotFound />} />
             </Routes>

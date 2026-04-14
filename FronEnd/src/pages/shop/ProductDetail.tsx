@@ -1,13 +1,13 @@
 import { useParams, Link } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
-import { products } from "@/data/mockData";
+import { productService } from "@/features/products/services/product.service";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, Star, Shield, Clock, ArrowLeft, Plus, Minus } from "lucide-react";
 import { useState } from "react";
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const product = products.find((p) => p.id === id);
+  const product = productService.getProductById(id!);
   const { addItem } = useCart();
   const [qty, setQty] = useState(1);
 
@@ -22,7 +22,7 @@ const ProductDetail = () => {
     );
   }
 
-  const related = products.filter((p) => p.category === product.category && p.id !== product.id).slice(0, 4);
+  const related = productService.getProductsByCategory(product.category).filter(p => p.id !== product.id).slice(0, 4);
 
   return (
     <PublicLayout>

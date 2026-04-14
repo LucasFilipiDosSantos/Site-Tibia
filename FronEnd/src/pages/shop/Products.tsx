@@ -1,7 +1,8 @@
 import { useState, useMemo, useEffect } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
-import { products, categories, servers } from "@/data/mockData";
+import { productService } from "@/features/products/services/product.service";
+import { categories, servers } from "@/data/mockData";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, Star, SlidersHorizontal, X } from "lucide-react";
 
@@ -16,8 +17,10 @@ const Products = () => {
   const [sortBy, setSortBy] = useState("popular");
   const [showFilters, setShowFilters] = useState(false);
 
+  const allProducts = productService.getProducts();
+
   const filtered = useMemo(() => {
-    let list = [...products];
+    let list = [...allProducts];
     if (category) list = list.filter((p) => p.category === category);
     if (server) list = list.filter((p) => p.server === server || p.server === "Todos");
     switch (sortBy) {
@@ -27,7 +30,7 @@ const Products = () => {
       default: list.sort((a, b) => b.sales - a.sales);
     }
     return list;
-  }, [category, server, sortBy]);
+  }, [allProducts, category, server, sortBy]);
 
   return (
     <PublicLayout>

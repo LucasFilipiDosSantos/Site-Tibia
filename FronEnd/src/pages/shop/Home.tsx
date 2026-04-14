@@ -1,14 +1,14 @@
 import { Link } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import CategoryGrid from "@/components/lootera/CategoryGrid";
-import { products } from "@/data/mockData";
+import { productService } from "@/features/products/services/product.service";
 import { useCart } from "@/contexts/CartContext";
 import { ShoppingCart, Star, ArrowRight } from "lucide-react";
 import heroBanner from "@/assets/hero-banner-v3.png";
 
 const Home = () => {
   const { addItem } = useCart();
-  const featured = products.filter((p) => p.featured);
+  const featured = productService.getFeaturedProducts();
 
   return (
     <PublicLayout>
