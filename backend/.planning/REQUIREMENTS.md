@@ -112,53 +112,53 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CAT-01 | Phase [TBD] | Pending |
-| CAT-02 | Phase [TBD] | Pending |
-| CAT-03 | Phase [TBD] | Pending |
-| CAT-04 | Phase [TBD] | Pending |
-| INV-01 | Phase [TBD] | Pending |
-| INV-02 | Phase [TBD] | Pending |
-| INV-03 | Phase [TBD] | Pending |
-| INV-04 | Phase [TBD] | Pending |
-| CHK-01 | Phase [TBD] | Pending |
-| CHK-02 | Phase [TBD] | Pending |
-| CHK-03 | Phase [TBD] | Pending |
-| ORD-01 | Phase [TBD] | Pending |
-| ORD-02 | Phase [TBD] | Pending |
-| ORD-03 | Phase [TBD] | Pending |
-| ORD-04 | Phase [TBD] | Pending |
-| PAY-01 | Phase [TBD] | Pending |
-| PAY-02 | Phase [TBD] | Pending |
-| PAY-03 | Phase [TBD] | Pending |
-| PAY-04 | Phase [TBD] | Pending |
-| FUL-01 | Phase [TBD] | Pending |
-| FUL-02 | Phase [TBD] | Pending |
-| FUL-03 | Phase [TBD] | Pending |
-| FUL-04 | Phase [TBD] | Pending |
-| AUTH-01 | Phase [TBD] | Pending |
-| AUTH-02 | Phase [TBD] | Pending |
-| AUTH-03 | Phase [TBD] | Pending |
-| AUTH-04 | Phase [TBD] | Pending |
-| CUS-01 | Phase [TBD] | Pending |
-| CUS-02 | Phase [TBD] | Pending |
-| MKT-01 | Phase [TBD] | Pending |
-| MKT-02 | Phase [TBD] | Pending |
-| NTF-01 | Phase [TBD] | Pending |
-| NTF-02 | Phase [TBD] | Pending |
-| NTF-03 | Phase [TBD] | Pending |
-| ADM-01 | Phase [TBD] | Pending |
-| ADM-02 | Phase [TBD] | Pending |
-| ADM-03 | Phase [TBD] | Pending |
-| SEC-01 | Phase [TBD] | Pending |
-| SEC-02 | Phase [TBD] | Pending |
-| REL-01 | Phase [TBD] | Pending |
-| REL-02 | Phase [TBD] | Pending |
+| CAT-01 | Phase 2 | Pending |
+| CAT-02 | Phase 2 | Pending |
+| CAT-03 | Phase 2 | Pending |
+| CAT-04 | Phase 2 | Pending |
+| INV-01 | Phase 3 | Pending |
+| INV-02 | Phase 3 | Pending |
+| INV-03 | Phase 3 | Pending |
+| INV-04 | Phase 3 | Pending |
+| CHK-01 | Phase 4 | Pending |
+| CHK-02 | Phase 4 | Pending |
+| CHK-03 | Phase 4 | Pending |
+| ORD-01 | Phase 5 | Pending |
+| ORD-02 | Phase 5 | Pending |
+| ORD-03 | Phase 5 | Pending |
+| ORD-04 | Phase 5 | Pending |
+| PAY-01 | Phase 6 | Pending |
+| PAY-02 | Phase 6 | Pending |
+| PAY-03 | Phase 6 | Pending |
+| PAY-04 | Phase 6 | Pending |
+| FUL-01 | Phase 8 | Pending |
+| FUL-02 | Phase 8 | Pending |
+| FUL-03 | Phase 8 | Pending |
+| FUL-04 | Phase 8 | Pending |
+| AUTH-01 | Phase 1 | Pending |
+| AUTH-02 | Phase 1 | Pending |
+| AUTH-03 | Phase 1 | Pending |
+| AUTH-04 | Phase 1 | Pending |
+| CUS-01 | Phase 9 | Pending |
+| CUS-02 | Phase 9 | Pending |
+| MKT-01 | Phase 9 | Pending |
+| MKT-02 | Phase 9 | Pending |
+| NTF-01 | Phase 7 | Pending |
+| NTF-02 | Phase 7 | Pending |
+| NTF-03 | Phase 7 | Pending |
+| ADM-01 | Phase 9 | Pending |
+| ADM-02 | Phase 9 | Pending |
+| ADM-03 | Phase 9 | Pending |
+| SEC-01 | Phase 1 | Pending |
+| SEC-02 | Phase 1 | Pending |
+| REL-01 | Phase 7 | Pending |
+| REL-02 | Phase 7 | Pending |
 
 **Coverage:**
 - v1 requirements: 40 total
-- Mapped to phases: 0
-- Unmapped: 40 ⚠️
+- Mapped to phases: 40
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-14*
-*Last updated: 2026-04-14 after initial definition*
+*Last updated: 2026-04-14 after roadmap mapping*
