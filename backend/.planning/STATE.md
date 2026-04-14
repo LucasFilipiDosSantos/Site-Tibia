@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 01-identity-security-foundation-04-PLAN.md
-last_updated: "2026-04-14T17:16:34.662Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-04-14T17:20:54.561Z"
 last_activity: 2026-04-14
 progress:
   total_phases: 9
@@ -51,6 +51,8 @@ Progress: [█░░░░░░░░░] 11%
 - Last 5 plans: 01-01, 01-02, 01-03
 - Trend: Positive
 
+| Phase 01-identity-security-foundation P05 | 12 | 3 tasks | 6 files |
+
 ## Accumulated Context
 
 ### Decisions
@@ -61,6 +63,8 @@ Recent decisions affecting current work:
 - [Phase 1-9] Reliability-first dependency order selected (auth → catalog/inventory → checkout/orders → payments → async/notifications → fulfillment → custom/admin ops)
 - [Phase 1-9] Fine granularity applied as 9 coherent requirement-driven phases
 - [Phase 01-identity-security-foundation]: Use application delivery port for raw token handoff to preserve layering while enabling secure round-trip completion.
+- [Phase 01-identity-security-foundation]: JWT bearer validation now binds strongly-typed issuer/audience/signing key config with startup fail-fast checks and strict TokenValidationParameters.
+- [Phase 01-identity-security-foundation]: AUTH-03 authorization proof now includes positive admin success plus explicit forbidden and unauthorized endpoint outcomes in automated pipeline tests.
 
 ### Pending Todos
 
@@ -74,6 +78,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-14T17:16:34.658Z
-Stopped at: Completed 01-identity-security-foundation-04-PLAN.md
+Last session: 2026-04-14T17:20:48.822Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
