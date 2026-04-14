@@ -148,6 +148,22 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
     }
 
+    [Fact]
+    public async Task Endpoint_PasswordResetConfirm_RejectsExpiredToken_AfterLifetimeBoundary()
+    {
+        await using var factory = new IdentityApiFactory();
+        using var client = factory.CreateClient();
+
+        var request = await client.PostAsJsonAsync("/auth/password-reset/request", new { email = "verify@test.com" });
+        Assert.Equal(HttpStatusCode.OK, request.StatusCode);
+
+        var token = factory.TokenDelivery.PasswordResetDeliveries.Last().RawToken;
+        factory.AdvanceClockBy(TimeSpan.FromMinutes(SecurityPolicy.PasswordResetTokenLifetimeMinutes + 1));
+
+        var expiredConfirm = await client.PostAsJsonAsync("/auth/password-reset/confirm", new { token, newPassword = "ValidPass999!" });
+        Assert.Equal(HttpStatusCode.BadRequest, expiredConfirm.StatusCode);
+    }
+
     private sealed class IdentityApiFactory : WebApplicationFactory<Program>, IAsyncDisposable
     {
         private readonly InMemoryUserRepository _users = new();
@@ -192,6 +208,11 @@ public sealed class VerificationAndPasswordResetRoundTripTests
 
             var user = new UserAccount("verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
             _users.Users.Add(user);
+        }
+
+        public void AdvanceClockBy(TimeSpan delta)
+        {
+            _clock.UtcNow = _clock.UtcNow.Add(delta);
         }
 
         public override async ValueTask DisposeAsync()
