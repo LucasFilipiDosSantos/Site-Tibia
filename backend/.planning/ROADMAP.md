@@ -32,7 +32,12 @@ This roadmap delivers a reliability-first Tibia commerce backend from secure acc
   3. Session continuity works via refresh token rotation without weakening account security.
   4. Admin-only endpoints reject non-admin users while allowing authorized admin actions.
   5. Account credentials are protected with HTTPS transport and strong one-way password hashing.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Define identity domain/application contracts with token, password, lockout invariants and unit tests.
+- [ ] 01-02-PLAN.md — Implement EF persistence, repositories, JWT and password hashing adapters with DI wiring.
+- [ ] 01-03-PLAN.md — Expose auth endpoints and enforce RBAC, verification gates, throttling/lockout, HTTPS hardening.
 
 ### Phase 2: Catalog & Product Governance
 **Goal**: Customers can discover valid Tibia products and admins can maintain catalog data safely.
@@ -129,7 +134,7 @@ This roadmap delivers a reliability-first Tibia commerce backend from secure acc
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Identity & Security Foundation | 0/TBD | Not started | - |
+| 1. Identity & Security Foundation | 0/3 | Not started | - |
 | 2. Catalog & Product Governance | 0/TBD | Not started | - |
 | 3. Inventory Integrity & Reservation Control | 0/TBD | Not started | - |
 | 4. Cart & Checkout Capture | 0/TBD | Not started | - |
