@@ -50,7 +50,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Authentication and Access
 
-- [ ] **AUTH-01**: User can register and authenticate via JWT access token and refresh token flow
+- [x] **AUTH-01**: User can register and authenticate via JWT access token and refresh token flow
 - [x] **AUTH-02**: User can verify email and reset password via secure tokenized flow
 - [x] **AUTH-03**: System enforces role-based access so admin actions are restricted to authorized users
 - [ ] **AUTH-04**: User session can persist securely across requests via refresh token rotation
@@ -135,7 +135,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FUL-02 | Phase 8 | Pending |
 | FUL-03 | Phase 8 | Pending |
 | FUL-04 | Phase 8 | Pending |
-| AUTH-01 | Phase 1 | Pending |
+| AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |
 | AUTH-04 | Phase 1 | Pending |
