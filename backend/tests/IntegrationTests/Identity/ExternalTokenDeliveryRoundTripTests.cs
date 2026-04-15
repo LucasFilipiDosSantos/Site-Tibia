@@ -1,8 +1,17 @@
 using Application.Identity.Contracts;
+using Application.Identity.Services;
+using Domain.Identity;
 using Infrastructure.Identity.Options;
 using Infrastructure.Identity.Services;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
+using System.Net;
+using System.Net.Http.Json;
 
 namespace IntegrationTests.Identity;
 
@@ -87,6 +96,59 @@ public sealed class ExternalTokenDeliveryRoundTripTests
         Assert.Contains(expiresAt.ToString("O"), sent.Body, StringComparison.Ordinal);
     }
 
+    [Fact]
+    public async Task External_VerificationRequest_CapturesToken_ConfirmsOnce_AndRejectsReplay()
+    {
+        await using var factory = new ExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var request = await client.PostAsJsonAsync("/auth/verify-email/request", new { email = "verify@test.com" });
+        Assert.Equal(HttpStatusCode.OK, request.StatusCode);
+
+        var token = Assert.Single(factory.Transport.Messages).ExtractToken();
+
+        var confirm = await client.PostAsJsonAsync("/auth/verify-email/confirm", new { token });
+        var replay = await client.PostAsJsonAsync("/auth/verify-email/confirm", new { token });
+
+        Assert.Equal(HttpStatusCode.OK, confirm.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+    }
+
+    [Fact]
+    public async Task External_PasswordResetRequest_CapturesToken_ConfirmsOnce_AndRejectsReplay()
+    {
+        await using var factory = new ExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var request = await client.PostAsJsonAsync("/auth/password-reset/request", new { email = "verify@test.com" });
+        Assert.Equal(HttpStatusCode.OK, request.StatusCode);
+
+        var token = Assert.Single(factory.Transport.Messages).ExtractToken();
+
+        var confirm = await client.PostAsJsonAsync("/auth/password-reset/confirm", new { token, newPassword = "ValidPass999!" });
+        var replay = await client.PostAsJsonAsync("/auth/password-reset/confirm", new { token, newPassword = "ValidPass999!" });
+
+        Assert.Equal(HttpStatusCode.OK, confirm.StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest, replay.StatusCode);
+    }
+
+    [Fact]
+    public async Task External_UnknownEmail_RequestIsGeneric_AndDoesNotDispatchToken()
+    {
+        await using var factory = new ExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var existing = await client.PostAsJsonAsync("/auth/verify-email/request", new { email = "verify@test.com" });
+        var unknown = await client.PostAsJsonAsync("/auth/verify-email/request", new { email = "unknown@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, existing.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
+        Assert.Equal(
+            await existing.Content.ReadAsStringAsync(),
+            await unknown.Content.ReadAsStringAsync());
+        Assert.Single(factory.Transport.Messages);
+    }
+
     private static IdentityTokenDeliveryOptions ValidOptions() =>
         new()
         {
@@ -111,5 +173,93 @@ public sealed class ExternalTokenDeliveryRoundTripTests
             Messages.Add(message);
             return Task.CompletedTask;
         }
+
+        public void Clear() => Messages.Clear();
+    }
+
+    private sealed class ExternalDeliveryApiFactory : WebApplicationFactory<Program>, IAsyncDisposable
+    {
+        private readonly InMemoryUserRepository _users = new();
+        private readonly InMemoryRefreshSessionRepository _refreshSessions = new();
+        private readonly InMemorySecurityTokenRepository _tokens = new();
+        private readonly FixedClock _clock = new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
+        private readonly FakeTokenService _tokenService = new();
+        private readonly FakePasswordHasherService _passwordHasher = new();
+
+        public CapturingSmtpTokenTransport Transport { get; } = new();
+
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseEnvironment("Development");
+            SeedDefaultUser();
+
+            builder.ConfigureAppConfiguration((_, cfg) =>
+            {
+                cfg.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["Jwt:Issuer"] = "tibia-webstore",
+                        ["Jwt:Audience"] = "tibia-webstore-client",
+                        ["Jwt:SigningKey"] = "01234567890123456789012345678901",
+                    });
+            });
+
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IUserRepository>();
+                services.RemoveAll<IRefreshSessionRepository>();
+                services.RemoveAll<ISecurityTokenRepository>();
+                services.RemoveAll<ITokenService>();
+                services.RemoveAll<IPasswordHasherService>();
+                services.RemoveAll<ISystemClock>();
+
+                services.AddSingleton<IUserRepository>(_users);
+                services.AddSingleton<IRefreshSessionRepository>(_refreshSessions);
+                services.AddSingleton<ISecurityTokenRepository>(_tokens);
+                services.AddSingleton<ITokenService>(_tokenService);
+                services.AddSingleton<IPasswordHasherService>(_passwordHasher);
+                services.AddSingleton<ISystemClock>(_clock);
+                services.RemoveAll<ISmtpTokenTransport>();
+                services.AddSingleton<ISmtpTokenTransport>(Transport);
+            });
+        }
+
+        private void SeedDefaultUser()
+        {
+            if (_users.Users.Any())
+            {
+                return;
+            }
+
+            var user = new UserAccount("verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
+            _users.Users.Add(user);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await base.DisposeAsync();
+        }
+    }
+}
+
+internal static class SmtpOutgoingMessageExtensions
+{
+    public static string ExtractToken(this SmtpOutgoingMessage message)
+    {
+        var marker = "token is:";
+        var idx = message.Body.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0)
+        {
+            return string.Empty;
+        }
+
+        var start = idx + marker.Length;
+        var end = message.Body.IndexOf(Environment.NewLine, start, StringComparison.Ordinal);
+        if (end < 0)
+        {
+            end = message.Body.Length;
+        }
+
+        return message.Body[start..end].Trim();
     }
 }
