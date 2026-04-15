@@ -55,7 +55,13 @@ public sealed class GlobalExceptionHandler(
             ArgumentException argumentException => (
                 StatusCodes.Status400BadRequest,
                 "Validation failed.",
-                argumentException.Message
+                argumentException.ParamName is null
+                    ? argumentException.Message
+                    : argumentException.Message.Replace(
+                        $" (Parameter '{argumentException.ParamName}')",
+                        string.Empty,
+                        StringComparison.Ordinal
+                    )
             ),
             UnauthorizedAccessException unauthorizedAccessException => (
                 StatusCodes.Status401Unauthorized,
