@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-04-15T11:35:15.476Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-04-15T12:35:49.674Z"
 last_activity: 2026-04-15
 progress:
   total_phases: 9
   completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 7
+  completed_plans: 7
   percent: 100
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 01 (identity-security-foundation) — EXECUTING
-Plan: 2 of 6
+Plan: 2 of 7
 Status: Ready to execute
 Last activity: 2026-04-15
 
@@ -53,6 +53,7 @@ Progress: [█░░░░░░░░░] 11%
 
 | Phase 01-identity-security-foundation P05 | 12 | 3 tasks | 6 files |
 | Phase 01 P06 | 10 min | 3 tasks | 5 files |
+| Phase 01 P07 | 10 min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -68,6 +69,8 @@ Recent decisions affecting current work:
 - [Phase 01-identity-security-foundation]: AUTH-03 authorization proof now includes positive admin success plus explicit forbidden and unauthorized endpoint outcomes in automated pipeline tests.
 - [Phase 01]: Mapped expected auth/business exceptions centrally to RFC7807 ProblemDetails for deterministic 4xx contracts.
 - [Phase 01]: Moved registration HTTP contracts to dedicated IntegrationTests project to preserve UnitTests isolation boundary.
+- [Phase 01]: Token delivery provider selection is runtime-configured (smtp or inmemory) with smtp as non-test default.
+- [Phase 01]: SMTP adapter logs only audit-safe metadata while raw tokens exist only in outbound message bodies.
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:35:15.471Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-04-15T12:35:49.670Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None

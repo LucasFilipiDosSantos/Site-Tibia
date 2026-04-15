@@ -10,7 +10,7 @@ This roadmap delivers a reliability-first Tibia commerce backend from secure acc
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [x] **Phase 1: Identity & Security Foundation** - Secure authentication, authorization, and account protection baseline.
+- [ ] **Phase 1: Identity & Security Foundation** - Secure authentication, authorization, and account protection baseline.
 - [ ] **Phase 2: Catalog & Product Governance** - Server-scoped catalog discovery and product administration.
 - [ ] **Phase 3: Inventory Integrity & Reservation Control** - Real-time stock control with reservation/release safeguards.
 - [ ] **Phase 4: Cart & Checkout Capture** - Cart operations and checkout order creation with delivery instructions.
@@ -32,7 +32,7 @@ This roadmap delivers a reliability-first Tibia commerce backend from secure acc
   3. Session continuity works via refresh token rotation without weakening account security.
   4. Admin-only endpoints reject non-admin users while allowing authorized admin actions.
   5. Account credentials are protected with HTTPS transport and strong one-way password hashing.
-**Plans**: 6 plans
+**Plans**: 7 plans
 
 Plans:
 - [x] 01-01-PLAN.md — Define identity domain/application contracts with token, password, lockout invariants and unit tests.
@@ -41,6 +41,7 @@ Plans:
 - [x] 01-04-PLAN.md — Close AUTH-02 gap by wiring verification/reset token delivery channel and round-trip tests.
 - [x] 01-05-PLAN.md — Close AUTH-03 gap by configuring JWT bearer validation and admin positive-path authorization tests.
 - [x] 01-06-PLAN.md — Close UAT blocker by mapping registration validation exceptions to ProblemDetails and adding weak/strong password HTTP contract tests.
+- [x] 01-07-PLAN.md — Close remaining AUTH-02 verification gap with provider-backed external token delivery and integration proof.
 
 ### Phase 2: Catalog & Product Governance
 **Goal**: Customers can discover valid Tibia products and admins can maintain catalog data safely.
@@ -137,7 +138,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Identity & Security Foundation | 3/3 | Complete | 2026-04-14 |
+| 1. Identity & Security Foundation | 6/7 | In progress | - |
 | 2. Catalog & Product Governance | 0/TBD | Not started | - |
 | 3. Inventory Integrity & Reservation Control | 0/TBD | Not started | - |
 | 4. Cart & Checkout Capture | 0/TBD | Not started | - |
