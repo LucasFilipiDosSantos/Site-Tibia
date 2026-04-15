@@ -12,6 +12,7 @@ namespace IntegrationTests.Identity;
 
 [Trait("Category", "IdentitySecurity")]
 [Trait("Requirement", "AUTH-01")]
+[Trait("Suite", "Phase01AuthRegression")]
 public sealed class RegisterValidationErrorContractTests
 {
     [Fact]
