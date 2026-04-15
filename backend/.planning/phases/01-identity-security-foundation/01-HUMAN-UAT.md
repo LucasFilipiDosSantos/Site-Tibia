@@ -1,5 +1,5 @@
 ---
-status: partial
+status: diagnosed
 phase: 01-identity-security-foundation
 source:
   - 01-01-SUMMARY.md
@@ -8,7 +8,7 @@ source:
   - 01-04-SUMMARY.md
   - 01-05-SUMMARY.md
 started: 2026-04-15T10:21:17Z
-updated: 2026-04-15T10:40:02Z
+updated: 2026-04-15T10:44:53Z
 ---
 
 ## Current Test
@@ -69,7 +69,18 @@ blocked: 5
   reason: "User reported: it does return the error for the password but not on a rest complaint way, it just explode an error, exception error handling in any of the layers"
   severity: blocker
   test: 1
-  root_cause: ""
-  artifacts: []
-  missing: []
-  debug_session: ""
+  root_cause: "Weak-password registration throws ArgumentException in the application service, and the API layer has no exception-to-REST mapping, so the expected validation failure bubbles as an unhandled exception instead of a structured 4xx response."
+  artifacts:
+    - path: "src/Application/Identity/Services/IdentityService.cs"
+      issue: "RegisterAsync throws ArgumentException for weak password instead of returning a mapped validation outcome."
+    - path: "src/API/Auth/AuthEndpoints.cs"
+      issue: "Register endpoint does not translate expected validation exceptions to REST-compliant responses."
+    - path: "src/API/Program.cs"
+      issue: "No centralized exception middleware maps domain/application exceptions to ProblemDetails."
+    - path: "tests/UnitTests/Identity/AuthEndpointContractTests.cs"
+      issue: "No contract test verifies weak-password registration error status/body semantics."
+  missing:
+    - "Map expected registration validation failures to a structured 4xx response (e.g., ProblemDetails)."
+    - "Add centralized exception handling or endpoint-level translation for expected business validation exceptions."
+    - "Add endpoint/integration tests for weak-password response status and payload contract."
+  debug_session: ".planning/debug/registration-weak-password-error.md"
