@@ -1,4 +1,5 @@
 using Application.Identity.Contracts;
+using Domain.Identity;
 using Infrastructure.Identity.Repositories;
 using Infrastructure.Identity.Options;
 using Infrastructure.Identity.Services;
@@ -17,7 +18,8 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres";
 
-        services.AddDbContext<AppDbContext>(options => options.UseNpgsql(connectionString));
+        services.AddDbContext<AppDbContext>(options =>
+            options.UseNpgsql(connectionString, npgsql => npgsql.MapEnum<UserRole>("user_role")));
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshSessionRepository, RefreshSessionRepository>();
@@ -27,22 +29,8 @@ public static class DependencyInjection
         services
             .AddOptions<IdentityTokenDeliveryOptions>()
             .Bind(configuration.GetSection(IdentityTokenDeliveryOptions.SectionName))
-            .Validate(
-                options => !string.IsNullOrWhiteSpace(options.Provider),
-                "IdentityTokenDelivery:Provider is required.")
-            .Validate(
-                options =>
-                    !string.Equals(options.Provider, "smtp", StringComparison.OrdinalIgnoreCase)
-                    ||
-                    (
-                        !string.IsNullOrWhiteSpace(options.Smtp.Host)
-                        && options.Smtp.Port > 0
-                        && !string.IsNullOrWhiteSpace(options.Smtp.Username)
-                        && !string.IsNullOrWhiteSpace(options.Smtp.Password)
-                        && !string.IsNullOrWhiteSpace(options.Smtp.FromEmail)
-                    ),
-                "IdentityTokenDelivery SMTP configuration is invalid. Required keys: Smtp:Host, Smtp:Port, Smtp:Username, Smtp:Password, Smtp:FromEmail.")
             .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<IdentityTokenDeliveryOptions>, IdentityTokenDeliveryOptionsValidator>();
 
         services.AddScoped<InMemoryIdentityTokenDelivery>();
         services.AddScoped<SmtpIdentityTokenDelivery>();

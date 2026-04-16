@@ -21,6 +21,44 @@ namespace IntegrationTests.Identity;
 [Trait("Plan", "01-07")]
 public sealed class ExternalTokenDeliveryRoundTripTests
 {
+    [Theory]
+    [InlineData("smtp.dev.local")]
+    [InlineData("smtp.example.com")]
+    public void OptionsValidator_WithPlaceholderHost_RejectsSmtpProvider(string host)
+    {
+        var options = ValidOptions();
+        options.Smtp.Host = host;
+
+        var sut = new IdentityTokenDeliveryOptionsValidator();
+        var result = sut.Validate(IdentityTokenDeliveryOptions.SectionName, options);
+
+        Assert.True(result.Failed);
+        Assert.Contains("placeholder", string.Join(' ', result.Failures ?? []), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void OptionsValidator_WithPlaceholderCredentials_RejectsSmtpProvider()
+    {
+        var options = ValidOptions();
+        options.Smtp.Username = "change-me";
+
+        var sut = new IdentityTokenDeliveryOptionsValidator();
+        var result = sut.Validate(IdentityTokenDeliveryOptions.SectionName, options);
+
+        Assert.True(result.Failed);
+        Assert.Contains("placeholder", string.Join(' ', result.Failures ?? []), StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void OptionsValidator_WithConcreteSmtpSettings_AllowsSmtpProvider()
+    {
+        var sut = new IdentityTokenDeliveryOptionsValidator();
+
+        var result = sut.Validate(IdentityTokenDeliveryOptions.SectionName, ValidOptions());
+
+        Assert.True(result.Succeeded);
+    }
+
     [Fact]
     public async Task Adapter_DeliverVerificationAndReset_ForwardsBothPayloadsToTransport()
     {
@@ -201,6 +239,13 @@ public sealed class ExternalTokenDeliveryRoundTripTests
                         ["Jwt:Issuer"] = "tibia-webstore",
                         ["Jwt:Audience"] = "tibia-webstore-client",
                         ["Jwt:SigningKey"] = "01234567890123456789012345678901",
+                        ["IdentityTokenDelivery:Provider"] = "smtp",
+                        ["IdentityTokenDelivery:Smtp:Host"] = "smtp.test.local",
+                        ["IdentityTokenDelivery:Smtp:Port"] = "2525",
+                        ["IdentityTokenDelivery:Smtp:Username"] = "smtp-user",
+                        ["IdentityTokenDelivery:Smtp:Password"] = "smtp-password",
+                        ["IdentityTokenDelivery:Smtp:FromEmail"] = "noreply@test.local",
+                        ["IdentityTokenDelivery:Smtp:UseTls"] = "false",
                     });
             });
 
