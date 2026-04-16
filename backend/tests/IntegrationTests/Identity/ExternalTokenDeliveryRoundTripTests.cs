@@ -243,6 +243,34 @@ public sealed class ExternalTokenDeliveryRoundTripTests
         Assert.DoesNotContain(factory.Audit.Events, evt => (evt.Email ?? string.Empty).Contains("token", StringComparison.OrdinalIgnoreCase));
     }
 
+    [Fact]
+    public async Task External_VerificationRequest_WhenTransportFails_MaintainsGenericParityForExistingAndUnknownEmails()
+    {
+        await using var factory = new FaultingExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var existing = await client.PostAsJsonAsync("/auth/verify-email/request", new { email = "verify@test.com" });
+        var unknown = await client.PostAsJsonAsync("/auth/verify-email/request", new { email = "unknown@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, existing.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
+        Assert.Equal(await existing.Content.ReadAsStringAsync(), await unknown.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task External_PasswordResetRequest_WhenTransportFails_MaintainsGenericParityForExistingAndUnknownEmails()
+    {
+        await using var factory = new FaultingExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var existing = await client.PostAsJsonAsync("/auth/password-reset/request", new { email = "verify@test.com" });
+        var unknown = await client.PostAsJsonAsync("/auth/password-reset/request", new { email = "unknown@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, existing.StatusCode);
+        Assert.Equal(HttpStatusCode.OK, unknown.StatusCode);
+        Assert.Equal(await existing.Content.ReadAsStringAsync(), await unknown.Content.ReadAsStringAsync());
+    }
+
     private static IdentityTokenDeliveryOptions ValidOptions() =>
         new()
         {

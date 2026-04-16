@@ -3,6 +3,7 @@ using Application.Identity.Services;
 using Infrastructure.Identity.Services;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net;
@@ -179,6 +180,21 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         {
             builder.UseEnvironment("Development");
             SeedDefaultUser();
+            builder.ConfigureAppConfiguration((_, cfg) =>
+            {
+                cfg.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["IdentityTokenDelivery:Provider"] = "inmemory",
+                        ["IdentityTokenDelivery:Smtp:Host"] = "smtp.test.local",
+                        ["IdentityTokenDelivery:Smtp:Port"] = "2525",
+                        ["IdentityTokenDelivery:Smtp:Username"] = "smtp-user",
+                        ["IdentityTokenDelivery:Smtp:Password"] = "smtp-password",
+                        ["IdentityTokenDelivery:Smtp:FromEmail"] = "noreply@test.local",
+                        ["IdentityTokenDelivery:Smtp:UseTls"] = "false",
+                    });
+            });
+
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<IUserRepository>();
