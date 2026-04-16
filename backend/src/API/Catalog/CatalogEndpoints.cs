@@ -8,25 +8,27 @@ public static class CatalogEndpoints
     public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/products", async (
-            string? category,
-            string? slug,
-            int? page,
-            int? pageSize,
+            [AsParameters] ProductListQueryRequest query,
             CatalogService catalogService,
             CancellationToken ct) =>
         {
             var request = new Application.Catalog.Contracts.ListProductsRequest(
-                Page: page ?? 1,
-                PageSize: pageSize ?? 20,
-                Category: category,
-                Slug: slug
+                Page: query.Page,
+                PageSize: query.PageSize,
+                Category: query.Category,
+                Slug: query.Slug
             );
 
             var result = await catalogService.ListProducts(request, ct);
+            var hasPreviousPage = result.Page > 1;
+            var hasNextPage = result.Items.Count == result.PageSize;
+
             return Results.Ok(new ProductListResponse(
-                result.Items.Select(x => new ProductResponse(x.Name, x.Slug, x.Description, x.Price, x.CategorySlug)).ToList(),
+                result.Items.Select(x => new ProductListItemResponse(x.Name, x.Slug, x.Description, x.Price, x.CategorySlug)).ToList(),
                 result.Page,
-                result.PageSize));
+                result.PageSize,
+                new ProductListAppliedFiltersResponse(query.Category, query.Slug),
+                new ProductListPaginationResponse(result.Page, result.PageSize, hasPreviousPage, hasNextPage)));
         });
 
         app.MapGet("/products/{slug}", async (string slug, CatalogService catalogService, CancellationToken ct) =>

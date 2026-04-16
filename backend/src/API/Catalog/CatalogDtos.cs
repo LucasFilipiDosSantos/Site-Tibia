@@ -1,13 +1,108 @@
 namespace API.Catalog;
 
-public sealed record ProductListQueryRequest(string? Category, string? Slug, int Page = 1, int PageSize = 20);
+/// <summary>
+/// Query contract for customer catalog list requests.
+/// </summary>
+public sealed record ProductListQueryRequest
+{
+    /// <summary>
+    /// Optional category slug filter.
+    /// </summary>
+    public string? Category { get; init; }
 
-public sealed record ProductResponse(string Name, string Slug, string Description, decimal Price, string CategorySlug);
+    /// <summary>
+    /// Optional product slug filter.
+    /// </summary>
+    public string? Slug { get; init; }
 
-public sealed record ProductListResponse(IReadOnlyList<ProductResponse> Items, int Page, int PageSize);
+    /// <summary>
+    /// 1-based page index.
+    /// </summary>
+    public int Page { get; init; } = 1;
 
+    /// <summary>
+    /// Page size for offset pagination.
+    /// </summary>
+    public int PageSize { get; init; } = 20;
+}
+
+/// <summary>
+/// Route contract for customer canonical slug lookup.
+/// </summary>
+public sealed record ProductSlugRouteRequest(string Slug);
+
+/// <summary>
+/// Route contract for admin category deletion by slug.
+/// </summary>
+public sealed record CategorySlugRouteRequest(string Slug);
+
+/// <summary>
+/// Item contract in customer list responses.
+/// </summary>
+public sealed record ProductListItemResponse(
+    string Name,
+    string Slug,
+    string Description,
+    decimal Price,
+    string CategorySlug);
+
+/// <summary>
+/// Customer/admin product response contract.
+/// </summary>
+public sealed record ProductResponse(
+    string Name,
+    string Slug,
+    string Description,
+    decimal Price,
+    string CategorySlug);
+
+/// <summary>
+/// Echo of effective list filters used to produce response items.
+/// </summary>
+public sealed record ProductListAppliedFiltersResponse(
+    string? Category,
+    string? Slug);
+
+/// <summary>
+/// Pagination metadata for list responses.
+/// </summary>
+public sealed record ProductListPaginationResponse(
+    int Page,
+    int PageSize,
+    bool HasPreviousPage,
+    bool HasNextPage);
+
+/// <summary>
+/// Customer list response contract with items and metadata.
+/// </summary>
+public sealed record ProductListResponse(
+    IReadOnlyList<ProductListItemResponse> Items,
+    int Page,
+    int PageSize,
+    ProductListAppliedFiltersResponse AppliedFilters,
+    ProductListPaginationResponse Pagination);
+
+/// <summary>
+/// Admin category create payload.
+/// </summary>
 public sealed record CreateCategoryRequest(string Name, string Slug, string Description);
 
-public sealed record CreateProductRequest(string Name, string Slug, string Description, decimal Price, string CategorySlug);
+/// <summary>
+/// Admin product create payload.
+/// </summary>
+public sealed record CreateProductRequest(
+    string Name,
+    string Slug,
+    string Description,
+    decimal Price,
+    string CategorySlug);
 
-public sealed record UpdateProductPutReplaceRequest(string Slug, string Name, string Description, decimal Price, string CategorySlug);
+/// <summary>
+/// Admin product full-replace payload.
+/// </summary>
+public sealed record UpdateProductPutReplaceRequest(
+    string Slug,
+    string Name,
+    string Description,
+    decimal Price,
+    string CategorySlug);
