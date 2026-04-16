@@ -38,6 +38,27 @@ public sealed class RegisterValidationErrorContractTests
     }
 
     [Fact]
+    public async Task Register_InvalidEmail_ReturnsProblemDetailsBadRequest()
+    {
+        await using var factory = new RegisterApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync(
+            "/auth/register",
+            new { email = "invalid-email", password = "ValidPass123!" }
+        );
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
+        var payload = await response.Content.ReadFromJsonAsync<ProblemDetailsPayload>();
+        Assert.NotNull(payload);
+        Assert.Equal("Validation failed.", payload!.Title);
+        Assert.Equal("Email format is invalid.", payload.Detail);
+        Assert.Equal(400, payload.Status);
+    }
+
+    [Fact]
     public async Task Register_StrongPassword_ReturnsSuccessContract()
     {
         await using var factory = new RegisterApiFactory();

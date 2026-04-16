@@ -12,11 +12,6 @@ internal sealed class InMemoryUserRepository : IUserRepository
         return Task.FromResult(Users.SingleOrDefault(u => string.Equals(u.Email, email, StringComparison.OrdinalIgnoreCase)));
     }
 
-    public Task<UserAccount?> GetByNormalizedEmailAsync(string normalizedEmail, CancellationToken cancellationToken = default)
-    {
-        return Task.FromResult(Users.SingleOrDefault(u => u.NormalizedEmail == normalizedEmail));
-    }
-
     public Task<UserAccount?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(Users.SingleOrDefault(u => u.Id == userId));
