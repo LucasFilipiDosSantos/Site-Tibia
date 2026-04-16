@@ -1,0 +1,61 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tibia-webstore-api
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres
+      Jwt__Issuer: tibia-webstore
+      Jwt__Audience: tibia-webstore-client
+      Jwt__SigningKey: "01234567890123456789012345678901"
+      IdentityTokenDelivery__Provider: smtp
+      IdentityTokenDelivery__Smtp__Host: mailpit
+      IdentityTokenDelivery__Smtp__Port: 1025
+      IdentityTokenDelivery__Smtp__Username: mailpit-local-user
+      IdentityTokenDelivery__Smtp__Password: mailpit-local-pass
+      IdentityTokenDelivery__Smtp__FromEmail: noreply@dev.local
+      IdentityTokenDelivery__Smtp__UseTls: false
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailpit:
+        condition: service_healthy
+    restart: unless-stopped
+
+  mailpit:
+    image: axllent/mailpit:v1.29.7
+    container_name: tibia-webstore-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:8025 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17
+    container_name: tibia-webstore-postgres
+    environment:
+      POSTGRES_DB: tibia_webstore
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d tibia_webstore"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
