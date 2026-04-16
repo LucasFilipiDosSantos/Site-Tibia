@@ -56,9 +56,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Define catalog domain/application contracts and invariants with TDD for immutable slugs, category references, and filter+paging behavior.
-- [ ] 02-02-PLAN.md — Implement EF persistence/repositories plus blocking migration and schema push for catalog/category governance constraints.
-- [ ] 02-03-PLAN.md — Expose customer/admin catalog endpoints with RBAC integration tests and requirements alignment updates for the global catalog scope decision.
+- [x] 02-01-PLAN.md — Define catalog domain/application contracts and invariants with TDD for immutable slugs, category references, and filter+paging behavior.
+- [x] 02-02-PLAN.md — Implement EF persistence/repositories plus blocking migration and schema push for catalog/category governance constraints.
+- [x] 02-03-PLAN.md — Expose customer/admin catalog endpoints with RBAC integration tests and requirements alignment updates for the global catalog scope decision.
 
 ### Phase 3: Inventory Integrity & Reservation Control
 **Goal**: Stock remains accurate under concurrent demand and checkout safety rules.
