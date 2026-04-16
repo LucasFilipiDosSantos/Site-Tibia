@@ -187,6 +187,62 @@ public sealed class ExternalTokenDeliveryRoundTripTests
         Assert.Single(factory.Transport.Messages);
     }
 
+    [Fact]
+    public async Task External_VerificationRequest_WhenTransportFails_ReturnsGenericSuccess()
+    {
+        await using var factory = new FaultingExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/auth/verify-email/request", new { email = "verify@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("{\"message\":\"If the account exists, a verification link was sent.\"}", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task External_PasswordResetRequest_WhenTransportFails_ReturnsGenericSuccess()
+    {
+        await using var factory = new FaultingExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/auth/password-reset/request", new { email = "verify@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal("{\"message\":\"If the account exists, a reset link was sent.\"}", await response.Content.ReadAsStringAsync());
+    }
+
+    [Fact]
+    public async Task External_VerificationRequest_WhenTransportFails_RecordsFailureAuditWithoutTokenLeak()
+    {
+        await using var factory = new FaultingExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/auth/verify-email/request", new { email = "verify@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains(
+            factory.Audit.Events,
+            evt => evt.EventName == SecurityAuditService.EmailVerificationDispatchFailed && evt.Email == "verify@test.com"
+        );
+        Assert.DoesNotContain(factory.Audit.Events, evt => (evt.Email ?? string.Empty).Contains("token", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task External_PasswordResetRequest_WhenTransportFails_RecordsFailureAuditWithoutTokenLeak()
+    {
+        await using var factory = new FaultingExternalDeliveryApiFactory();
+        using var client = factory.CreateClient();
+
+        var response = await client.PostAsJsonAsync("/auth/password-reset/request", new { email = "verify@test.com" });
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Contains(
+            factory.Audit.Events,
+            evt => evt.EventName == SecurityAuditService.PasswordResetDispatchFailed && evt.Email == "verify@test.com"
+        );
+        Assert.DoesNotContain(factory.Audit.Events, evt => (evt.Email ?? string.Empty).Contains("token", StringComparison.OrdinalIgnoreCase));
+    }
+
     private static IdentityTokenDeliveryOptions ValidOptions() =>
         new()
         {
@@ -266,6 +322,87 @@ public sealed class ExternalTokenDeliveryRoundTripTests
                 services.AddSingleton<ISystemClock>(_clock);
                 services.RemoveAll<ISmtpTokenTransport>();
                 services.AddSingleton<ISmtpTokenTransport>(Transport);
+            });
+        }
+
+        private void SeedDefaultUser()
+        {
+            if (_users.Users.Any())
+            {
+                return;
+            }
+
+            var user = new UserAccount("verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
+            _users.Users.Add(user);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            await base.DisposeAsync();
+        }
+    }
+
+    private sealed class FaultingSmtpTokenTransport : ISmtpTokenTransport
+    {
+        public Task SendAsync(SmtpOutgoingMessage message, CancellationToken cancellationToken = default)
+        {
+            throw new InvalidOperationException("Simulated SMTP transport failure.");
+        }
+    }
+
+    private sealed class FaultingExternalDeliveryApiFactory : WebApplicationFactory<Program>, IAsyncDisposable
+    {
+        private readonly InMemoryUserRepository _users = new();
+        private readonly InMemoryRefreshSessionRepository _refreshSessions = new();
+        private readonly InMemorySecurityTokenRepository _tokens = new();
+        private readonly FixedClock _clock = new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
+        private readonly FakeTokenService _tokenService = new();
+        private readonly FakePasswordHasherService _passwordHasher = new();
+
+        public SecurityAuditService Audit { get; } = new();
+
+        protected override void ConfigureWebHost(IWebHostBuilder builder)
+        {
+            builder.UseEnvironment("Development");
+            SeedDefaultUser();
+
+            builder.ConfigureAppConfiguration((_, cfg) =>
+            {
+                cfg.AddInMemoryCollection(
+                    new Dictionary<string, string?>
+                    {
+                        ["Jwt:Issuer"] = "tibia-webstore",
+                        ["Jwt:Audience"] = "tibia-webstore-client",
+                        ["Jwt:SigningKey"] = "01234567890123456789012345678901",
+                        ["IdentityTokenDelivery:Provider"] = "smtp",
+                        ["IdentityTokenDelivery:Smtp:Host"] = "smtp.test.local",
+                        ["IdentityTokenDelivery:Smtp:Port"] = "2525",
+                        ["IdentityTokenDelivery:Smtp:Username"] = "smtp-user",
+                        ["IdentityTokenDelivery:Smtp:Password"] = "smtp-password",
+                        ["IdentityTokenDelivery:Smtp:FromEmail"] = "noreply@test.local",
+                        ["IdentityTokenDelivery:Smtp:UseTls"] = "false",
+                    });
+            });
+
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IUserRepository>();
+                services.RemoveAll<IRefreshSessionRepository>();
+                services.RemoveAll<ISecurityTokenRepository>();
+                services.RemoveAll<ITokenService>();
+                services.RemoveAll<IPasswordHasherService>();
+                services.RemoveAll<ISystemClock>();
+                services.RemoveAll<ISmtpTokenTransport>();
+                services.RemoveAll<SecurityAuditService>();
+
+                services.AddSingleton<IUserRepository>(_users);
+                services.AddSingleton<IRefreshSessionRepository>(_refreshSessions);
+                services.AddSingleton<ISecurityTokenRepository>(_tokens);
+                services.AddSingleton<ITokenService>(_tokenService);
+                services.AddSingleton<IPasswordHasherService>(_passwordHasher);
+                services.AddSingleton<ISystemClock>(_clock);
+                services.AddSingleton<ISmtpTokenTransport, FaultingSmtpTokenTransport>();
+                services.AddSingleton(Audit);
             });
         }
 

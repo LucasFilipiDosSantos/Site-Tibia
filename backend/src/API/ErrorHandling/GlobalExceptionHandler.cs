@@ -1,3 +1,4 @@
+using Application.Identity.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -14,6 +15,28 @@ public sealed class GlobalExceptionHandler(
         CancellationToken cancellationToken
     )
     {
+        if (exception is TokenDeliveryUnavailableException)
+        {
+            logger.LogWarning(
+                exception,
+                "Token delivery unavailable while processing {Path}; returning generic success contract.",
+                httpContext.Request.Path
+            );
+
+            httpContext.Response.StatusCode = StatusCodes.Status200OK;
+            httpContext.Response.ContentType = "application/json";
+
+            var message = httpContext.Request.Path.Value switch
+            {
+                "/auth/verify-email/request" => "If the account exists, a verification link was sent.",
+                "/auth/password-reset/request" => "If the account exists, a reset link was sent.",
+                _ => "Request accepted.",
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(new { message }, cancellationToken);
+            return true;
+        }
+
         var (status, title, detail) = Map(exception);
 
         if (status >= StatusCodes.Status500InternalServerError)

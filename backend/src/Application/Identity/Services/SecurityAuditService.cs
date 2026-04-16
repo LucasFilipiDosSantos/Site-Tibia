@@ -12,6 +12,8 @@ public sealed class SecurityAuditService
     public const string EmailVerificationRequested = "email_verification_requested";
     public const string EmailVerificationDispatchAttempted = "email_verification_dispatch_attempted";
     public const string PasswordResetDispatchAttempted = "password_reset_dispatch_attempted";
+    public const string EmailVerificationDispatchFailed = "email_verification_dispatch_failed";
+    public const string PasswordResetDispatchFailed = "password_reset_dispatch_failed";
     public const string TokenRequestUnknownEmail = "token_request_unknown_email";
 
     private readonly List<SecurityAuditEvent> _events = new();
