@@ -1,6 +1,8 @@
 using System.Text;
 using API.Auth;
+using API.Catalog;
 using API.ErrorHandling;
+using Application.Catalog.Services;
 using Application.Identity.Contracts;
 using Application.Identity.Services;
 using Infrastructure;
@@ -70,6 +72,7 @@ public partial class Program
         builder.Services.AddScoped<IIdentityService, IdentityService>();
         builder.Services.AddScoped<TokenRotationService>();
         builder.Services.AddSingleton<SecurityAuditService>();
+        builder.Services.AddScoped<CatalogService>();
 
         var app = builder.Build();
 
@@ -93,6 +96,7 @@ public partial class Program
         app.UseMiddleware<AuthRateLimitMiddleware>();
 
         app.MapAuthEndpoints();
+        app.MapCatalogEndpoints();
 
         app.Run();
     }
