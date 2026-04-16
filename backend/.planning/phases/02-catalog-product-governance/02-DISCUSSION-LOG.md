@@ -94,3 +94,62 @@
 ## Deferred Ideas
 
 - Server-scoped product filtering from CAT-01 deferred for roadmap/requirements alignment with global-product catalog vision.
+
+---
+
+## Update pass (2026-04-16)
+
+### Server-scope requirement conflict
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Override CAT-01 in this phase | Server filtering not applicable to global product model; align requirements/roadmap docs. | ✓ |
+| Support no-op compat param | Accept `server` but ignore it. | |
+| Keep deferred only | Leave unresolved for later. | |
+
+**User's choice:** Override CAT-01 in this phase
+**Notes:** Requirement alignment is now a locked decision, not a deferred item.
+
+### Catalog read contract details
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Category + slug only | Keep filter set minimal for Phase 2. | ✓ |
+| Add search text | Expand contract with keyword matching now. | |
+| Add price range | Expand contract with pricing filters now. | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Offset paging required | Require `page` and `pageSize` list pagination. | ✓ |
+| Unpaged for now | Return full list. | |
+| Cursor paging | Use cursor-based pagination. | |
+
+**User's choice:** Category + slug filters only; offset paging required
+
+### Admin write rules
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Allow zero on create+update | Consistent zero-price policy across writes. | ✓ |
+| Zero only on update | Special-case behavior. | |
+| Disallow zero | Paid-only model. | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Validation error 400 for missing category slug | Reject invalid category references. | ✓ |
+| Auto-create category | Create taxonomy on demand. | |
+| 404 not found | Treat missing category as missing resource. | |
+
+**User's choice:** Allow zero on create/update; missing category slug returns 400
+
+### Slug and taxonomy policy
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Admin-manageable categories | Category CRUD governance in Phase 2. | ✓ |
+| Seeded and fixed categories | Non-mutable taxonomy for now. | |
+| Hybrid | Seed + limited edits. | |
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Block delete when linked products exist | Preserve referential integrity. | ✓ |
+| Soft-delete category | Hide while preserving links. | |
+| Cascade to uncategorized | Reassign on delete. | |
+
+**User's choice:** Admin-manageable categories; block category delete when linked products exist

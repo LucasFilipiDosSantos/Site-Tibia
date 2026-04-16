@@ -17,22 +17,27 @@ Deliver backend catalog discovery and product governance contracts so customers 
 - **D-01:** Customer browsing uses a single endpoint contract: `GET /products` with composable query filters.
 - **D-02:** Filter combination uses AND semantics when multiple filters are provided.
 - **D-03:** Product slug resolution is canonical via dedicated endpoint: `GET /products/{slug}`.
+- **D-04:** Official list filters for Phase 2 are `category` and `slug` only.
+- **D-05:** `GET /products` list responses require offset pagination (`page`, `pageSize`).
 
 ### Slug Rules
-- **D-04:** Product slugs are globally unique across the catalog.
-- **D-05:** Product slugs are immutable after creation.
-- **D-06:** Attempts to change immutable product slug in update flows are rejected with validation error.
+- **D-06:** Product slugs are globally unique across the catalog.
+- **D-07:** Product slugs are immutable after creation.
+- **D-08:** Attempts to change immutable product slug in update flows are rejected with validation error.
 
 ### Category and Server Taxonomy
-- **D-07:** Catalog is global: products are not segmented by Tibia server and product model has no server field.
-- **D-08:** Product type/category is modeled as a database `Category` entity (not enum/free text).
-- **D-09:** Category slug is immutable after creation.
-- **D-10:** Requirement CAT-01 server filter is intentionally deferred as a requirements/roadmap alignment follow-up because current product vision is "just products" without server segmentation.
+- **D-09:** Catalog is global: products are not segmented by Tibia server and product model has no server field.
+- **D-10:** Product type/category is modeled as a database `Category` entity (not enum/free text).
+- **D-11:** Category slug is immutable after creation.
+- **D-12:** Categories are admin-manageable in Phase 2.
+- **D-13:** Category deletion is blocked when linked products exist.
+- **D-14:** CAT-01 server filtering is explicitly overridden for this product model and must be updated in requirements/roadmap alignment artifacts.
 
 ### Admin Product Mutation Contract
-- **D-11:** Admin product updates use PUT replace model (single full-update contract).
-- **D-12:** Product price allows zero value.
-- **D-13:** Product write contract references category by category slug.
+- **D-15:** Admin product updates use PUT replace model (single full-update contract).
+- **D-16:** Product price allows zero value on both create and update operations.
+- **D-17:** Product write contract references category by category slug.
+- **D-18:** If category slug does not exist on create/update, API returns validation error 400.
 
 ### the agent's Discretion
 - Exact pagination strategy for `GET /products` list responses (if needed by planner/research based on existing API conventions).
@@ -90,13 +95,14 @@ Deliver backend catalog discovery and product governance contracts so customers 
 - Catalog should be product-centric (no server-specific product split).
 - Product/category slugs must stay stable to preserve consistent SEO-friendly access.
 - Admin write flow should be strict and explicit (PUT replace with validation errors for immutable field edits).
+- Keep read contract minimal in Phase 2: category/slug filters plus required offset paging.
 
 </specifics>
 
 <deferred>
 ## Deferred Ideas
 
-- Server-scoped catalog filtering from CAT-01 is deferred for requirements alignment with product vision (global catalog only).
+None - discussion stayed within phase scope. Requirement alignment is captured as a locked decision in D-14.
 
 </deferred>
 
