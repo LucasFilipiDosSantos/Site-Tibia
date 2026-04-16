@@ -1,0 +1,1 @@
+- [Out-of-scope] `dotnet test backend.slnx -v minimal` fails on pre-existing identity suite (`UnitTests.Identity.AdminJwtAuthorizationTests`) due to SMTP placeholder configuration validation. This was observed while verifying Task 2 and is unrelated to catalog endpoint changes in this plan.
