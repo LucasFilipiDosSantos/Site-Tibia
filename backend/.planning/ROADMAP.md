@@ -52,7 +52,12 @@ Plans:
   2. Customer can access product groupings by Tibia goods/service category.
   3. Catalog and category endpoints resolve SEO-friendly slugs consistently.
   4. Admin can create and update product descriptions and pricing for catalog operations.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Define catalog domain/application contracts and invariants with TDD for immutable slugs, category references, and filter+paging behavior.
+- [ ] 02-02-PLAN.md — Implement EF persistence/repositories plus blocking migration and schema push for catalog/category governance constraints.
+- [ ] 02-03-PLAN.md — Expose customer/admin catalog endpoints with RBAC integration tests and requirements alignment updates for the global catalog scope decision.
 
 ### Phase 3: Inventory Integrity & Reservation Control
 **Goal**: Stock remains accurate under concurrent demand and checkout safety rules.
@@ -139,7 +144,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Identity & Security Foundation | 6/7 | In progress | - |
-| 2. Catalog & Product Governance | 0/TBD | Not started | - |
+| 2. Catalog & Product Governance | 0/3 | Not started | - |
 | 3. Inventory Integrity & Reservation Control | 0/TBD | Not started | - |
 | 4. Cart & Checkout Capture | 0/TBD | Not started | - |
 | 5. Order Lifecycle & Timeline Visibility | 0/TBD | Not started | - |
