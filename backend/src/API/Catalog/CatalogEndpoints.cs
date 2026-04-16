@@ -29,7 +29,8 @@ public static class CatalogEndpoints
                 result.PageSize,
                 new ProductListAppliedFiltersResponse(query.Category, query.Slug),
                 new ProductListPaginationResponse(result.Page, result.PageSize, hasPreviousPage, hasNextPage)));
-        });
+        })
+        .WithTags("Public Catalog");
 
         app.MapGet("/products/{slug}", async (string slug, CatalogService catalogService, CancellationToken ct) =>
         {
@@ -40,7 +41,8 @@ public static class CatalogEndpoints
             }
 
             return Results.Ok(new ProductResponse(product.Name, product.Slug, product.Description, product.Price, product.CategorySlug));
-        });
+        })
+        .WithTags("Public Catalog");
 
         var admin = app.MapGroup("/admin/catalog")
             .RequireAuthorization(AuthPolicies.AdminOnly);
@@ -49,13 +51,15 @@ public static class CatalogEndpoints
         {
             await catalogService.CreateCategory(new Application.Catalog.Contracts.CreateCategoryRequest(request.Name, request.Slug, request.Description), ct);
             return Results.Ok();
-        });
+        })
+        .WithTags("Admin Catalog");
 
         admin.MapDelete("/categories/{slug}", async (string slug, CatalogService catalogService, CancellationToken ct) =>
         {
             await catalogService.DeleteCategory(slug, ct);
             return Results.Ok();
-        });
+        })
+        .WithTags("Admin Catalog");
 
         admin.MapPost("/products", async (CreateProductRequest request, CatalogService catalogService, CancellationToken ct) =>
         {
@@ -69,7 +73,8 @@ public static class CatalogEndpoints
                 ct);
 
             return Results.Ok(new ProductResponse(created.Name, created.Slug, created.Description, created.Price, created.CategorySlug));
-        });
+        })
+        .WithTags("Admin Catalog");
 
         admin.MapPut("/products/{slug}", async (string slug, UpdateProductPutReplaceRequest request, CatalogService catalogService, CancellationToken ct) =>
         {
@@ -84,7 +89,8 @@ public static class CatalogEndpoints
                 ct);
 
             return Results.Ok(new ProductResponse(updated.Name, updated.Slug, updated.Description, updated.Price, updated.CategorySlug));
-        });
+        })
+        .WithTags("Admin Catalog");
 
         return app;
     }
