@@ -15,8 +15,8 @@ public sealed class CatalogServiceFilterAndPaginationTests
         categoryRepository.Seed(new Category("Gold", "gold", "Gold offers"));
         categoryRepository.Seed(new Category("Items", "items", "Items offers"));
 
-        productRepository.Seed(new Product("Gold Starter", "gold-starter", "Gold product", 5m, "gold"));
-        productRepository.Seed(new Product("Magic Sword", "magic-sword", "Sword product", 9m, "items"));
+        productRepository.Seed(new Product("Gold Starter", "gold-starter", "Gold product", 5m, Guid.NewGuid(), "gold"));
+        productRepository.Seed(new Product("Magic Sword", "magic-sword", "Sword product", 9m, Guid.NewGuid(), "items"));
 
         var service = new CatalogService(productRepository, categoryRepository);
         var request = new ListProductsRequest(Page: 1, PageSize: 10, Category: "gold", Slug: "magic-sword");
@@ -60,7 +60,7 @@ public sealed class CatalogServiceFilterAndPaginationTests
         var productRepository = new InMemoryProductRepository();
 
         categoryRepository.Seed(new Category("Gold", "gold", "Gold offers"));
-        productRepository.Seed(new Product("Gold Starter", "gold-starter", "Gold product", 5m, "gold"));
+        productRepository.Seed(new Product("Gold Starter", "gold-starter", "Gold product", 5m, Guid.NewGuid(), "gold"));
 
         var service = new CatalogService(productRepository, categoryRepository);
 
@@ -83,7 +83,7 @@ public sealed class CatalogServiceFilterAndPaginationTests
         var productRepository = new InMemoryProductRepository();
 
         categoryRepository.Seed(new Category("Gold", "gold", "Gold offers"));
-        productRepository.Seed(new Product("Gold Starter", "gold-starter", "Gold product", 5m, "gold"));
+        productRepository.Seed(new Product("Gold Starter", "gold-starter", "Gold product", 5m, Guid.NewGuid(), "gold"));
 
         var service = new CatalogService(productRepository, categoryRepository);
 

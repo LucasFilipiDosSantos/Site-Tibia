@@ -76,7 +76,7 @@ public sealed class CatalogService
             throw new ArgumentException("Product slug already exists.", nameof(request.Slug));
         }
 
-        var product = new Product(request.Name, normalizedSlug, request.Description, request.Price, normalizedCategorySlug);
+        var product = new Product(request.Name, normalizedSlug, request.Description, request.Price, category.Id, normalizedCategorySlug);
         await _productRepository.AddAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
 
@@ -107,7 +107,7 @@ public sealed class CatalogService
         var product = await _productRepository.GetBySlugAsync(routeSlug, cancellationToken)
             ?? throw new ArgumentException("Product slug not found.", nameof(request.RouteSlug));
 
-        product.ReplaceDetails(request.Name, request.Description, request.Price, normalizedCategorySlug);
+        product.ReplaceDetails(request.Name, request.Description, request.Price, category.Id, normalizedCategorySlug);
         await _productRepository.UpdateAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
 
