@@ -9,7 +9,11 @@ updated: 2026-04-16T15:22:57Z
 
 ## Current Test
 
-[awaiting human testing]
+number: 1
+name: Validate HTTPS redirect + HSTS in deployed non-Development environment behind real ingress/TLS
+expected: |
+  HTTP requests are redirected to HTTPS and HSTS is present where applicable
+awaiting: user response
 
 ## Tests
 

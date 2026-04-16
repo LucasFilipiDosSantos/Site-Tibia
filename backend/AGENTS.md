@@ -89,7 +89,15 @@ This project is a backend platform for a Tibia-focused webstore that sells virtu
 <!-- GSD:conventions-start source:CONVENTIONS.md -->
 ## Conventions
 
-Conventions not yet established. Will populate as patterns emerge during development.
+### Enforceable Architecture Boundary Guardrails (PR Checks)
+
+- [ ] `src/Domain` stays framework-free (no ASP.NET Core, EF Core, Npgsql, Hangfire, HTTP, or external SDK references).
+- [ ] `src/Application` depends only on `src/Domain` abstractions and shared contracts (never on `src/API` or `src/Infrastructure`).
+- [ ] `src/API` contains transport/composition concerns only (controllers, DTO mapping, auth/middleware, DI wiring), not domain/business rules.
+- [ ] `src/Infrastructure` implements interfaces from `src/Application`/`src/Domain` and contains persistence/integration details; it never becomes an orchestration layer.
+- [ ] Dependency direction always points inward: `API -> Application -> Domain`; `Infrastructure -> Application/Domain`; no reverse or cross-layer shortcuts.
+- [ ] New abstractions are owned by inner layers (`Domain` or `Application`), while outer layers only implement or consume them.
+- [ ] `tests/UnitTests` test `Domain`/`Application` behavior in isolation (mocks/fakes), without real database, network, or filesystem dependencies.
 <!-- GSD:conventions-end -->
 
 <!-- GSD:architecture-start source:ARCHITECTURE.md -->
