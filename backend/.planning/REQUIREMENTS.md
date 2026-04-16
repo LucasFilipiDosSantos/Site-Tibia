@@ -9,6 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Catalog
 
+- **Alignment note (Phase 02, D-14):** CAT-01 server-filter wording is superseded by the locked global catalog model decision. Phase 2 catalog contracts use global discovery by category/slug and do not include a product server field.
 - [ ] **CAT-01**: User can browse products filtered by Tibia server (Aurera or Eternia)
 - [ ] **CAT-02**: User can view products categorized by type (gold, items, characters, Tibia Coins, scripts, macros, services)
 - [ ] **CAT-03**: User can access products and categories through SEO-friendly slugs

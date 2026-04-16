@@ -47,8 +47,9 @@ Plans:
 **Goal**: Customers can discover valid Tibia products and admins can maintain catalog data safely.
 **Depends on**: Phase 1
 **Requirements**: CAT-01, CAT-02, CAT-03, CAT-04
+**Alignment note:** CAT-01 server-filter phrasing is superseded in Phase 2 by locked decision D-14 (global catalog model without server segmentation).
 **Success Criteria** (what must be TRUE):
-  1. Customer can browse products filtered by Aurera and Eternia server scope.
+  1. Customer can browse the global catalog using category and slug discovery without server-specific segmentation.
   2. Customer can access product groupings by Tibia goods/service category.
   3. Catalog and category endpoints resolve SEO-friendly slugs consistently.
   4. Admin can create and update product descriptions and pricing for catalog operations.
