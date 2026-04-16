@@ -4,10 +4,13 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Text.RegularExpressions;
 using System.Net;
 using System.Net.Http.Json;
 
 namespace IntegrationTests.Catalog;
+
+using ApiCatalog = API.Catalog;
 
 [Trait("Category", "CatalogGovernance")]
 [Trait("Requirement", "CAT-02")]
@@ -25,7 +28,7 @@ public sealed class CatalogCustomerEndpointsTests
         var response = await client.GetAsync("/products?category=gold&slug=gold-pro&page=1&pageSize=10");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var payload = await response.Content.ReadFromJsonAsync<ProductListResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ApiCatalog.ProductListResponse>();
         Assert.NotNull(payload);
         var product = Assert.Single(payload!.Items);
         Assert.Equal("gold-pro", product.Slug);
@@ -41,7 +44,7 @@ public sealed class CatalogCustomerEndpointsTests
         var response = await client.GetAsync("/products/gold-starter");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        var payload = await response.Content.ReadFromJsonAsync<ProductResponse>();
+        var payload = await response.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
         Assert.NotNull(payload);
         Assert.Equal("gold-starter", payload!.Slug);
         Assert.Equal("Gold Starter", payload.Name);
@@ -59,6 +62,31 @@ public sealed class CatalogCustomerEndpointsTests
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+    }
+
+    [Fact]
+    public void CatalogDtos_File_IsSubstantiveForContractSurface()
+    {
+        var dtoFile = FindRepoPath("src/API/Catalog/CatalogDtos.cs");
+        var lineCount = File.ReadAllLines(dtoFile).Length;
+
+        Assert.True(
+            lineCount >= 80,
+            $"CatalogDtos.cs must be substantive (>= 80 lines). Current line count: {lineCount}.");
+    }
+
+    [Fact]
+    public void CustomerTests_DoNotDuplicateApiCatalogDtoContracts()
+    {
+        var currentTestFile = FindRepoPath("tests/IntegrationTests/Catalog/CatalogCustomerEndpointsTests.cs");
+        var source = File.ReadAllText(currentTestFile);
+
+        var hasLocalDuplicateDtoRecords = Regex.IsMatch(
+            source,
+            @"^\s*private\s+sealed\s+record\s+Product(ListResponse|Response)\b",
+            RegexOptions.Multiline);
+
+        Assert.False(hasLocalDuplicateDtoRecords, "Customer tests must not declare local ProductListResponse/ProductResponse records.");
     }
 
     private sealed class CatalogCustomerApiFactory : WebApplicationFactory<Program>, IAsyncDisposable
@@ -101,9 +129,6 @@ public sealed class CatalogCustomerEndpointsTests
             await base.DisposeAsync();
         }
     }
-
-    private sealed record ProductListResponse(IReadOnlyList<ProductResponse> Items, int Page, int PageSize);
-    private sealed record ProductResponse(string Name, string Slug, string Description, decimal Price, string CategorySlug);
 
     private sealed class InMemoryProductRepository : IProductRepository
     {
@@ -158,5 +183,22 @@ public sealed class CatalogCustomerEndpointsTests
         public Task AddAsync(Domain.Catalog.Category category, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task DeleteAsync(Domain.Catalog.Category category, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private static string FindRepoPath(string relativePath)
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current is not null)
+        {
+            var candidate = Path.Combine(current.FullName, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new InvalidOperationException($"Could not locate repository file: {relativePath}");
     }
 }

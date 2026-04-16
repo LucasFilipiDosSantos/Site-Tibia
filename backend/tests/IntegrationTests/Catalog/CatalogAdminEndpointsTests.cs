@@ -13,8 +13,11 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Security.Claims;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace IntegrationTests.Catalog;
+
+using ApiCatalog = API.Catalog;
 
 [Trait("Category", "CatalogGovernance")]
 [Trait("Requirement", "CAT-04")]
@@ -23,6 +26,20 @@ namespace IntegrationTests.Catalog;
 public sealed class CatalogAdminEndpointsTests
 {
     [Fact]
+    public void AdminTests_DoNotUseAnonymousPayloads_ForCatalogContracts()
+    {
+        var currentTestFile = FindRepoPath("tests/IntegrationTests/Catalog/CatalogAdminEndpointsTests.cs");
+        var source = File.ReadAllText(currentTestFile);
+
+        var hasAnonymousPayloads = Regex.IsMatch(
+            source,
+            @"PostAsJsonAsync\s*\([^\)]*new\s*\{|PutAsJsonAsync\s*\([^\)]*new\s*\{",
+            RegexOptions.Singleline);
+
+        Assert.False(hasAnonymousPayloads, "Admin tests must send typed API catalog DTO payloads, not anonymous objects.");
+    }
+
+    [Fact]
     public async Task AdminMutationRoutes_UnauthenticatedAndNonAdmin_AreRejected()
     {
         await using var factory = new CatalogAdminApiFactory();
@@ -30,7 +47,7 @@ public sealed class CatalogAdminEndpointsTests
 
         var unauthorized = await unauthenticatedClient.PostAsJsonAsync(
             "/admin/catalog/categories",
-            new { name = "Services", slug = "services", description = "Service offers" });
+            new ApiCatalog.CreateCategoryRequest("Services", "services", "Service offers"));
         Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
 
         using var nonAdminClient = factory.CreateClient();
@@ -39,7 +56,7 @@ public sealed class CatalogAdminEndpointsTests
 
         var forbidden = await nonAdminClient.PostAsJsonAsync(
             "/admin/catalog/categories",
-            new { name = "Services", slug = "services", description = "Service offers" });
+            new ApiCatalog.CreateCategoryRequest("Services", "services", "Service offers"));
         Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
     }
 
@@ -53,13 +70,18 @@ public sealed class CatalogAdminEndpointsTests
 
         var createCategory = await client.PostAsJsonAsync(
             "/admin/catalog/categories",
-            new { name = "Services", slug = "services", description = "Service offers" });
+            new ApiCatalog.CreateCategoryRequest("Services", "services", "Service offers"));
         Assert.True((int)createCategory.StatusCode >= 200 && (int)createCategory.StatusCode < 300);
 
         var createProduct = await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new { name = "Boost", slug = "boost", description = "Boost service", price = 0m, categorySlug = "services" });
+            new ApiCatalog.CreateProductRequest("Boost", "boost", "Boost service", 0m, "services"));
         Assert.True((int)createProduct.StatusCode >= 200 && (int)createProduct.StatusCode < 300);
+
+        var payload = await createProduct.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
+        Assert.NotNull(payload);
+        Assert.Equal("boost", payload!.Slug);
+        Assert.Equal("services", payload.CategorySlug);
     }
 
     [Fact]
@@ -72,22 +94,22 @@ public sealed class CatalogAdminEndpointsTests
 
         var createCategory = await client.PostAsJsonAsync(
             "/admin/catalog/categories",
-            new { name = "Gold", slug = "gold", description = "Gold offers" });
+            new ApiCatalog.CreateCategoryRequest("Gold", "gold", "Gold offers"));
         Assert.True((int)createCategory.StatusCode >= 200 && (int)createCategory.StatusCode < 300);
 
         var createProduct = await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new { name = "Gold Starter", slug = "gold-starter", description = "Starter", price = 10m, categorySlug = "gold" });
+            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 10m, "gold"));
         Assert.True((int)createProduct.StatusCode >= 200 && (int)createProduct.StatusCode < 300);
 
         var slugMutation = await client.PutAsJsonAsync(
             "/admin/catalog/products/gold-starter",
-            new { slug = "gold-changed", name = "Gold Starter", description = "Starter", price = 10m, categorySlug = "gold" });
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-changed", "Gold Starter", "Starter", 10m, "gold"));
         Assert.Equal(HttpStatusCode.BadRequest, slugMutation.StatusCode);
 
         var zeroPriceUpdate = await client.PutAsJsonAsync(
             "/admin/catalog/products/gold-starter",
-            new { slug = "gold-starter", name = "Gold Starter", description = "Starter", price = 0m, categorySlug = "gold" });
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 0m, "gold"));
         Assert.True((int)zeroPriceUpdate.StatusCode >= 200 && (int)zeroPriceUpdate.StatusCode < 300);
     }
 
@@ -101,19 +123,19 @@ public sealed class CatalogAdminEndpointsTests
 
         var create = await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new { name = "Ghost", slug = "ghost", description = "Ghost", price = 1m, categorySlug = "missing" });
+            new ApiCatalog.CreateProductRequest("Ghost", "ghost", "Ghost", 1m, "missing"));
         Assert.Equal(HttpStatusCode.BadRequest, create.StatusCode);
 
         await client.PostAsJsonAsync(
             "/admin/catalog/categories",
-            new { name = "Gold", slug = "gold", description = "Gold offers" });
+            new ApiCatalog.CreateCategoryRequest("Gold", "gold", "Gold offers"));
         await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new { name = "Gold Starter", slug = "gold-starter", description = "Starter", price = 2m, categorySlug = "gold" });
+            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 2m, "gold"));
 
         var update = await client.PutAsJsonAsync(
             "/admin/catalog/products/gold-starter",
-            new { slug = "gold-starter", name = "Gold Starter", description = "Starter", price = 2m, categorySlug = "missing" });
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 2m, "missing"));
         Assert.Equal(HttpStatusCode.BadRequest, update.StatusCode);
     }
 
@@ -127,10 +149,10 @@ public sealed class CatalogAdminEndpointsTests
 
         await client.PostAsJsonAsync(
             "/admin/catalog/categories",
-            new { name = "Items", slug = "items", description = "Item offers" });
+            new ApiCatalog.CreateCategoryRequest("Items", "items", "Item offers"));
         await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new { name = "Sword", slug = "sword", description = "Sword", price = 3m, categorySlug = "items" });
+            new ApiCatalog.CreateProductRequest("Sword", "sword", "Sword", 3m, "items"));
 
         var delete = await client.DeleteAsync("/admin/catalog/categories/items");
         Assert.Equal(HttpStatusCode.BadRequest, delete.StatusCode);
@@ -167,6 +189,23 @@ public sealed class CatalogAdminEndpointsTests
         public const string Issuer = "tibia-webstore";
         public const string Audience = "tibia-webstore-client";
         public const string SigningKey = "01234567890123456789012345678901";
+    }
+
+    private static string FindRepoPath(string relativePath)
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current is not null)
+        {
+            var candidate = Path.Combine(current.FullName, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new InvalidOperationException($"Could not locate repository file: {relativePath}");
     }
 
     private sealed class CatalogAdminApiFactory : WebApplicationFactory<Program>, IAsyncDisposable
