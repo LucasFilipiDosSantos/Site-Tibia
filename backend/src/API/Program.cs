@@ -1,9 +1,11 @@
 using System.Text;
 using API.Auth;
 using API.Catalog;
+using API.Checkout;
 using API.ErrorHandling;
 using API.Inventory;
 using Application.Catalog.Services;
+using Application.Checkout.Services;
 using Application.Identity.Contracts;
 using Application.Identity.Services;
 using Application.Inventory.Services;
@@ -76,6 +78,8 @@ public partial class Program
         builder.Services.AddSingleton<SecurityAuditService>();
         builder.Services.AddScoped<CatalogService>();
         builder.Services.AddScoped<InventoryService>();
+        builder.Services.AddScoped<CartService>();
+        builder.Services.AddScoped<CheckoutService>();
 
         var app = builder.Build();
 
@@ -101,6 +105,7 @@ public partial class Program
         app.MapAuthEndpoints();
         app.MapCatalogEndpoints();
         app.MapInventoryEndpoints();
+        app.MapCheckoutEndpoints();
 
         app.Run();
     }
