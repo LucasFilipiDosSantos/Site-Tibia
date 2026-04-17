@@ -1,4 +1,5 @@
 using Application.Identity.Exceptions;
+using Application.Checkout.Contracts;
 using Application.Inventory.Contracts;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
@@ -65,6 +66,29 @@ public sealed class GlobalExceptionHandler(
             problem.Extensions["availableQuantity"] = inventoryConflict.AvailableQuantity;
         }
 
+        if (exception is CartStockConflictException cartConflict)
+        {
+            problem.Extensions["lineConflicts"] = new[]
+            {
+                new
+                {
+                    productId = cartConflict.ProductId,
+                    requestedQuantity = cartConflict.RequestedQuantity,
+                    availableQuantity = cartConflict.AvailableQuantity
+                }
+            };
+        }
+
+        if (exception is CheckoutReservationConflictException checkoutConflict)
+        {
+            problem.Extensions["lineConflicts"] = checkoutConflict.LineConflicts.Select(x => new
+            {
+                productId = x.ProductId,
+                requestedQuantity = x.RequestedQuantity,
+                availableQuantity = x.AvailableQuantity
+            }).ToArray();
+        }
+
         await problemDetailsService.WriteAsync(
             new ProblemDetailsContext
             {
@@ -110,6 +134,16 @@ public sealed class GlobalExceptionHandler(
                 StatusCodes.Status409Conflict,
                 "Conflict.",
                 inventoryConflictException.Message
+            ),
+            CartStockConflictException cartStockConflictException => (
+                StatusCodes.Status409Conflict,
+                "Conflict.",
+                cartStockConflictException.Message
+            ),
+            CheckoutReservationConflictException checkoutConflictException => (
+                StatusCodes.Status409Conflict,
+                "Conflict.",
+                checkoutConflictException.Message
             ),
             InvalidOperationException invalidOperationException => (
                 StatusCodes.Status400BadRequest,
