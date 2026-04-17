@@ -39,6 +39,7 @@ public sealed class CheckoutService
         var orderId = Guid.NewGuid();
         var orderIntentKey = $"checkout-{Guid.NewGuid():N}";
         var conflicts = new List<CheckoutLineConflict>();
+        var hasSuccessfulReserve = false;
 
         foreach (var line in cart.Lines)
         {
@@ -50,6 +51,8 @@ public sealed class CheckoutService
                     line.ProductId,
                     line.Quantity,
                     cancellationToken);
+
+                hasSuccessfulReserve = true;
             }
             catch (CheckoutReservationConflictException ex)
             {
@@ -59,6 +62,11 @@ public sealed class CheckoutService
 
         if (conflicts.Count > 0)
         {
+            if (hasSuccessfulReserve)
+            {
+                await CompensateReservationsOrThrowAsync(orderIntentKey, cancellationToken);
+            }
+
             throw new CheckoutReservationConflictException(conflicts);
         }
 
@@ -110,6 +118,21 @@ public sealed class CheckoutService
                     x.RequestBrief,
                     x.ContactHandle))
                 .ToList());
+    }
+
+    private async Task CompensateReservationsOrThrowAsync(string orderIntentKey, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _inventoryGateway.ReleaseCheckoutReservationAsync(
+                orderIntentKey,
+                Application.Inventory.Contracts.ReservationReleaseReason.OrderCanceled,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            throw new CheckoutReservationCompensationException(orderIntentKey, ex);
+        }
     }
 
     private static DeliveryInstruction CreateInstruction(

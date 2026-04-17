@@ -1,5 +1,6 @@
 using API.Checkout;
 using Application.Checkout.Contracts;
+using Application.Inventory.Contracts;
 using Domain.Checkout;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -275,6 +276,11 @@ public sealed class CartEndpointsTests
             }
 
             _available[productId] = available - quantity;
+            return Task.CompletedTask;
+        }
+
+        public Task ReleaseCheckoutReservationAsync(string orderIntentKey, ReservationReleaseReason reason, CancellationToken cancellationToken = default)
+        {
             return Task.CompletedTask;
         }
     }

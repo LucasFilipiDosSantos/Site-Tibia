@@ -124,6 +124,41 @@ public sealed class CheckoutServiceTests
     }
 
     [Fact]
+    public async Task SubmitCheckout_WhenCompensationFails_ThrowsDeterministicExceptionAndDoesNotPersistOrder()
+    {
+        var customerId = Guid.NewGuid();
+        var lineA = Guid.NewGuid();
+        var lineB = Guid.NewGuid();
+        var cart = new Cart(customerId);
+        cart.AddOrMerge(lineA, 1);
+        cart.AddOrMerge(lineB, 2);
+
+        var cartRepository = new InMemoryCartRepository(cart);
+        var checkoutRepository = new InMemoryCheckoutRepository();
+        var inventoryGateway = new TrackingReserveGateway(lineB, requestedQuantity: 2, availableQuantity: 1)
+        {
+            ThrowOnRelease = true
+        };
+        var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
+            new CheckoutProductSnapshot(lineA, "A", "a", "cat", 1m, "BRL", FulfillmentType.Automated),
+            new CheckoutProductSnapshot(lineB, "B", "b", "cat", 2m, "BRL", FulfillmentType.Automated));
+
+        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+
+        var ex = await Assert.ThrowsAsync<CheckoutReservationCompensationException>(() =>
+            sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
+                customerId,
+                [
+                    new CheckoutDeliveryInstructionRequest(lineA, "CharA", "Aurera", "chan-a", null, null),
+                    new CheckoutDeliveryInstructionRequest(lineB, "CharB", "Aurera", "chan-b", null, null)
+                ])));
+
+        Assert.Contains("compensation failed", ex.Message, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(0, checkoutRepository.SavedOrders.Count);
+        Assert.Equal(0, cartRepository.ClearCallCount);
+    }
+
+    [Fact]
     public async Task SubmitCheckout_Success_ClearsCart()
     {
         var customerId = Guid.NewGuid();
@@ -276,6 +311,7 @@ public sealed class CheckoutServiceTests
 
         public int ReleaseCallCount { get; private set; }
         public string? LastOrderIntentKey { get; private set; }
+        public bool ThrowOnRelease { get; set; }
 
         public Task ReserveStockForCheckoutAsync(Guid orderId, string orderIntentKey, Guid productId, int quantity, CancellationToken cancellationToken = default)
         {
@@ -301,6 +337,11 @@ public sealed class CheckoutServiceTests
         public Task ReleaseCheckoutReservationAsync(string orderIntentKey, ReservationReleaseReason reason, CancellationToken cancellationToken = default)
         {
             ReleaseCallCount++;
+            if (ThrowOnRelease)
+            {
+                throw new InvalidOperationException("simulated release failure");
+            }
+
             _reservedByIntent[orderIntentKey] = [];
             return Task.CompletedTask;
         }

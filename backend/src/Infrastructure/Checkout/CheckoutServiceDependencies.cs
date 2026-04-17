@@ -32,6 +32,16 @@ public sealed class CheckoutInventoryGateway : ICheckoutInventoryGateway
             throw new CheckoutReservationConflictException([new CheckoutLineConflict(ex.ProductId, ex.RequestedQuantity, ex.AvailableQuantity)]);
         }
     }
+
+    public Task ReleaseCheckoutReservationAsync(
+        string orderIntentKey,
+        ReservationReleaseReason reason,
+        CancellationToken cancellationToken = default)
+    {
+        return _inventoryService.ReleaseReservationAsync(
+            new ReleaseReservationRequest(orderIntentKey, reason),
+            cancellationToken);
+    }
 }
 
 public sealed class CheckoutProductCatalogGateway : ICheckoutProductCatalogGateway

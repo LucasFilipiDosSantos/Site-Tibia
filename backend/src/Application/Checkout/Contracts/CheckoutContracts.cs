@@ -63,3 +63,14 @@ public sealed class CheckoutReservationConflictException : InvalidOperationExcep
 
     public IReadOnlyList<CheckoutLineConflict> LineConflicts { get; }
 }
+
+public sealed class CheckoutReservationCompensationException : InvalidOperationException
+{
+    public CheckoutReservationCompensationException(string orderIntentKey, Exception innerException)
+        : base($"Checkout reservation compensation failed for order intent '{orderIntentKey}'.", innerException)
+    {
+        OrderIntentKey = orderIntentKey;
+    }
+
+    public string OrderIntentKey { get; }
+}

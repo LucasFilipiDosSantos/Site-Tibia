@@ -107,6 +107,37 @@ public sealed class CheckoutEndpointsTests
     }
 
     [Fact]
+    public async Task CheckoutSubmit_WhenCompensationFails_Returns400AndDoesNotMutateCheckoutState()
+    {
+        await using var factory = new CheckoutApiFactory();
+        var productA = factory.SeedProduct("line-a", 5m, FulfillmentType.Automated, 5);
+        var productB = factory.SeedProduct("line-b", 7m, FulfillmentType.Automated, 5);
+        factory.InventoryGateway.FailRelease = true;
+        using var client = factory.CreateAuthenticatedClient();
+
+        await client.PostAsJsonAsync("/checkout/cart/items", new AddCartItemDto(productA, 1));
+        await client.PostAsJsonAsync("/checkout/cart/items", new AddCartItemDto(productB, 3));
+        factory.SetCheckoutAvailability(productB, 1);
+
+        var submit = await client.PostAsJsonAsync("/checkout/submit", new SubmitCheckoutDto(
+            [
+                new CheckoutDeliveryInstructionDto(productA, "CharA", "Aurera", "chan-a", null, null),
+                new CheckoutDeliveryInstructionDto(productB, "CharB", "Aurera", "chan-b", null, null)
+            ]));
+
+        Assert.Equal(HttpStatusCode.BadRequest, submit.StatusCode);
+        var details = await submit.Content.ReadFromJsonAsync<ProblemDetails>();
+        Assert.NotNull(details);
+        Assert.Equal("Operation failed.", details!.Title);
+        Assert.Contains("compensation failed", details.Detail ?? string.Empty, StringComparison.OrdinalIgnoreCase);
+
+        var cartAfter = await client.GetFromJsonAsync<CartResponseDto>("/checkout/cart");
+        Assert.NotNull(cartAfter);
+        Assert.Equal(2, cartAfter!.Lines.Count);
+        Assert.Equal(0, factory.CheckoutRepository.StoredOrders.Count);
+    }
+
+    [Fact]
     public async Task GetOrder_ReturnsStoredSnapshotsEvenAfterCatalogMutation()
     {
         await using var factory = new CheckoutApiFactory();
@@ -315,6 +346,7 @@ public sealed class CheckoutEndpointsTests
         private readonly Dictionary<Guid, int> _available = [];
         private readonly Dictionary<string, Dictionary<Guid, int>> _reservedByIntent = [];
         public string? LastOrderIntentKey { get; private set; }
+        public bool FailRelease { get; set; }
 
         public void SetAvailability(Guid productId, int available) => _available[productId] = available;
 
@@ -344,6 +376,11 @@ public sealed class CheckoutEndpointsTests
 
         public Task ReleaseCheckoutReservationAsync(string orderIntentKey, ReservationReleaseReason reason, CancellationToken cancellationToken = default)
         {
+            if (FailRelease)
+            {
+                throw new InvalidOperationException("simulated release failure");
+            }
+
             if (_reservedByIntent.TryGetValue(orderIntentKey, out var perProduct))
             {
                 foreach (var entry in perProduct)
