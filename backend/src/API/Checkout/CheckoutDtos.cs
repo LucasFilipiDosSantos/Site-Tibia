@@ -83,5 +83,11 @@ public sealed record PaginatedOrderListDto(
     int TotalCount
 );
 
+public sealed record CreatePaymentPreferenceResponseDto(
+    string PreferenceId,
+    string InitPointUrl,
+    string ExternalReference
+);
+
 // Per D-14: Explicit admin cancel action (not generic set-status)
 public sealed record AdminCancelOrderDto(string Reason);

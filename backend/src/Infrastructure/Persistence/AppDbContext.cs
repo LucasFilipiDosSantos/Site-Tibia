@@ -2,6 +2,7 @@ using Domain.Catalog;
 using Domain.Checkout;
 using Domain.Identity;
 using Domain.Inventory;
+using Domain.Payments;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Persistence;
@@ -27,6 +28,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<OrderItemSnapshot> OrderItemSnapshots => Set<OrderItemSnapshot>();
     public DbSet<DeliveryInstruction> DeliveryInstructions => Set<DeliveryInstruction>();
     public DbSet<OrderStatusTransitionEvent> OrderStatusTransitionEvents => Set<OrderStatusTransitionEvent>();
+    public DbSet<PaymentLink> PaymentLinks => Set<PaymentLink>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

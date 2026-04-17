@@ -1,6 +1,8 @@
 using API.Auth;
 using Application.Checkout.Contracts;
 using Application.Checkout.Services;
+using Application.Payments.Contracts;
+using Application.Payments.Services;
 using Domain.Checkout;
 using System.Security.Claims;
 
@@ -92,6 +94,27 @@ public static class CheckoutEndpoints
                     x.DeliveryChannelOrContact,
                     x.RequestBrief,
                     x.ContactHandle)).ToList()));
+        });
+
+        group.MapPost("/orders/{orderId:guid}/payments/preference", async (
+            ClaimsPrincipal user,
+            Guid orderId,
+            PaymentPreferenceService paymentPreferenceService,
+            CancellationToken ct) =>
+        {
+            var customerId = ResolveCustomerId(user);
+            try
+            {
+                var preference = await paymentPreferenceService.CreatePreferenceAsync(orderId, customerId, ct);
+                return Results.Ok(new CreatePaymentPreferenceResponseDto(
+                    preference.PreferenceId,
+                    preference.InitPointUrl,
+                    preference.ExternalReference));
+            }
+            catch (PaymentPreferenceOrderNotFoundException)
+            {
+                return Results.NotFound();
+            }
         });
 
         // Per D-09, D-12: Customer order history list with pagination

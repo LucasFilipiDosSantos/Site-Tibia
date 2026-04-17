@@ -13,6 +13,7 @@ using Infrastructure.Identity.Options;
 using Infrastructure.Identity.Services;
 using Infrastructure.Persistence;
 using Infrastructure.Payments.MercadoPago;
+using Infrastructure.Payments.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -49,6 +50,7 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<MercadoPagoOptions>, MercadoPagoOptionsValidator>();
         services.AddScoped<IMercadoPagoPreferenceGateway>(sp =>
             new MercadoPagoPreferenceGateway(sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value));
+        services.AddScoped<IPaymentLinkRepository, PaymentLinkRepository>();
         services.AddScoped<PaymentPreferenceSettings>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value;
