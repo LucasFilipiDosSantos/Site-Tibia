@@ -1,8 +1,10 @@
 using Application.Catalog.Contracts;
+using Application.Checkout.Contracts;
 using Application.Identity.Contracts;
 using Application.Inventory.Contracts;
 using Domain.Identity;
 using Infrastructure.Catalog.Repositories;
+using Infrastructure.Checkout.Repositories;
 using Infrastructure.Inventory.Repositories;
 using Infrastructure.Identity.Repositories;
 using Infrastructure.Identity.Options;
@@ -31,6 +33,8 @@ public static class DependencyInjection
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<IInventoryRepository, InventoryRepository>();
+        services.AddScoped<ICartRepository, CartRepository>();
+        services.AddScoped<ICheckoutRepository, CheckoutRepository>();
         services.AddScoped<IPasswordHasherService, PasswordHasherService>();
         services.AddSingleton<ISystemClock, SystemClock>();
         services

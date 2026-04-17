@@ -1,4 +1,5 @@
 using Domain.Catalog;
+using Domain.Checkout;
 using Domain.Identity;
 using Domain.Inventory;
 using Microsoft.EntityFrameworkCore;
@@ -20,6 +21,11 @@ public sealed class AppDbContext : DbContext
     public DbSet<InventoryStock> InventoryStocks => Set<InventoryStock>();
     public DbSet<InventoryReservation> InventoryReservations => Set<InventoryReservation>();
     public DbSet<StockAdjustmentAudit> StockAdjustmentAudits => Set<StockAdjustmentAudit>();
+    public DbSet<Cart> Carts => Set<Cart>();
+    public DbSet<CartLine> CartLines => Set<CartLine>();
+    public DbSet<Order> Orders => Set<Order>();
+    public DbSet<OrderItemSnapshot> OrderItemSnapshots => Set<OrderItemSnapshot>();
+    public DbSet<DeliveryInstruction> DeliveryInstructions => Set<DeliveryInstruction>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
