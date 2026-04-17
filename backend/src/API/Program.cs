@@ -9,6 +9,7 @@ using Application.Checkout.Services;
 using Application.Identity.Contracts;
 using Application.Identity.Services;
 using Application.Inventory.Services;
+using Application.Payments.Services;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -80,6 +81,7 @@ public partial class Program
         builder.Services.AddScoped<InventoryService>();
         builder.Services.AddScoped<CartService>();
         builder.Services.AddScoped<CheckoutService>();
+        builder.Services.AddScoped<PaymentPreferenceService>();
 
         var app = builder.Build();
 

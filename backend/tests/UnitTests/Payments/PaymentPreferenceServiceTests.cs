@@ -16,7 +16,15 @@ public sealed class PaymentPreferenceServiceTests
         var checkoutRepository = new InMemoryCheckoutRepository(order);
         var gateway = new CapturingPreferenceGateway();
         var paymentLinkRepository = new InMemoryPaymentLinkRepository();
-        var sut = new PaymentPreferenceService(checkoutRepository, gateway, paymentLinkRepository);
+        var sut = new PaymentPreferenceService(
+            checkoutRepository,
+            gateway,
+            paymentLinkRepository,
+            new PaymentPreferenceSettings(
+                "https://example.com/webhook",
+                "https://example.com/success",
+                "https://example.com/failure",
+                "https://example.com/pending"));
 
         var response = await sut.CreatePreferenceAsync(orderId, customerId);
 
@@ -37,7 +45,15 @@ public sealed class PaymentPreferenceServiceTests
         var checkoutRepository = new InMemoryCheckoutRepository(order);
         var gateway = new CapturingPreferenceGateway();
         var paymentLinkRepository = new InMemoryPaymentLinkRepository();
-        var sut = new PaymentPreferenceService(checkoutRepository, gateway, paymentLinkRepository);
+        var sut = new PaymentPreferenceService(
+            checkoutRepository,
+            gateway,
+            paymentLinkRepository,
+            new PaymentPreferenceSettings(
+                "https://example.com/webhook",
+                "https://example.com/success",
+                "https://example.com/failure",
+                "https://example.com/pending"));
 
         await Assert.ThrowsAsync<PaymentPreferenceOrderNotFoundException>(() =>
             sut.CreatePreferenceAsync(orderId, Guid.NewGuid()));

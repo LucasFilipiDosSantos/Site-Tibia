@@ -2,6 +2,7 @@ using Application.Catalog.Contracts;
 using Application.Checkout.Contracts;
 using Application.Identity.Contracts;
 using Application.Inventory.Contracts;
+using Application.Payments.Contracts;
 using Domain.Identity;
 using Infrastructure.Catalog.Repositories;
 using Infrastructure.Checkout;
@@ -11,6 +12,7 @@ using Infrastructure.Identity.Repositories;
 using Infrastructure.Identity.Options;
 using Infrastructure.Identity.Services;
 using Infrastructure.Persistence;
+using Infrastructure.Payments.MercadoPago;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +42,22 @@ public static class DependencyInjection
         services.AddScoped<ICartProductAvailabilityGateway, CartProductAvailabilityGateway>();
         services.AddScoped<ICheckoutProductCatalogGateway, CheckoutProductCatalogGateway>();
         services.AddScoped<ICheckoutInventoryGateway, CheckoutInventoryGateway>();
+        services
+            .AddOptions<MercadoPagoOptions>()
+            .Bind(configuration.GetSection(MercadoPagoOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<MercadoPagoOptions>, MercadoPagoOptionsValidator>();
+        services.AddScoped<IMercadoPagoPreferenceGateway>(sp =>
+            new MercadoPagoPreferenceGateway(sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value));
+        services.AddScoped<PaymentPreferenceSettings>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value;
+            return new PaymentPreferenceSettings(
+                options.NotificationUrl,
+                options.SuccessUrl,
+                options.FailureUrl,
+                options.PendingUrl);
+        });
         services.AddScoped<IPasswordHasherService, PasswordHasherService>();
         services.AddSingleton<ISystemClock, SystemClock>();
         services
