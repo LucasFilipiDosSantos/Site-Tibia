@@ -6,15 +6,17 @@ namespace UnitTests.Inventory;
 public sealed class InventoryReservationServiceTests
 {
     [Fact]
-    public async Task ReserveStockForCheckoutAsync_WithExistingReservationBySameIntent_DoesNotDoubleReserve()
+    public async Task ReserveStockForCheckoutAsync_ReplaySameIntentAndProductAndQuantity_DoesNotDoubleReserve()
     {
         var now = new DateTimeOffset(2026, 4, 17, 11, 0, 0, TimeSpan.Zero);
+        var orderId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
         var repository = new InMemoryInventoryRepository
         {
             ReservationByIntent = new InventoryReservationRecord(
                 "intent-001",
-                Guid.NewGuid(),
-                Guid.NewGuid(),
+                orderId,
+                productId,
                 3,
                 now,
                 now.AddMinutes(15),
@@ -24,11 +26,72 @@ public sealed class InventoryReservationServiceTests
         var service = new InventoryService(repository, new FixedClock(now));
 
         var response = await service.ReserveStockForCheckoutAsync(
-            new ReserveStockForCheckoutRequest("intent-001", Guid.NewGuid(), Guid.NewGuid(), 99));
+            new ReserveStockForCheckoutRequest("intent-001", orderId, productId, 3));
 
         Assert.Equal("intent-001", response.OrderIntentKey);
         Assert.Equal(3, response.Quantity);
         Assert.Equal(now.AddMinutes(15), response.ReservationExpiresAtUtc);
+        Assert.Equal(0, repository.TryReserveCallCount);
+    }
+
+    [Fact]
+    public async Task ReserveStockForCheckoutAsync_SameIntentDifferentProduct_PerformsRealReserveAttempt()
+    {
+        var now = new DateTimeOffset(2026, 4, 17, 11, 0, 0, TimeSpan.Zero);
+        var orderId = Guid.NewGuid();
+        var reservedProductId = Guid.NewGuid();
+        var requestedProductId = Guid.NewGuid();
+
+        var repository = new InMemoryInventoryRepository
+        {
+            ReservationByIntent = new InventoryReservationRecord(
+                "intent-001",
+                orderId,
+                reservedProductId,
+                3,
+                now,
+                now.AddMinutes(15),
+                null),
+            TryReserveResult = ReserveInventoryResult.Reserved()
+        };
+
+        var service = new InventoryService(repository, new FixedClock(now));
+
+        var response = await service.ReserveStockForCheckoutAsync(
+            new ReserveStockForCheckoutRequest("intent-001", orderId, requestedProductId, 2));
+
+        Assert.Equal(requestedProductId, response.ProductId);
+        Assert.Equal(2, response.Quantity);
+        Assert.Equal(1, repository.TryReserveCallCount);
+        Assert.NotNull(repository.LastReserveAttempt);
+        Assert.Equal(requestedProductId, repository.LastReserveAttempt!.ProductId);
+    }
+
+    [Fact]
+    public async Task ReserveStockForCheckoutAsync_SameIntentAndProductDifferentQuantity_ThrowsInvalidOperation()
+    {
+        var now = new DateTimeOffset(2026, 4, 17, 11, 0, 0, TimeSpan.Zero);
+        var orderId = Guid.NewGuid();
+        var productId = Guid.NewGuid();
+
+        var repository = new InMemoryInventoryRepository
+        {
+            ReservationByIntent = new InventoryReservationRecord(
+                "intent-001",
+                orderId,
+                productId,
+                3,
+                now,
+                now.AddMinutes(15),
+                null)
+        };
+
+        var service = new InventoryService(repository, new FixedClock(now));
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            service.ReserveStockForCheckoutAsync(
+                new ReserveStockForCheckoutRequest("intent-001", orderId, productId, 4)));
+
         Assert.Equal(0, repository.TryReserveCallCount);
     }
 
@@ -166,6 +229,21 @@ public sealed class InventoryReservationServiceTests
         public StockAdjustmentCommand? LastAdjustmentCommand { get; private set; }
         public AdjustStockResponse AdjustmentResponse { get; set; } =
             new(Guid.Empty, 0, 0, 0, string.Empty, Guid.Empty, DateTimeOffset.UnixEpoch);
+
+        public Task<InventoryReservationRecord?> GetReservationByIntentAndProductAsync(
+            string orderIntentKey,
+            Guid productId,
+            CancellationToken cancellationToken = default)
+        {
+            if (ReservationByIntent is null)
+            {
+                return Task.FromResult<InventoryReservationRecord?>(null);
+            }
+
+            var matchesIntent = string.Equals(ReservationByIntent.OrderIntentKey, orderIntentKey.Trim(), StringComparison.Ordinal);
+            var matchesProduct = ReservationByIntent.ProductId == productId;
+            return Task.FromResult(matchesIntent && matchesProduct ? ReservationByIntent : null);
+        }
 
         public Task<InventoryReservationRecord?> GetReservationByIntentKeyAsync(string orderIntentKey, CancellationToken cancellationToken = default)
         {

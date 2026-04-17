@@ -57,6 +57,12 @@ public sealed class InventoryAdjustmentInvariantTests
     {
         public InventoryAvailabilityResponse Availability { get; set; } = new(0, 0, 0);
 
+        public Task<InventoryReservationRecord?> GetReservationByIntentAndProductAsync(
+            string orderIntentKey,
+            Guid productId,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<InventoryReservationRecord?>(null);
+
         public Task<InventoryReservationRecord?> GetReservationByIntentKeyAsync(string orderIntentKey, CancellationToken cancellationToken = default)
             => Task.FromResult<InventoryReservationRecord?>(null);
 

@@ -2,6 +2,12 @@ namespace Application.Inventory.Contracts;
 
 public interface IInventoryRepository
 {
+    Task<InventoryReservationRecord?> GetReservationByIntentAndProductAsync(
+        string orderIntentKey,
+        Guid productId,
+        CancellationToken cancellationToken = default
+    );
+
     Task<InventoryReservationRecord?> GetReservationByIntentKeyAsync(
         string orderIntentKey,
         CancellationToken cancellationToken = default

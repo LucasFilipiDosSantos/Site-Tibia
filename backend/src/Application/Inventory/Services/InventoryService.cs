@@ -39,9 +39,18 @@ public sealed class InventoryService
         }
 
         var normalizedIntentKey = request.OrderIntentKey.Trim();
-        var existingReservation = await _inventoryRepository.GetReservationByIntentKeyAsync(normalizedIntentKey, cancellationToken);
+        var existingReservation = await _inventoryRepository.GetReservationByIntentAndProductAsync(
+            normalizedIntentKey,
+            request.ProductId,
+            cancellationToken);
         if (existingReservation is not null && !existingReservation.IsReleased)
         {
+            if (existingReservation.Quantity != request.Quantity)
+            {
+                throw new InvalidOperationException(
+                    "Existing reservation for order intent and product has a different quantity.");
+            }
+
             return new ReserveStockForCheckoutResponse(
                 existingReservation.OrderIntentKey,
                 existingReservation.OrderId,

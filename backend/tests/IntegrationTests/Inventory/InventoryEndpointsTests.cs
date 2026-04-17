@@ -278,6 +278,19 @@ public sealed class InventoryEndpointsTests
             _stocks[productId] = (total, reserved);
         }
 
+        public Task<InventoryReservationRecord?> GetReservationByIntentAndProductAsync(
+            string orderIntentKey,
+            Guid productId,
+            CancellationToken cancellationToken = default)
+        {
+            if (_reservations.TryGetValue(orderIntentKey, out var reservation) && reservation.ProductId == productId)
+            {
+                return Task.FromResult<InventoryReservationRecord?>(reservation);
+            }
+
+            return Task.FromResult<InventoryReservationRecord?>(null);
+        }
+
         public Task<InventoryReservationRecord?> GetReservationByIntentKeyAsync(string orderIntentKey, CancellationToken cancellationToken = default)
         {
             _reservations.TryGetValue(orderIntentKey, out var reservation);

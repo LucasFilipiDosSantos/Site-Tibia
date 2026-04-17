@@ -14,6 +14,34 @@ public sealed class InventoryRepository : IInventoryRepository
         _dbContext = dbContext;
     }
 
+    public async Task<InventoryReservationRecord?> GetReservationByIntentAndProductAsync(
+        string orderIntentKey,
+        Guid productId,
+        CancellationToken cancellationToken = default)
+    {
+        var normalized = orderIntentKey.Trim();
+        var reservation = await _dbContext.InventoryReservations
+            .AsNoTracking()
+            .OrderByDescending(x => x.ReservedAtUtc)
+            .FirstOrDefaultAsync(
+                x => x.OrderIntentKey == normalized && x.ProductId == productId,
+                cancellationToken);
+
+        if (reservation is null)
+        {
+            return null;
+        }
+
+        return new InventoryReservationRecord(
+            reservation.OrderIntentKey,
+            reservation.OrderId,
+            reservation.ProductId,
+            reservation.Quantity,
+            reservation.ReservedAtUtc,
+            reservation.ReservationExpiresAtUtc,
+            reservation.ReleasedAtUtc);
+    }
+
     public async Task<InventoryReservationRecord?> GetReservationByIntentKeyAsync(
         string orderIntentKey,
         CancellationToken cancellationToken = default)
