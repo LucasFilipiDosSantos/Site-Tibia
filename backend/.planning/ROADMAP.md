@@ -14,7 +14,7 @@ This roadmap delivers a reliability-first Tibia commerce backend from secure acc
 - [ ] **Phase 2: Catalog & Product Governance** - Server-scoped catalog discovery and product administration.
 - [ ] **Phase 3: Inventory Integrity & Reservation Control** - Real-time stock control with reservation/release safeguards.
 - [ ] **Phase 4: Cart & Checkout Capture** - Cart operations and checkout order creation with delivery instructions.
-- [ ] **Phase 5: Order Lifecycle & Timeline Visibility** - Legal order state transitions with customer/admin tracking.
+- [x] **Phase 5: Order Lifecycle & Timeline Visibility** - Legal order state transitions with customer/admin tracking. (completed 2026-04-17)
 - [ ] **Phase 6: Mercado Pago Payment Confirmation** - Idempotent payment flow with verified paid transitions.
 - [ ] **Phase 7: Async Processing, Notifications & Monitoring** - Durable background execution, lifecycle notifications, and observability.
 - [ ] **Phase 8: Fulfillment Orchestration** - Automated/manual delivery routing and fulfillment correction workflows.
@@ -108,9 +108,9 @@ Plans:
 **UI hint**: yes
 
 Plans:
-- [ ] 05-01-PLAN.md — Define lifecycle state-machine/timeline domain contracts with TDD and transition authority/idempotency proofs.
-- [ ] 05-02-PLAN.md — Implement lifecycle persistence/event history repositories with blocking migration/schema update and integration persistence verification.
-- [ ] 05-03-PLAN.md — Expose customer timeline/admin order management endpoints with explicit actions, conflict ProblemDetails, and end-to-end contract tests.
+- [x] 05-01-PLAN.md — Define lifecycle state-machine/timeline domain contracts with TDD and transition authority/idempotency proofs.
+- [x] 05-02-PLAN.md — Implement lifecycle persistence/event history repositories with blocking migration/schema update and integration persistence verification.
+- [x] 05-03-PLAN.md — Expose customer timeline/admin order management endpoints with explicit actions, conflict ProblemDetails, and end-to-end contract tests.
 
 ### Phase 6: Mercado Pago Payment Confirmation
 **Goal**: Verified Mercado Pago events reliably drive payment state and paid-order transitions.
@@ -167,7 +167,7 @@ Plans:
 | 2. Catalog & Product Governance | 0/3 | Not started | - |
 | 3. Inventory Integrity & Reservation Control | 0/TBD | Not started | - |
 | 4. Cart & Checkout Capture | 0/TBD | Not started | - |
-| 5. Order Lifecycle & Timeline Visibility | 0/TBD | Not started | - |
+| 5. Order Lifecycle & Timeline Visibility | 3/3 | Complete   | 2026-04-17 |
 | 6. Mercado Pago Payment Confirmation | 0/TBD | Not started | - |
 | 7. Async Processing, Notifications & Monitoring | 0/TBD | Not started | - |
 | 8. Fulfillment Orchestration | 0/TBD | Not started | - |

@@ -30,10 +30,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Orders
 
-- [ ] **ORD-01**: System tracks order lifecycle states (Pending, Paid, Cancelled) with legal transitions only
-- [ ] **ORD-02**: System stores order status history with timestamped events
-- [ ] **ORD-03**: User can view order history and order-level status timeline
-- [ ] **ORD-04**: Admin can search and manage orders by status and customer
+- [x] **ORD-01**: System tracks order lifecycle states (Pending, Paid, Cancelled) with legal transitions only
+- [x] **ORD-02**: System stores order status history with timestamped events
+- [x] **ORD-03**: User can view order history and order-level status timeline
+- [x] **ORD-04**: Admin can search and manage orders by status and customer
 
 ### Payments
 
@@ -124,10 +124,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHK-01 | Phase 4 | Complete |
 | CHK-02 | Phase 4 | Complete |
 | CHK-03 | Phase 4 | Complete |
-| ORD-01 | Phase 5 | Pending |
-| ORD-02 | Phase 5 | Pending |
-| ORD-03 | Phase 5 | Pending |
-| ORD-04 | Phase 5 | Pending |
+| ORD-01 | Phase 5 | Complete |
+| ORD-02 | Phase 5 | Complete |
+| ORD-03 | Phase 5 | Complete |
+| ORD-04 | Phase 5 | Complete |
 | PAY-01 | Phase 6 | Pending |
 | PAY-02 | Phase 6 | Pending |
 | PAY-03 | Phase 6 | Pending |
