@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-04-17T14:18:35.297Z"
+stopped_at: Completed 04-05-PLAN.md
+last_updated: "2026-04-17T14:49:33.354Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 9
   completed_phases: 4
-  total_plans: 19
-  completed_plans: 19
+  total_plans: 20
+  completed_plans: 20
   percent: 100
 ---
 
@@ -59,6 +59,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03-inventory-integrity-reservation-control P01 | 3min | 2 tasks | 8 files |
 | Phase 03-inventory-integrity-reservation-control P02 | 6min | 2 tasks | 12 files |
 | Phase 03-inventory-integrity-reservation-control P03 | 11min | 2 tasks | 5 files |
+| Phase 04-cart-checkout-capture P05 | 5min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,7 @@ Recent decisions affecting current work:
 - [Phase 03-inventory-integrity-reservation-control]: Inventory conflict handling extends existing RFC7807 mapping with only availableQuantity extension to keep details actionable and non-sensitive.
 - [Phase 04-cart-checkout-capture]: Checkout persistence enforces one-cart-per-customer, one-line-per-product, and immutable order snapshot schema with migration-backed durability.
 - [Phase 04-cart-checkout-capture]: Checkout/cart routes derive customer identity from JWT sub and emit deterministic lineConflicts payloads for 409 responses.
+- [Phase 04-cart-checkout-capture]: Compensation failure throws CheckoutReservationCompensationException to block order persistence/cart clear deterministically.
 
 ### Pending Todos
 
@@ -99,6 +101,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T14:18:35.291Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-04-17T14:49:33.058Z
+Stopped at: Completed 04-05-PLAN.md
 Resume file: None
