@@ -70,13 +70,13 @@ public sealed class InventoryPersistenceContractTests
 
         var repository = new InventoryRepository(db);
         var command = new StockAdjustmentCommand(
-            productId,
-            delta: 2,
-            beforeQuantity: 5,
-            afterQuantity: 7,
-            reason: "manual reconciliation",
-            adminUserId: Guid.NewGuid(),
-            adjustedAtUtc: DateTimeOffset.UtcNow);
+            ProductId: productId,
+            Delta: 2,
+            BeforeQuantity: 5,
+            AfterQuantity: 7,
+            Reason: "manual reconciliation",
+            AdminUserId: Guid.NewGuid(),
+            AdjustedAtUtc: DateTimeOffset.UtcNow);
 
         var result = await repository.AdjustStockAsync(command);
 

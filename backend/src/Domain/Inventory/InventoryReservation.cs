@@ -2,6 +2,7 @@ namespace Domain.Inventory;
 
 public sealed class InventoryReservation
 {
+    public Guid Id { get; private set; } = Guid.NewGuid();
     public string OrderIntentKey { get; private set; }
     public Guid OrderId { get; private set; }
     public Guid ProductId { get; private set; }
@@ -12,6 +13,8 @@ public sealed class InventoryReservation
     public string? ReleaseReason { get; private set; }
 
     public bool IsReleased => ReleasedAtUtc.HasValue;
+
+    public bool IsExpired(DateTimeOffset nowUtc) => ReservationExpiresAtUtc <= nowUtc;
 
     public InventoryReservation(
         string orderIntentKey,
@@ -55,5 +58,17 @@ public sealed class InventoryReservation
     private InventoryReservation()
     {
         OrderIntentKey = string.Empty;
+    }
+
+    public int Release(DateTimeOffset releasedAtUtc, string reason)
+    {
+        if (IsReleased)
+        {
+            return 0;
+        }
+
+        ReleasedAtUtc = releasedAtUtc;
+        ReleaseReason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim();
+        return Quantity;
     }
 }

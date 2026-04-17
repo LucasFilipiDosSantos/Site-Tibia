@@ -1,7 +1,9 @@
 using Application.Catalog.Contracts;
 using Application.Identity.Contracts;
+using Application.Inventory.Contracts;
 using Domain.Identity;
 using Infrastructure.Catalog.Repositories;
+using Infrastructure.Inventory.Repositories;
 using Infrastructure.Identity.Repositories;
 using Infrastructure.Identity.Options;
 using Infrastructure.Identity.Services;
@@ -28,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<ISecurityTokenRepository, SecurityTokenRepository>();
         services.AddScoped<ICategoryRepository, CategoryRepository>();
         services.AddScoped<IProductRepository, ProductRepository>();
+        services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<IPasswordHasherService, PasswordHasherService>();
         services.AddSingleton<ISystemClock, SystemClock>();
         services
