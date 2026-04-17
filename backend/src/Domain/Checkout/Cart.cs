@@ -4,11 +4,13 @@ public sealed class Cart
 {
     private readonly List<CartLine> _lines = [];
 
+    public Guid Id { get; private set; }
     public Guid CustomerId { get; private set; }
     public IReadOnlyList<CartLine> Lines => _lines;
 
     public Cart(Guid customerId)
     {
+        Id = Guid.NewGuid();
         CustomerId = customerId == Guid.Empty
             ? throw new ArgumentException("Customer id is required.", nameof(customerId))
             : customerId;
@@ -62,5 +64,6 @@ public sealed class Cart
 
     private Cart()
     {
+        Id = Guid.NewGuid();
     }
 }
