@@ -1,4 +1,5 @@
 using Application.Checkout.Contracts;
+using Application.Inventory.Contracts;
 using Domain.Checkout;
 
 namespace UnitTests.Checkout;
@@ -88,6 +89,38 @@ public sealed class CheckoutServiceTests
         Assert.Equal(1, ex.LineConflicts[0].AvailableQuantity);
         Assert.Equal(0, checkoutRepository.SavedOrders.Count);
         Assert.Equal(0, cartRepository.ClearCallCount);
+    }
+
+    [Fact]
+    public async Task SubmitCheckout_OnSecondLineConflict_CompensatesPriorSuccessfulReservations()
+    {
+        var customerId = Guid.NewGuid();
+        var lineA = Guid.NewGuid();
+        var lineB = Guid.NewGuid();
+        var cart = new Cart(customerId);
+        cart.AddOrMerge(lineA, 1);
+        cart.AddOrMerge(lineB, 2);
+
+        var cartRepository = new InMemoryCartRepository(cart);
+        var checkoutRepository = new InMemoryCheckoutRepository();
+        var inventoryGateway = new TrackingReserveGateway(lineB, requestedQuantity: 2, availableQuantity: 1);
+        var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
+            new CheckoutProductSnapshot(lineA, "A", "a", "cat", 1m, "BRL", FulfillmentType.Automated),
+            new CheckoutProductSnapshot(lineB, "B", "b", "cat", 2m, "BRL", FulfillmentType.Automated));
+
+        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+
+        await Assert.ThrowsAsync<CheckoutReservationConflictException>(() =>
+            sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
+                customerId,
+                [
+                    new CheckoutDeliveryInstructionRequest(lineA, "CharA", "Aurera", "chan-a", null, null),
+                    new CheckoutDeliveryInstructionRequest(lineB, "CharB", "Aurera", "chan-b", null, null)
+                ])));
+
+        Assert.Equal(1, inventoryGateway.ReleaseCallCount);
+        Assert.Equal(0, inventoryGateway.GetReservedQuantityForLastIntent(lineA));
+        Assert.Equal(0, inventoryGateway.GetReservedQuantityForLastIntent(lineB));
     }
 
     [Fact]
@@ -191,6 +224,11 @@ public sealed class CheckoutServiceTests
         {
             return Task.CompletedTask;
         }
+
+        public Task ReleaseCheckoutReservationAsync(string orderIntentKey, ReservationReleaseReason reason, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 
     private sealed class ConflictReserveGateway : ICheckoutInventoryGateway
@@ -214,6 +252,70 @@ public sealed class CheckoutServiceTests
             }
 
             return Task.CompletedTask;
+        }
+
+        public Task ReleaseCheckoutReservationAsync(string orderIntentKey, ReservationReleaseReason reason, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class TrackingReserveGateway : ICheckoutInventoryGateway
+    {
+        private readonly Guid _conflictingProductId;
+        private readonly int _requestedQuantity;
+        private readonly int _availableQuantity;
+        private readonly Dictionary<string, Dictionary<Guid, int>> _reservedByIntent = [];
+
+        public TrackingReserveGateway(Guid conflictingProductId, int requestedQuantity, int availableQuantity)
+        {
+            _conflictingProductId = conflictingProductId;
+            _requestedQuantity = requestedQuantity;
+            _availableQuantity = availableQuantity;
+        }
+
+        public int ReleaseCallCount { get; private set; }
+        public string? LastOrderIntentKey { get; private set; }
+
+        public Task ReserveStockForCheckoutAsync(Guid orderId, string orderIntentKey, Guid productId, int quantity, CancellationToken cancellationToken = default)
+        {
+            LastOrderIntentKey = orderIntentKey;
+            if (productId == _conflictingProductId)
+            {
+                throw new CheckoutReservationConflictException([new CheckoutLineConflict(productId, _requestedQuantity, _availableQuantity)]);
+            }
+
+            if (!_reservedByIntent.TryGetValue(orderIntentKey, out var perProduct))
+            {
+                perProduct = [];
+                _reservedByIntent[orderIntentKey] = perProduct;
+            }
+
+            perProduct[productId] = perProduct.TryGetValue(productId, out var existing)
+                ? existing + quantity
+                : quantity;
+
+            return Task.CompletedTask;
+        }
+
+        public Task ReleaseCheckoutReservationAsync(string orderIntentKey, ReservationReleaseReason reason, CancellationToken cancellationToken = default)
+        {
+            ReleaseCallCount++;
+            _reservedByIntent[orderIntentKey] = [];
+            return Task.CompletedTask;
+        }
+
+        public int GetReservedQuantityForLastIntent(Guid productId)
+        {
+            if (LastOrderIntentKey is null)
+            {
+                return 0;
+            }
+
+            return _reservedByIntent.TryGetValue(LastOrderIntentKey, out var perProduct)
+                && perProduct.TryGetValue(productId, out var quantity)
+                ? quantity
+                : 0;
         }
     }
 }

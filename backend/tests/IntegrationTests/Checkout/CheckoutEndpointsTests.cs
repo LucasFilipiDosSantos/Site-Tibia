@@ -1,5 +1,6 @@
 using API.Checkout;
 using Application.Checkout.Contracts;
+using Application.Inventory.Contracts;
 using Domain.Checkout;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
@@ -101,6 +102,8 @@ public sealed class CheckoutEndpointsTests
         Assert.Equal(2, cartAfter!.Lines.Count);
 
         Assert.Equal(0, factory.CheckoutRepository.StoredOrders.Count);
+        Assert.Equal(0, factory.InventoryGateway.GetReservedQuantityForLastIntent(productA));
+        Assert.Equal(0, factory.InventoryGateway.GetReservedQuantityForLastIntent(productB));
     }
 
     [Fact]
@@ -165,6 +168,7 @@ public sealed class CheckoutEndpointsTests
         public InMemoryProductGateway ProductGateway { get; } = new();
         private readonly InMemoryAvailabilityGateway _availabilityGateway = new();
         private readonly InMemoryCheckoutInventoryGateway _inventoryGateway = new();
+        public InMemoryCheckoutInventoryGateway InventoryGateway => _inventoryGateway;
 
         public Guid CustomerId { get; } = Guid.NewGuid();
 
@@ -309,11 +313,14 @@ public sealed class CheckoutEndpointsTests
     public sealed class InMemoryCheckoutInventoryGateway : ICheckoutInventoryGateway
     {
         private readonly Dictionary<Guid, int> _available = [];
+        private readonly Dictionary<string, Dictionary<Guid, int>> _reservedByIntent = [];
+        public string? LastOrderIntentKey { get; private set; }
 
         public void SetAvailability(Guid productId, int available) => _available[productId] = available;
 
         public Task ReserveStockForCheckoutAsync(Guid orderId, string orderIntentKey, Guid productId, int quantity, CancellationToken cancellationToken = default)
         {
+            LastOrderIntentKey = orderIntentKey;
             var available = _available[productId];
             if (quantity > available)
             {
@@ -321,7 +328,45 @@ public sealed class CheckoutEndpointsTests
             }
 
             _available[productId] = available - quantity;
+
+            if (!_reservedByIntent.TryGetValue(orderIntentKey, out var perProduct))
+            {
+                perProduct = [];
+                _reservedByIntent[orderIntentKey] = perProduct;
+            }
+
+            perProduct[productId] = perProduct.TryGetValue(productId, out var existing)
+                ? existing + quantity
+                : quantity;
+
             return Task.CompletedTask;
+        }
+
+        public Task ReleaseCheckoutReservationAsync(string orderIntentKey, ReservationReleaseReason reason, CancellationToken cancellationToken = default)
+        {
+            if (_reservedByIntent.TryGetValue(orderIntentKey, out var perProduct))
+            {
+                foreach (var entry in perProduct)
+                {
+                    _available[entry.Key] = _available[entry.Key] + entry.Value;
+                }
+            }
+
+            _reservedByIntent[orderIntentKey] = [];
+            return Task.CompletedTask;
+        }
+
+        public int GetReservedQuantityForLastIntent(Guid productId)
+        {
+            if (LastOrderIntentKey is null)
+            {
+                return 0;
+            }
+
+            return _reservedByIntent.TryGetValue(LastOrderIntentKey, out var perProduct)
+                && perProduct.TryGetValue(productId, out var quantity)
+                ? quantity
+                : 0;
         }
     }
 }
