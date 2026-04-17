@@ -21,6 +21,19 @@ public sealed class OrderLifecycleRepository : IOrderLifecycleRepository
             .FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        // Per D-10: Default sort is newest-first by CreatedAtUtc
+        return await _context.Orders
+            .Where(o => o.CustomerId == customerId)
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .Include(o => o.Items)
+            .Include(o => o.DeliveryInstructions)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task SaveAsync(Order order, CancellationToken cancellationToken = default)
     {
         // Check if order exists

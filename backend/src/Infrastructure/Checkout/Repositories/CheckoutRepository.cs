@@ -27,4 +27,32 @@ public sealed class CheckoutRepository : ICheckoutRepository
             .Include(x => x.DeliveryInstructions)
             .SingleOrDefaultAsync(x => x.Id == orderId, cancellationToken);
     }
+
+    public async Task<IReadOnlyList<Order>> SearchOrdersAsync(
+        OrderStatus? status,
+        Guid? customerId,
+        DateTimeOffset? createdFromUtc,
+        DateTimeOffset? createdToUtc,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Orders.AsQueryable();
+        
+        if (status.HasValue)
+            query = query.Where(o => o.Status == status.Value);
+        if (customerId.HasValue)
+            query = query.Where(o => o.CustomerId == customerId.Value);
+        if (createdFromUtc.HasValue)
+            query = query.Where(o => o.CreatedAtUtc >= createdFromUtc.Value);
+        if (createdToUtc.HasValue)
+            query = query.Where(o => o.CreatedAtUtc <= createdToUtc.Value);
+            
+        return await query
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Skip(page * pageSize)
+            .Take(pageSize)
+            .Include(o => o.Items)
+            .ToListAsync(cancellationToken);
+    }
 }
