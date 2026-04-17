@@ -135,6 +135,59 @@ public sealed class CheckoutPersistenceContractTests
     }
 
     [Fact]
+    public async Task InventoryRelease_ByIntent_ReleasesAllActiveRowsRestoresAllStocksAndIsIdempotent()
+    {
+        await using var fixture = await SqliteCheckoutFixture.CreateAsync();
+        await using var db = fixture.CreateDbContext();
+        var now = new DateTimeOffset(2026, 4, 17, 15, 0, 0, TimeSpan.Zero);
+
+        var orderId = Guid.NewGuid();
+        const string orderIntentKey = "checkout-release-all-intent";
+        var productA = await fixture.SeedCatalogProductAsync("release-a", 10m);
+        var productB = await fixture.SeedCatalogProductAsync("release-b", 20m);
+
+        db.InventoryStocks.Add(new InventoryStock(productA, totalQuantity: 10, reservedQuantity: 0, now));
+        db.InventoryStocks.Add(new InventoryStock(productB, totalQuantity: 10, reservedQuantity: 0, now));
+        await db.SaveChangesAsync();
+
+        var inventoryRepository = new InventoryRepository(db);
+        var inventoryService = new InventoryService(inventoryRepository, new FixedClock(now));
+
+        await inventoryService.ReserveStockForCheckoutAsync(new ReserveStockForCheckoutRequest(orderIntentKey, orderId, productA, 2));
+        await inventoryService.ReserveStockForCheckoutAsync(new ReserveStockForCheckoutRequest(orderIntentKey, orderId, productB, 3));
+
+        var released = await inventoryService.ReleaseReservationAsync(
+            new ReleaseReservationRequest(orderIntentKey, ReservationReleaseReason.OrderCanceled));
+
+        Assert.Equal(5, released.ReleasedQuantity);
+
+        var reservations = await db.InventoryReservations
+            .Where(x => x.OrderIntentKey == orderIntentKey)
+            .ToListAsync();
+        Assert.Equal(2, reservations.Count);
+        Assert.All(reservations, reservation => Assert.NotNull(reservation.ReleasedAtUtc));
+
+        var availabilityA = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productA));
+        var availabilityB = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productB));
+        Assert.Equal(0, availabilityA.Reserved);
+        Assert.Equal(0, availabilityB.Reserved);
+        Assert.Equal(10, availabilityA.Available);
+        Assert.Equal(10, availabilityB.Available);
+
+        var releasedAgain = await inventoryService.ReleaseReservationAsync(
+            new ReleaseReservationRequest(orderIntentKey, ReservationReleaseReason.OrderCanceled));
+
+        Assert.Equal(0, releasedAgain.ReleasedQuantity);
+
+        var availabilityAfterSecondReleaseA = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productA));
+        var availabilityAfterSecondReleaseB = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productB));
+        Assert.Equal(0, availabilityAfterSecondReleaseA.Reserved);
+        Assert.Equal(0, availabilityAfterSecondReleaseB.Reserved);
+        Assert.Equal(10, availabilityAfterSecondReleaseA.Available);
+        Assert.Equal(10, availabilityAfterSecondReleaseB.Available);
+    }
+
+    [Fact]
     public async Task CartRepository_SaveAndLoad_PreservesMergedLineAndAbsoluteQuantity()
     {
         await using var fixture = await SqliteCheckoutFixture.CreateAsync();
