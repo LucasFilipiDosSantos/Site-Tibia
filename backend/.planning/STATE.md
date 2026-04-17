@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 3 context gathered
-last_updated: "2026-04-17T11:12:32.001Z"
-last_activity: 2026-04-17 -- Phase 03 planning complete
+stopped_at: Completed 03-inventory-integrity-reservation-control-01-PLAN.md
+last_updated: "2026-04-17T11:53:02.266Z"
+last_activity: 2026-04-17
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 15
-  completed_plans: 12
-  percent: 80
+  completed_plans: 13
+  percent: 87
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-14)
 ## Current Position
 
 Phase: 02 (catalog-product-governance) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
-Last activity: 2026-04-17 -- Phase 03 planning complete
+Last activity: 2026-04-17
 
 Progress: [█░░░░░░░░░] 11%
 
@@ -56,6 +56,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 01 P06 | 10 min | 3 tasks | 5 files |
 | Phase 01 P07 | 10 min | 3 tasks | 8 files |
 | Phase 02-catalog-product-governance P04 | 8min | 2 tasks | 4 files |
+| Phase 03-inventory-integrity-reservation-control P01 | 3min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -75,6 +76,8 @@ Recent decisions affecting current work:
 - [Phase 01]: SMTP adapter logs only audit-safe metadata while raw tokens exist only in outbound message bodies.
 - [Phase 02-catalog-product-governance]: Expanded ProductListResponse metadata while preserving Phase 2 route semantics and authz behavior.
 - [Phase 02-catalog-product-governance]: Integration tests now consume API.Catalog transport DTOs directly to prevent endpoint/test contract drift.
+- [Phase 03-inventory-integrity-reservation-control]: Reserve requests short-circuit on active reservation by order intent key to preserve idempotency.
+- [Phase 03-inventory-integrity-reservation-control]: Conflict failures throw InventoryReservationConflictException carrying available quantity for downstream 409 mapping.
 
 ### Pending Todos
 
@@ -88,6 +91,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T10:58:22.153Z
-Stopped at: Phase 3 context gathered
-Resume file: .planning/phases/03-inventory-integrity-reservation-control/03-CONTEXT.md
+Last session: 2026-04-17T11:53:02.261Z
+Stopped at: Completed 03-inventory-integrity-reservation-control-01-PLAN.md
+Resume file: None

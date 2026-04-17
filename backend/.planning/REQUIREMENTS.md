@@ -18,9 +18,9 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Inventory
 
 - [ ] **INV-01**: System can track available stock per product in real time
-- [ ] **INV-02**: System can reserve stock when an order is pending payment and release it on cancellation/expiration
-- [ ] **INV-03**: System prevents checkout when requested quantity exceeds available stock
-- [ ] **INV-04**: Admin can adjust stock with audit visibility
+- [x] **INV-02**: System can reserve stock when an order is pending payment and release it on cancellation/expiration
+- [x] **INV-03**: System prevents checkout when requested quantity exceeds available stock
+- [x] **INV-04**: Admin can adjust stock with audit visibility
 
 ### Cart and Checkout
 
@@ -118,9 +118,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CAT-03 | Phase 2 | Complete |
 | CAT-04 | Phase 2 | Complete |
 | INV-01 | Phase 3 | Pending |
-| INV-02 | Phase 3 | Pending |
-| INV-03 | Phase 3 | Pending |
-| INV-04 | Phase 3 | Pending |
+| INV-02 | Phase 3 | Complete |
+| INV-03 | Phase 3 | Complete |
+| INV-04 | Phase 3 | Complete |
 | CHK-01 | Phase 4 | Pending |
 | CHK-02 | Phase 4 | Pending |
 | CHK-03 | Phase 4 | Pending |
