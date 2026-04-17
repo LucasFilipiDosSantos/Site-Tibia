@@ -24,9 +24,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Cart and Checkout
 
-- [ ] **CHK-01**: Authenticated user can add products to cart with quantity
-- [ ] **CHK-02**: User can submit checkout creating an order with immutable item price snapshot
-- [ ] **CHK-03**: System records delivery instructions required for manual and automated fulfillment paths
+- [x] **CHK-01**: Authenticated user can add products to cart with quantity
+- [x] **CHK-02**: User can submit checkout creating an order with immutable item price snapshot
+- [x] **CHK-03**: System records delivery instructions required for manual and automated fulfillment paths
 
 ### Orders
 
@@ -121,9 +121,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | INV-02 | Phase 3 | Complete |
 | INV-03 | Phase 3 | Complete |
 | INV-04 | Phase 3 | Complete |
-| CHK-01 | Phase 4 | Pending |
-| CHK-02 | Phase 4 | Pending |
-| CHK-03 | Phase 4 | Pending |
+| CHK-01 | Phase 4 | Complete |
+| CHK-02 | Phase 4 | Complete |
+| CHK-03 | Phase 4 | Complete |
 | ORD-01 | Phase 5 | Pending |
 | ORD-02 | Phase 5 | Pending |
 | ORD-03 | Phase 5 | Pending |

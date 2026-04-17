@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Phase 4 context gathered
-last_updated: "2026-04-17T13:18:02.160Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-04-17T14:18:35.297Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 9
-  completed_phases: 3
-  total_plans: 15
-  completed_plans: 15
+  completed_phases: 4
+  total_plans: 19
+  completed_plans: 19
   percent: 100
 ---
 
@@ -84,6 +84,8 @@ Recent decisions affecting current work:
 - [Phase 03-inventory-integrity-reservation-control]: Reservation writes run inside repository-owned transaction with duplicate intent-key replay short-circuit.
 - [Phase 03-inventory-integrity-reservation-control]: Admin adjustment actor identity is sourced from authenticated JWT sub claim, not client payload, to prevent actor spoofing.
 - [Phase 03-inventory-integrity-reservation-control]: Inventory conflict handling extends existing RFC7807 mapping with only availableQuantity extension to keep details actionable and non-sensitive.
+- [Phase 04-cart-checkout-capture]: Checkout persistence enforces one-cart-per-customer, one-line-per-product, and immutable order snapshot schema with migration-backed durability.
+- [Phase 04-cart-checkout-capture]: Checkout/cart routes derive customer identity from JWT sub and emit deterministic lineConflicts payloads for 409 responses.
 
 ### Pending Todos
 
@@ -97,6 +99,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T13:18:02.152Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-cart-checkout-capture/04-CONTEXT.md
+Last session: 2026-04-17T14:18:35.291Z
+Stopped at: Completed 04-04-PLAN.md
+Resume file: None

@@ -87,10 +87,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Define cart domain/application contracts and TDD invariants for merge/set/remove/conflict semantics.
-- [ ] 04-02-PLAN.md — Implement checkout domain/application TDD flow for immutable snapshots, delivery-instruction validation, and atomic reserve behavior.
-- [ ] 04-03-PLAN.md — Implement checkout/cart persistence plus blocking migration/schema push and persistence integration verification.
-- [ ] 04-04-PLAN.md — Expose cart/checkout API contracts with auth + 409 ProblemDetails mapping and end-to-end integration proof.
+- [x] 04-01-PLAN.md — Define cart domain/application contracts and TDD invariants for merge/set/remove/conflict semantics.
+- [x] 04-02-PLAN.md — Implement checkout domain/application TDD flow for immutable snapshots, delivery-instruction validation, and atomic reserve behavior.
+- [x] 04-03-PLAN.md — Implement checkout/cart persistence plus blocking migration/schema push and persistence integration verification.
+- [x] 04-04-PLAN.md — Expose cart/checkout API contracts with auth + 409 ProblemDetails mapping and end-to-end integration proof.
 
 ### Phase 5: Order Lifecycle & Timeline Visibility
 **Goal**: Orders follow legal lifecycle transitions and are traceable by customers and operators.
