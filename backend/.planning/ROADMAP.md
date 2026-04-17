@@ -113,15 +113,22 @@ Plans:
 - [x] 05-03-PLAN.md — Expose customer timeline/admin order management endpoints with explicit actions, conflict ProblemDetails, and end-to-end contract tests.
 
 ### Phase 6: Mercado Pago Payment Confirmation
-**Goal**: Verified Mercado Pago events reliably drive payment state and paid-order transitions.
+**Goal**: Mercado Pago SDK-backed payment creation and verified webhook confirmations reliably drive payment state and paid-order transitions.
 **Depends on**: Phase 5
 **Requirements**: PAY-01, PAY-02, PAY-03, PAY-04
 **Success Criteria** (what must be TRUE):
-  1. Checkout creates Mercado Pago payment requests linked to the exact target order.
-  2. Webhook processing is idempotent so duplicate events do not duplicate order transitions.
-  3. Payment status changes and webhook payload logs are stored for audit/debugging.
-  4. Orders become Paid only after verified payment confirmation.
-**Plans**: TBD
+  1. Checkout uses the Mercado Pago .NET SDK (`MercadoPagoConfig.AccessToken`, `PreferenceClient`/payment client) to create payment requests linked to one exact order external reference.
+  2. Webhook handler validates notification origin via `x-signature` (`ts`,`v1`) HMAC-SHA256 secret verification before applying any order transition.
+  3. Webhook processing is idempotent (provider event/payment id + local idempotency guard) so retries/duplicates do not duplicate payment logs or order transitions.
+  4. Payment status changes and raw/minified webhook payload logs are persisted with processing outcome, request id, and timestamps for admin inspection.
+  5. Orders move to `Paid` only after a verified approved/processed confirmation path; invalid signatures or non-approved statuses never mark paid.
+  6. Webhook endpoint acknowledges with `200/201` quickly and defers heavy processing to durable async flow to respect provider retry semantics.
+**Plans**: 3 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Add Mercado Pago SDK payment request creation flow linked to immutable order reference and checkout return metadata.
+- [ ] 06-02-PLAN.md — Implement webhook endpoint + signature validation + idempotent payment event processing and persistence audit trail.
+- [ ] 06-03-PLAN.md — Wire verified payment confirmation to legal lifecycle transition to `Paid`, with conflict-safe behavior and integration tests.
 
 ### Phase 7: Async Processing, Notifications & Monitoring
 **Goal**: Critical side effects run durably with retries, while operators can observe flow health.
@@ -168,7 +175,7 @@ Plans:
 | 3. Inventory Integrity & Reservation Control | 0/TBD | Not started | - |
 | 4. Cart & Checkout Capture | 0/TBD | Not started | - |
 | 5. Order Lifecycle & Timeline Visibility | 3/3 | Complete   | 2026-04-17 |
-| 6. Mercado Pago Payment Confirmation | 0/TBD | Not started | - |
+| 6. Mercado Pago Payment Confirmation | 0/3 | Not started | - |
 | 7. Async Processing, Notifications & Monitoring | 0/TBD | Not started | - |
 | 8. Fulfillment Orchestration | 0/TBD | Not started | - |
 | 9. Custom Orders, Marketplace Assets & Admin Ops | 0/TBD | Not started | - |
