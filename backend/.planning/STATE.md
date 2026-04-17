@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 03-inventory-integrity-reservation-control-02-PLAN.md
-last_updated: "2026-04-17T12:04:03.147Z"
+stopped_at: Completed 03-inventory-integrity-reservation-control-03-PLAN.md
+last_updated: "2026-04-17T12:19:43.557Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 9
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -58,6 +58,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 02-catalog-product-governance P04 | 8min | 2 tasks | 4 files |
 | Phase 03-inventory-integrity-reservation-control P01 | 3min | 2 tasks | 8 files |
 | Phase 03-inventory-integrity-reservation-control P02 | 6min | 2 tasks | 12 files |
+| Phase 03-inventory-integrity-reservation-control P03 | 11min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 03-inventory-integrity-reservation-control]: Conflict failures throw InventoryReservationConflictException carrying available quantity for downstream 409 mapping.
 - [Phase 03-inventory-integrity-reservation-control]: Inventory stock rows use explicit integer concurrency token mapping for optimistic write collision handling.
 - [Phase 03-inventory-integrity-reservation-control]: Reservation writes run inside repository-owned transaction with duplicate intent-key replay short-circuit.
+- [Phase 03-inventory-integrity-reservation-control]: Admin adjustment actor identity is sourced from authenticated JWT sub claim, not client payload, to prevent actor spoofing.
+- [Phase 03-inventory-integrity-reservation-control]: Inventory conflict handling extends existing RFC7807 mapping with only availableQuantity extension to keep details actionable and non-sensitive.
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T12:04:03.143Z
-Stopped at: Completed 03-inventory-integrity-reservation-control-02-PLAN.md
+Last session: 2026-04-17T12:19:43.553Z
+Stopped at: Completed 03-inventory-integrity-reservation-control-03-PLAN.md
 Resume file: None

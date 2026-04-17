@@ -74,7 +74,7 @@ Plans:
 Plans:
 - [x] 03-01-PLAN.md — Define inventory domain/application contracts and TDD invariants for reservation lifecycle, idempotency, and auditable adjustments.
 - [x] 03-02-PLAN.md — Implement EF persistence, transactional reservation repository, and blocking migration/schema push for inventory tables and audit trails.
-- [ ] 03-03-PLAN.md — Expose inventory endpoints with 409 ProblemDetails conflict semantics, AdminOnly adjustment routes, and end-to-end integration verification.
+- [x] 03-03-PLAN.md — Expose inventory endpoints with 409 ProblemDetails conflict semantics, AdminOnly adjustment routes, and end-to-end integration verification.
 
 ### Phase 4: Cart & Checkout Capture
 **Goal**: Authenticated customers can build carts and submit checkout with fulfillment-ready order input.
