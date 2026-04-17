@@ -84,7 +84,7 @@ Plans:
   1. Authenticated customer can add products to cart with selected quantity.
   2. Checkout creates an order containing immutable item price snapshots.
   3. Checkout records required delivery instructions for both manual and automated fulfillment paths.
-**Plans**: 6 plans
+**Plans**: 7 plans
 
 Plans:
 - [x] 04-01-PLAN.md — Define cart domain/application contracts and TDD invariants for merge/set/remove/conflict semantics.
@@ -93,6 +93,7 @@ Plans:
 - [x] 04-04-PLAN.md — Expose cart/checkout API contracts with auth + 409 ProblemDetails mapping and end-to-end integration proof.
 - [x] 04-05-PLAN.md — Close D-14 atomic checkout gap by adding reservation compensation rollback and explicit no-partial-side-effect verification.
 - [x] 04-06-PLAN.md — Close remaining D-14 inventory idempotency gap by product-scoping reserve replay semantics and proving real-path multi-line reserve-all atomicity.
+- [x] 04-07-PLAN.md — Close remaining D-14 compensation gap by releasing all reservations for shared checkout intent and proving 3+ line late-conflict rollback leaves zero residual reservations.
 
 ### Phase 5: Order Lifecycle & Timeline Visibility
 **Goal**: Orders follow legal lifecycle transitions and are traceable by customers and operators.

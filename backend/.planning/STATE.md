@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: verifying
-stopped_at: Completed 04-06-PLAN.md
-last_updated: "2026-04-17T15:24:42.525Z"
+stopped_at: Completed 04-07-PLAN.md
+last_updated: "2026-04-17T15:41:57.842Z"
 last_activity: 2026-04-17
 progress:
   total_phases: 9
   completed_phases: 4
-  total_plans: 21
-  completed_plans: 21
+  total_plans: 22
+  completed_plans: 22
   percent: 100
 ---
 
@@ -61,6 +61,7 @@ Progress: [█░░░░░░░░░] 11%
 | Phase 03-inventory-integrity-reservation-control P03 | 11min | 2 tasks | 5 files |
 | Phase 04-cart-checkout-capture P05 | 5min | 2 tasks | 7 files |
 | Phase 04-cart-checkout-capture P06 | 31min | 2 tasks | 7 files |
+| Phase 04-cart-checkout-capture P07 | 12min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -92,6 +93,8 @@ Recent decisions affecting current work:
 - [Phase 04-cart-checkout-capture]: Inventory idempotent replay now requires exact orderIntentKey + productId + quantity parity.
 - [Phase 04-cart-checkout-capture]: Shared checkout intent key is retained while reserve semantics are product-scoped to prevent hollow success.
 - [Phase 04-cart-checkout-capture]: D-14 closure proof now requires real CheckoutService + InventoryService + InventoryRepository integration-path tests.
+- [Phase 04-cart-checkout-capture]: Compensation now queries all active reservations by orderIntentKey and releases per product in one transaction.
+- [Phase 04-cart-checkout-capture]: Phase proof includes explicit 3-line late-conflict integration path with released-row assertions and reserved=0 checks.
 
 ### Pending Todos
 
@@ -105,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-17T15:24:42.520Z
-Stopped at: Completed 04-06-PLAN.md
+Last session: 2026-04-17T15:41:57.838Z
+Stopped at: Completed 04-07-PLAN.md
 Resume file: None
