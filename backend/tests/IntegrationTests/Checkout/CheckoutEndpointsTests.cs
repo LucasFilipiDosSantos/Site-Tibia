@@ -318,6 +318,35 @@ public sealed class CheckoutEndpointsTests
 
         public Task<Order?> GetOrderByIdAsync(Guid orderId, CancellationToken cancellationToken = default)
             => Task.FromResult(StoredOrders.SingleOrDefault(x => x.Id == orderId));
+
+        public Task<IReadOnlyList<Order>> SearchOrdersAsync(
+            OrderStatus? status,
+            Guid? customerId,
+            DateTimeOffset? createdFromUtc,
+            DateTimeOffset? createdToUtc,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+        {
+            var query = StoredOrders.AsEnumerable();
+
+            if (status.HasValue)
+                query = query.Where(o => o.Status == status.Value);
+            if (customerId.HasValue)
+                query = query.Where(o => o.CustomerId == customerId.Value);
+            if (createdFromUtc.HasValue)
+                query = query.Where(o => o.CreatedAtUtc >= createdFromUtc.Value);
+            if (createdToUtc.HasValue)
+                query = query.Where(o => o.CreatedAtUtc <= createdToUtc.Value);
+
+            var paged = query
+                .OrderByDescending(o => o.CreatedAtUtc)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return Task.FromResult<IReadOnlyList<Order>>(paged);
+        }
     }
 
     public sealed class InMemoryAvailabilityGateway : ICartProductAvailabilityGateway

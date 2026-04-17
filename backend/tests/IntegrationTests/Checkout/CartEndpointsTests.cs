@@ -238,6 +238,16 @@ public sealed class CartEndpointsTests
 
         public Task<Order?> GetOrderByIdAsync(Guid orderId, CancellationToken cancellationToken = default)
             => Task.FromResult<Order?>(null);
+
+        public Task<IReadOnlyList<Order>> SearchOrdersAsync(
+            OrderStatus? status,
+            Guid? customerId,
+            DateTimeOffset? createdFromUtc,
+            DateTimeOffset? createdToUtc,
+            int page,
+            int pageSize,
+            CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Order>>([]);
     }
 
     private sealed class InMemoryAvailabilityGateway : ICartProductAvailabilityGateway

@@ -51,6 +51,37 @@ public sealed record OrderResponseDto(
     Guid CustomerId,
     string OrderIntentKey,
     DateTimeOffset CreatedAtUtc,
+    string StatusCode,
+    string StatusLabel,
     IReadOnlyList<CheckoutOrderItemDto> Items,
     IReadOnlyList<CheckoutDeliveryInstructionResponseDto> DeliveryInstructions
 );
+
+// Per D-11: Timeline status payload includes raw status + display label
+public sealed record StatusTransitionEventDto(
+    Guid EventId,
+    string FromStatus,
+    string ToStatus,
+    string SourceType,
+    DateTimeOffset OccurredAtUtc,
+    Guid? ActorUserId,
+    string? Reason
+);
+
+public sealed record OrderListItemDto(
+    Guid OrderId,
+    string OrderIntentKey,
+    DateTimeOffset CreatedAtUtc,
+    string StatusCode,
+    string StatusLabel
+);
+
+public sealed record PaginatedOrderListDto(
+    IReadOnlyList<OrderListItemDto> Items,
+    int Page,
+    int PageSize,
+    int TotalCount
+);
+
+// Per D-14: Explicit admin cancel action (not generic set-status)
+public sealed record AdminCancelOrderDto(string Reason);

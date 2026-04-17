@@ -68,11 +68,14 @@ public static class CheckoutEndpoints
                 return Results.NotFound();
             }
 
+            // Per D-11: Include statusCode and statusLabel
             return Results.Ok(new OrderResponseDto(
                 order.Id,
                 order.CustomerId,
                 order.OrderIntentKey,
                 order.CreatedAtUtc,
+                order.Status.ToString(),
+                GetStatusLabel(order.Status),
                 order.Items.Select(x => new CheckoutOrderItemDto(
                     x.ProductId,
                     x.Quantity,
@@ -91,6 +94,24 @@ public static class CheckoutEndpoints
                     x.ContactHandle)).ToList()));
         });
 
+        // Per D-09, D-12: Customer order history list with pagination
+        group.MapGet("/orders", async (ClaimsPrincipal user, int page, int pageSize, IOrderLifecycleRepository repository, CancellationToken ct) =>
+        {
+            var customerId = ResolveCustomerId(user);
+            pageSize = Math.Clamp(pageSize, 1, 50);
+            
+            var orders = await repository.GetCustomerOrdersAsync(customerId, page, pageSize, ct);
+            
+            var items = orders.Select(o => new OrderListItemDto(
+                o.Id,
+                o.OrderIntentKey,
+                o.CreatedAtUtc,
+                o.Status.ToString(),
+                GetStatusLabel(o.Status))).ToList();
+                
+            return Results.Ok(new PaginatedOrderListDto(items, page, pageSize, items.Count));
+        });
+
         return app;
     }
 
@@ -104,6 +125,15 @@ public static class CheckoutEndpoints
 
         return customerId;
     }
+
+    // Per D-11: Get display label for status
+    private static string GetStatusLabel(OrderStatus status) => status switch
+    {
+        OrderStatus.Pending => "Pendente",
+        OrderStatus.Paid => "Pago",
+        OrderStatus.Cancelled => "Cancelado",
+        _ => status.ToString()
+    };
 
     private static CartResponseDto ToCartDto(CartResponse response)
     {

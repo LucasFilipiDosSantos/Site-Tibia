@@ -89,6 +89,13 @@ public sealed class GlobalExceptionHandler(
             }).ToArray();
         }
 
+        // Per D-15: ForbiddenStatusTransitionException includes currentStatus and allowedTransitions
+        if (exception is ForbiddenStatusTransitionException transitionException)
+        {
+            problem.Extensions["currentStatus"] = transitionException.CurrentStatus.ToString();
+            problem.Extensions["allowedTransitions"] = transitionException.AllowedTransitions.Select(t => t.ToString()).ToList();
+        }
+
         await problemDetailsService.WriteAsync(
             new ProblemDetailsContext
             {
@@ -144,6 +151,12 @@ public sealed class GlobalExceptionHandler(
                 StatusCodes.Status409Conflict,
                 "Conflict.",
                 checkoutConflictException.Message
+            ),
+            // Per D-15: Lifecycle conflict returns 409
+            ForbiddenStatusTransitionException => (
+                StatusCodes.Status409Conflict,
+                "Status Transition Conflict.",
+                "The requested status transition is not allowed from the current order status."
             ),
             InvalidOperationException invalidOperationException => (
                 StatusCodes.Status400BadRequest,
