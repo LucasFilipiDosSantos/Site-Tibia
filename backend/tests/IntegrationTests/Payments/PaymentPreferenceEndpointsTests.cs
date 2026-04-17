@@ -109,7 +109,13 @@ public sealed class PaymentPreferenceEndpointsTests
             {
                 services.RemoveAll<DbContextOptions<AppDbContext>>();
                 services.RemoveAll<AppDbContext>();
-                services.AddDbContext<AppDbContext>(options => options.UseSqlite(_connection));
+
+                services.AddScoped<AppDbContext>(_ =>
+                {
+                    var db = new AppDbContext(_options ?? throw new InvalidOperationException("Factory not initialized."));
+                    db.Database.ExecuteSqlRaw("PRAGMA foreign_keys = ON;");
+                    return db;
+                });
 
                 services.RemoveAll<IMercadoPagoPreferenceGateway>();
                 services.AddSingleton<IMercadoPagoPreferenceGateway>(new StubMercadoPagoPreferenceGateway());
@@ -130,9 +136,10 @@ public sealed class PaymentPreferenceEndpointsTests
 
         public async Task<Guid> SeedOrderAsync(Guid customerId, int quantity, decimal unitPrice, string currency)
         {
+            var productId = await SeedCatalogProductAsync();
             var order = new Order(Guid.NewGuid(), customerId, $"checkout-{Guid.NewGuid():N}");
             order.AddItemSnapshot(new OrderItemSnapshot(
-                Guid.NewGuid(),
+                productId,
                 quantity,
                 unitPrice,
                 currency,
@@ -145,6 +152,26 @@ public sealed class PaymentPreferenceEndpointsTests
             await db.SaveChangesAsync();
 
             return order.Id;
+        }
+
+        private async Task<Guid> SeedCatalogProductAsync()
+        {
+            await using var db = CreateDbContext();
+
+            var category = await db.Categories.SingleOrDefaultAsync(x => x.Slug == "gold");
+            if (category is null)
+            {
+                category = new Domain.Catalog.Category("Gold", "gold", "Gold products");
+                db.Categories.Add(category);
+                await db.SaveChangesAsync();
+            }
+
+            var slug = $"gold-pack-{Guid.NewGuid():N}";
+            var product = new Domain.Catalog.Product("Gold Pack", slug, "Package", 10m, category.Id, category.Slug);
+            db.Products.Add(product);
+            await db.SaveChangesAsync();
+
+            return product.Id;
         }
 
         public HttpClient CreateAuthenticatedClient(Guid customerId)

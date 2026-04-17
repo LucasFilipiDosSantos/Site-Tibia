@@ -1,6 +1,7 @@
 using Application.Identity.Exceptions;
 using Application.Checkout.Contracts;
 using Application.Inventory.Contracts;
+using Application.Payments.Contracts;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -151,6 +152,11 @@ public sealed class GlobalExceptionHandler(
                 StatusCodes.Status409Conflict,
                 "Conflict.",
                 checkoutConflictException.Message
+            ),
+            PaymentPreferenceProviderException paymentProviderException => (
+                StatusCodes.Status502BadGateway,
+                "Payment provider unavailable.",
+                paymentProviderException.Message
             ),
             // Per D-15: Lifecycle conflict returns 409
             ForbiddenStatusTransitionException => (
