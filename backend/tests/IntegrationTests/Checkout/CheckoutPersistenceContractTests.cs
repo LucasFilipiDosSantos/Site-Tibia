@@ -1,7 +1,15 @@
 using Domain.Catalog;
 using Domain.Checkout;
+using Domain.Inventory;
+using Application.Checkout.Contracts;
+using Application.Checkout.Services;
+using Application.Identity.Contracts;
+using Application.Inventory.Contracts;
+using Application.Inventory.Services;
+using Infrastructure.Checkout;
 using Infrastructure.Persistence;
 using Infrastructure.Checkout.Repositories;
+using Infrastructure.Inventory.Repositories;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,6 +23,117 @@ namespace IntegrationTests.Checkout;
 [Trait("Plan", "04-03")]
 public sealed class CheckoutPersistenceContractTests
 {
+    [Fact]
+    public async Task SubmitCheckout_MultiLineSuccess_ReservesAllLinesCreatesSingleOrderAndClearsCart()
+    {
+        await using var fixture = await SqliteCheckoutFixture.CreateAsync();
+        await using var db = fixture.CreateDbContext();
+        var now = new DateTimeOffset(2026, 4, 17, 15, 0, 0, TimeSpan.Zero);
+
+        var customerId = Guid.NewGuid();
+        var productA = await fixture.SeedCatalogProductAsync("bundle-a", 10m);
+        var productB = await fixture.SeedCatalogProductAsync("bundle-b", 20m);
+
+        db.InventoryStocks.Add(new InventoryStock(productA, totalQuantity: 10, reservedQuantity: 0, now));
+        db.InventoryStocks.Add(new InventoryStock(productB, totalQuantity: 10, reservedQuantity: 0, now));
+        await db.SaveChangesAsync();
+
+        var cartRepository = new CartRepository(db);
+        var checkoutRepository = new CheckoutRepository(db);
+        var inventoryRepository = new InventoryRepository(db);
+        var inventoryService = new InventoryService(inventoryRepository, new FixedClock(now));
+        var checkoutService = new CheckoutService(
+            cartRepository,
+            checkoutRepository,
+            new CheckoutInventoryGateway(inventoryService),
+            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)));
+
+        var cart = new Cart(customerId);
+        cart.AddOrMerge(productA, 2);
+        cart.AddOrMerge(productB, 3);
+        await cartRepository.SaveAsync(cart);
+
+        var response = await checkoutService.SubmitCheckoutAsync(
+            new SubmitCheckoutRequest(
+                customerId,
+                [
+                    new CheckoutDeliveryInstructionRequest(productA, "KnightA", "Aurera", "chan-a", null, null),
+                    new CheckoutDeliveryInstructionRequest(productB, "KnightB", "Aurera", "chan-b", null, null)
+                ]));
+
+        Assert.Equal(2, response.Items.Count);
+        Assert.Equal(1, await db.Orders.CountAsync());
+        Assert.Equal(2, await db.OrderItemSnapshots.CountAsync());
+        Assert.Equal(2, await db.DeliveryInstructions.CountAsync());
+        Assert.Equal(2, await db.InventoryReservations.CountAsync(x => x.OrderIntentKey == response.OrderIntentKey && x.ReleasedAtUtc == null));
+
+        var cartAfter = await cartRepository.GetByCustomerIdAsync(customerId);
+        Assert.Null(cartAfter);
+
+        var availabilityA = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productA));
+        var availabilityB = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productB));
+        Assert.Equal(2, availabilityA.Reserved);
+        Assert.Equal(3, availabilityB.Reserved);
+    }
+
+    [Fact]
+    public async Task SubmitCheckout_SecondLineConflict_ReleasesPriorReservationsPersistsNoOrderAndKeepsCart()
+    {
+        await using var fixture = await SqliteCheckoutFixture.CreateAsync();
+        await using var db = fixture.CreateDbContext();
+        var now = new DateTimeOffset(2026, 4, 17, 15, 0, 0, TimeSpan.Zero);
+
+        var customerId = Guid.NewGuid();
+        var productA = await fixture.SeedCatalogProductAsync("line-a", 10m);
+        var productB = await fixture.SeedCatalogProductAsync("line-b", 20m);
+
+        db.InventoryStocks.Add(new InventoryStock(productA, totalQuantity: 5, reservedQuantity: 0, now));
+        db.InventoryStocks.Add(new InventoryStock(productB, totalQuantity: 1, reservedQuantity: 0, now));
+        await db.SaveChangesAsync();
+
+        var cartRepository = new CartRepository(db);
+        var checkoutRepository = new CheckoutRepository(db);
+        var inventoryRepository = new InventoryRepository(db);
+        var inventoryService = new InventoryService(inventoryRepository, new FixedClock(now));
+        var checkoutService = new CheckoutService(
+            cartRepository,
+            checkoutRepository,
+            new CheckoutInventoryGateway(inventoryService),
+            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)));
+
+        var cart = new Cart(customerId);
+        cart.AddOrMerge(productA, 1);
+        cart.AddOrMerge(productB, 2);
+        await cartRepository.SaveAsync(cart);
+
+        var conflict = await Assert.ThrowsAsync<CheckoutReservationConflictException>(() =>
+            checkoutService.SubmitCheckoutAsync(
+                new SubmitCheckoutRequest(
+                    customerId,
+                    [
+                        new CheckoutDeliveryInstructionRequest(productA, "KnightA", "Aurera", "chan-a", null, null),
+                        new CheckoutDeliveryInstructionRequest(productB, "KnightB", "Aurera", "chan-b", null, null)
+                    ])));
+
+        Assert.Contains(conflict.LineConflicts, x => x.ProductId == productB && x.AvailableQuantity == 1);
+        Assert.Equal(0, await db.Orders.CountAsync());
+        Assert.Equal(0, await db.OrderItemSnapshots.CountAsync());
+
+        var cartAfter = await cartRepository.GetByCustomerIdAsync(customerId);
+        Assert.NotNull(cartAfter);
+        Assert.Equal(2, cartAfter!.Lines.Count);
+
+        var availabilityA = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productA));
+        var availabilityB = await inventoryService.GetAvailabilityAsync(new GetInventoryAvailabilityRequest(productB));
+        Assert.Equal(0, availabilityA.Reserved);
+        Assert.Equal(0, availabilityB.Reserved);
+
+        var releasedForIntent = await db.InventoryReservations
+            .Where(x => x.OrderIntentKey.StartsWith("checkout-"))
+            .ToListAsync();
+        Assert.All(releasedForIntent, reservation => Assert.NotNull(reservation.ReleasedAtUtc));
+    }
+
     [Fact]
     public async Task CartRepository_SaveAndLoad_PreservesMergedLineAndAbsoluteQuantity()
     {
@@ -189,5 +308,15 @@ public sealed class CheckoutPersistenceContractTests
         {
             await _connection.DisposeAsync();
         }
+    }
+
+    private sealed class FixedClock : ISystemClock
+    {
+        public FixedClock(DateTimeOffset utcNow)
+        {
+            UtcNow = utcNow;
+        }
+
+        public DateTimeOffset UtcNow { get; }
     }
 }

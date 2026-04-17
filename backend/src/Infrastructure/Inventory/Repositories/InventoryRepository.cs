@@ -20,12 +20,12 @@ public sealed class InventoryRepository : IInventoryRepository
         CancellationToken cancellationToken = default)
     {
         var normalized = orderIntentKey.Trim();
-        var reservation = await _dbContext.InventoryReservations
+        var reservation = (await _dbContext.InventoryReservations
             .AsNoTracking()
+            .Where(x => x.OrderIntentKey == normalized && x.ProductId == productId)
+            .ToListAsync(cancellationToken))
             .OrderByDescending(x => x.ReservedAtUtc)
-            .FirstOrDefaultAsync(
-                x => x.OrderIntentKey == normalized && x.ProductId == productId,
-                cancellationToken);
+            .FirstOrDefault();
 
         if (reservation is null)
         {
@@ -47,10 +47,12 @@ public sealed class InventoryRepository : IInventoryRepository
         CancellationToken cancellationToken = default)
     {
         var normalized = orderIntentKey.Trim();
-        var reservation = await _dbContext.InventoryReservations
+        var reservation = (await _dbContext.InventoryReservations
             .AsNoTracking()
+            .Where(x => x.OrderIntentKey == normalized)
+            .ToListAsync(cancellationToken))
             .OrderByDescending(x => x.ReservedAtUtc)
-            .FirstOrDefaultAsync(x => x.OrderIntentKey == normalized, cancellationToken);
+            .FirstOrDefault();
 
         if (reservation is null)
         {
@@ -116,9 +118,11 @@ public sealed class InventoryRepository : IInventoryRepository
         await using var tx = await _dbContext.Database.BeginTransactionAsync(cancellationToken);
         var normalized = orderIntentKey.Trim();
 
-        var reservation = await _dbContext.InventoryReservations
+        var reservation = (await _dbContext.InventoryReservations
+            .Where(x => x.OrderIntentKey == normalized)
+            .ToListAsync(cancellationToken))
             .OrderByDescending(x => x.ReservedAtUtc)
-            .FirstOrDefaultAsync(x => x.OrderIntentKey == normalized, cancellationToken);
+            .FirstOrDefault();
 
         if (reservation is null)
         {
