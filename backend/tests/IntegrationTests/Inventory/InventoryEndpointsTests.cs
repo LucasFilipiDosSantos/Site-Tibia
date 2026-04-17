@@ -134,6 +134,7 @@ public sealed class InventoryEndpointsTests
         Assert.Equal(tokenAdminUserId, adjustPayload.AdminUserId);
         Assert.Equal(8, adjustPayload.BeforeQuantity);
         Assert.Equal(12, adjustPayload.AfterQuantity);
+        Assert.NotEqual(default, adjustPayload.AdjustedAtUtc);
 
         var availability = await client.GetFromJsonAsync<ApiInventory.InventoryAvailabilityResponse>(
             $"/inventory/{InventoryApiFactory.ProductId}/availability");
