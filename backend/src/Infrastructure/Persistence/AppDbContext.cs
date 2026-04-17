@@ -26,6 +26,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<Order> Orders => Set<Order>();
     public DbSet<OrderItemSnapshot> OrderItemSnapshots => Set<OrderItemSnapshot>();
     public DbSet<DeliveryInstruction> DeliveryInstructions => Set<DeliveryInstruction>();
+    public DbSet<OrderStatusTransitionEvent> OrderStatusTransitionEvents => Set<OrderStatusTransitionEvent>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

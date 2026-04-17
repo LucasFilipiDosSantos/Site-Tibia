@@ -22,6 +22,14 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 
+        // Per ORD-02: Order status for lifecycle tracking
+        builder.Property(x => x.Status)
+            .IsRequired()
+            .HasConversion<int>();
+
+        builder.HasIndex(x => x.CustomerId);
+        builder.HasIndex(x => x.Status);
+        builder.HasIndex(x => x.CreatedAtUtc);
         builder.HasIndex(x => x.OrderIntentKey)
             .IsUnique();
 

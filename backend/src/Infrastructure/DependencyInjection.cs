@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<ICartRepository, CartRepository>();
         services.AddScoped<ICheckoutRepository, CheckoutRepository>();
+        services.AddScoped<IOrderLifecycleRepository, OrderLifecycleRepository>();
         services.AddScoped<ICartProductAvailabilityGateway, CartProductAvailabilityGateway>();
         services.AddScoped<ICheckoutProductCatalogGateway, CheckoutProductCatalogGateway>();
         services.AddScoped<ICheckoutInventoryGateway, CheckoutInventoryGateway>();
