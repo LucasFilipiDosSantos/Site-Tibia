@@ -104,8 +104,13 @@ Plans:
   2. Every order status change is stored as a timestamped history event.
   3. Customer can view order history with order-level status timeline.
   4. Admin can search and manage orders by status and customer.
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 05-01-PLAN.md — Define lifecycle state-machine/timeline domain contracts with TDD and transition authority/idempotency proofs.
+- [ ] 05-02-PLAN.md — Implement lifecycle persistence/event history repositories with blocking migration/schema update and integration persistence verification.
+- [ ] 05-03-PLAN.md — Expose customer timeline/admin order management endpoints with explicit actions, conflict ProblemDetails, and end-to-end contract tests.
 
 ### Phase 6: Mercado Pago Payment Confirmation
 **Goal**: Verified Mercado Pago events reliably drive payment state and paid-order transitions.
