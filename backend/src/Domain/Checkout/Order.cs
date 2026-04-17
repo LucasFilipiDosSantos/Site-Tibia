@@ -4,12 +4,15 @@ public sealed class Order
 {
     private readonly List<OrderItemSnapshot> _items = [];
     private readonly List<DeliveryInstruction> _deliveryInstructions = [];
+    private readonly List<OrderStatusTransitionEvent> _statusHistory = [];
 
     public Guid Id { get; private set; }
     public Guid CustomerId { get; private set; }
     public string OrderIntentKey { get; private set; }
+    public OrderStatus Status { get; private set; } = OrderStatus.Pending;
     public IReadOnlyList<OrderItemSnapshot> Items => _items;
     public IReadOnlyList<DeliveryInstruction> DeliveryInstructions => _deliveryInstructions;
+    public IReadOnlyList<OrderStatusTransitionEvent> StatusHistory => _statusHistory;
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
     public Order(Guid id, Guid customerId, string orderIntentKey)
@@ -22,6 +25,7 @@ public sealed class Order
             ? throw new ArgumentException("Order intent key is required.", nameof(orderIntentKey))
             : orderIntentKey.Trim();
         CreatedAtUtc = DateTimeOffset.UtcNow;
+        Status = OrderStatus.Pending;
     }
 
     public void AddItemSnapshot(OrderItemSnapshot item)
@@ -32,6 +36,54 @@ public sealed class Order
     public void AddDeliveryInstruction(DeliveryInstruction instruction)
     {
         _deliveryInstructions.Add(instruction);
+    }
+
+    /// <summary>
+    /// Apply transition - records event only if status actually changes (D-04, D-05)
+    /// </summary>
+    public void ApplyTransition(OrderStatus newStatus, TransitionSourceType source, DateTimeOffset occurredAtUtc, Guid? actorUserId = null, string? reason = null)
+    {
+        // Idempotent no-op if already at target status (D-04)
+        if (Status == newStatus)
+            return;
+
+        var fromStatus = Status;
+        var allowedTransitions = GetAllowedTransitionsForStatus(fromStatus, source);
+
+        if (!allowedTransitions.Contains(newStatus))
+        {
+            throw new InvalidOperationException(
+                $"Cannot transition from {fromStatus} to {newStatus} by {source}. Allowed: {string.Join(", ", allowedTransitions)}");
+        }
+
+        // Append history event only on real change (D-05, D-06, D-07)
+        var transitionEvent = new OrderStatusTransitionEvent(Id, fromStatus, newStatus, source, occurredAtUtc, actorUserId, reason);
+        _statusHistory.Add(transitionEvent);
+        Status = newStatus;
+    }
+
+    /// <summary>
+    /// Get allowed transitions for a given status/source (D-01, D-02, D-03)
+    /// </summary>
+    public static IReadOnlyList<OrderStatus> GetAllowedTransitionsForStatus(OrderStatus current, TransitionSourceType source)
+    {
+        return (current, source) switch
+        {
+            // Pending: System can set Paid (D-03)
+            (OrderStatus.Pending, TransitionSourceType.System) => [OrderStatus.Paid],
+            // Pending: Customer/Admin can cancel (D-02)
+            (OrderStatus.Pending, TransitionSourceType.Customer) => [OrderStatus.Cancelled],
+            (OrderStatus.Pending, TransitionSourceType.Admin) => [OrderStatus.Cancelled],
+            // Paid: No transitions allowed (D-02)
+            (OrderStatus.Paid, TransitionSourceType.System) => [],
+            (OrderStatus.Paid, TransitionSourceType.Customer) => [],
+            (OrderStatus.Paid, TransitionSourceType.Admin) => [],
+            // Cancelled: Terminal state - no transitions
+            (OrderStatus.Cancelled, TransitionSourceType.System) => [],
+            (OrderStatus.Cancelled, TransitionSourceType.Customer) => [],
+            (OrderStatus.Cancelled, TransitionSourceType.Admin) => [],
+            _ => []
+        };
     }
 
     private Order()
