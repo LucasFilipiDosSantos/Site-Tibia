@@ -6,11 +6,17 @@ using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net;
+using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace IntegrationTests.Inventory;
 
@@ -83,6 +89,139 @@ public sealed class InventoryEndpointsTests
         var releasePayload = await release.Content.ReadFromJsonAsync<ApiInventory.ReleaseInventoryReservationResponse>();
         Assert.NotNull(releasePayload);
         Assert.Equal(2, releasePayload!.ReleasedQuantity);
+    }
+
+    [Fact]
+    public async Task AdminAdjustment_RequiresAuthenticationAndAdminRole()
+    {
+        await using var factory = new InventoryApiFactory();
+        factory.Inventory.SeedProduct(InventoryApiFactory.ProductId, total: 8, reserved: 0);
+
+        using var unauthenticated = factory.CreateClient();
+        var unauthorized = await unauthenticated.PostAsJsonAsync(
+            "/admin/inventory/adjustments",
+            new ApiInventory.AdminAdjustInventoryRequest(InventoryApiFactory.ProductId, 1, "sync"));
+        Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
+
+        using var nonAdmin = factory.CreateClient();
+        nonAdmin.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", BuildJwt("Customer"));
+        var forbidden = await nonAdmin.PostAsJsonAsync(
+            "/admin/inventory/adjustments",
+            new ApiInventory.AdminAdjustInventoryRequest(InventoryApiFactory.ProductId, 1, "sync"));
+        Assert.Equal(HttpStatusCode.Forbidden, forbidden.StatusCode);
+    }
+
+    [Fact]
+    public async Task AdminAdjustment_AdminUser_SucceedsAndAvailabilityReflectsDelta()
+    {
+        await using var factory = new InventoryApiFactory();
+        factory.Inventory.SeedProduct(InventoryApiFactory.ProductId, total: 8, reserved: 2);
+        using var client = factory.CreateClient();
+        var tokenAdminUserId = Guid.NewGuid();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", BuildJwt("Admin", tokenAdminUserId));
+
+        var adjust = await client.PostAsJsonAsync(
+            "/admin/inventory/adjustments",
+            new ApiInventory.AdminAdjustInventoryRequest(InventoryApiFactory.ProductId, 4, "restock"));
+
+        Assert.Equal(HttpStatusCode.OK, adjust.StatusCode);
+        var adjustPayload = await adjust.Content.ReadFromJsonAsync<ApiInventory.AdminAdjustInventoryResponse>();
+        Assert.NotNull(adjustPayload);
+        Assert.Equal(InventoryApiFactory.ProductId, adjustPayload!.ProductId);
+        Assert.Equal(4, adjustPayload.Delta);
+        Assert.Equal("restock", adjustPayload.Reason);
+        Assert.Equal(tokenAdminUserId, adjustPayload.AdminUserId);
+        Assert.Equal(8, adjustPayload.BeforeQuantity);
+        Assert.Equal(12, adjustPayload.AfterQuantity);
+
+        var availability = await client.GetFromJsonAsync<ApiInventory.InventoryAvailabilityResponse>(
+            $"/inventory/{InventoryApiFactory.ProductId}/availability");
+        Assert.NotNull(availability);
+        Assert.Equal(10, availability!.Available);
+        Assert.Equal(2, availability.Reserved);
+        Assert.Equal(12, availability.Total);
+    }
+
+    [Fact]
+    public async Task OversellAttempt_ReturnsDeterministic409WithAvailableQuantity()
+    {
+        await using var factory = new InventoryApiFactory();
+        factory.Inventory.SeedProduct(InventoryApiFactory.ProductId, total: 3, reserved: 0);
+        using var client = factory.CreateClient();
+
+        var first = await client.PostAsJsonAsync(
+            "/inventory/reservations",
+            new ApiInventory.ReserveInventoryRequest("intent-first", Guid.NewGuid(), InventoryApiFactory.ProductId, 2));
+        Assert.Equal(HttpStatusCode.OK, first.StatusCode);
+
+        var second = await client.PostAsJsonAsync(
+            "/inventory/reservations",
+            new ApiInventory.ReserveInventoryRequest("intent-second", Guid.NewGuid(), InventoryApiFactory.ProductId, 2));
+
+        Assert.Equal(HttpStatusCode.Conflict, second.StatusCode);
+        var json = await second.Content.ReadAsStringAsync();
+        using var doc = System.Text.Json.JsonDocument.Parse(json);
+        Assert.True(doc.RootElement.TryGetProperty("availableQuantity", out var available));
+        Assert.Equal(1, available.GetInt32());
+    }
+
+    [Fact]
+    public void InventoryTests_DoNotUseAnonymousPayloads_ForInventoryContracts()
+    {
+        var currentTestFile = FindRepoPath("tests/IntegrationTests/Inventory/InventoryEndpointsTests.cs");
+        var source = File.ReadAllText(currentTestFile);
+
+        var hasAnonymousPayloads = Regex.IsMatch(
+            source,
+            @"PostAsJsonAsync\s*\([^\)]*new\s*\{|PutAsJsonAsync\s*\([^\)]*new\s*\{",
+            RegexOptions.Singleline);
+
+        Assert.False(hasAnonymousPayloads, "Inventory endpoint tests must use typed API inventory DTO payloads, not anonymous objects.");
+    }
+
+    private static string BuildJwt(string role, Guid? subjectId = null)
+    {
+        var now = DateTimeOffset.UtcNow;
+        var sub = (subjectId ?? Guid.NewGuid()).ToString();
+        var claims = new List<Claim>
+        {
+            new("sub", sub),
+            new("email", "inventory-admin@test.com"),
+            new("role", role),
+            new("email_verified", "true")
+        };
+
+        var credentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes("01234567890123456789012345678901")),
+            SecurityAlgorithms.HmacSha256);
+
+        var jwt = new JwtSecurityToken(
+            issuer: "tibia-webstore",
+            audience: "tibia-webstore-client",
+            claims: claims,
+            notBefore: now.UtcDateTime,
+            expires: now.AddMinutes(10).UtcDateTime,
+            signingCredentials: credentials);
+
+        return new JwtSecurityTokenHandler().WriteToken(jwt);
+    }
+
+    private static string FindRepoPath(string relativePath)
+    {
+        var current = new DirectoryInfo(AppContext.BaseDirectory);
+        while (current is not null)
+        {
+            var candidate = Path.Combine(current.FullName, relativePath.Replace('/', Path.DirectorySeparatorChar));
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+
+            current = current.Parent;
+        }
+
+        throw new InvalidOperationException($"Could not locate repository file: {relativePath}");
     }
 
     private sealed class InventoryApiFactory : WebApplicationFactory<Program>, IAsyncDisposable

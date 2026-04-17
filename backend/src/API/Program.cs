@@ -2,9 +2,11 @@ using System.Text;
 using API.Auth;
 using API.Catalog;
 using API.ErrorHandling;
+using API.Inventory;
 using Application.Catalog.Services;
 using Application.Identity.Contracts;
 using Application.Identity.Services;
+using Application.Inventory.Services;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
@@ -73,6 +75,7 @@ public partial class Program
         builder.Services.AddScoped<TokenRotationService>();
         builder.Services.AddSingleton<SecurityAuditService>();
         builder.Services.AddScoped<CatalogService>();
+        builder.Services.AddScoped<InventoryService>();
 
         var app = builder.Build();
 
@@ -97,6 +100,7 @@ public partial class Program
 
         app.MapAuthEndpoints();
         app.MapCatalogEndpoints();
+        app.MapInventoryEndpoints();
 
         app.Run();
     }

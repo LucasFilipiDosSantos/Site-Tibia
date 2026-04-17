@@ -1,4 +1,5 @@
 using Application.Identity.Exceptions;
+using Application.Inventory.Contracts;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,6 +60,11 @@ public sealed class GlobalExceptionHandler(
             Instance = httpContext.Request.Path,
         };
 
+        if (exception is InventoryReservationConflictException inventoryConflict)
+        {
+            problem.Extensions["availableQuantity"] = inventoryConflict.AvailableQuantity;
+        }
+
         await problemDetailsService.WriteAsync(
             new ProblemDetailsContext
             {
@@ -100,6 +106,11 @@ public sealed class GlobalExceptionHandler(
                     "Conflict.",
                     invalidOperationException.Message
                 ),
+            InventoryReservationConflictException inventoryConflictException => (
+                StatusCodes.Status409Conflict,
+                "Conflict.",
+                inventoryConflictException.Message
+            ),
             InvalidOperationException invalidOperationException => (
                 StatusCodes.Status400BadRequest,
                 "Operation failed.",
