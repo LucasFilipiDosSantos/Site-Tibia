@@ -186,5 +186,5 @@ Plans:
 | 5. Order Lifecycle & Timeline Visibility | 3/3 | Complete   | 2026-04-17 |
 | 6. Mercado Pago Payment Confirmation | 0/3 | Not started | - |
 | 7. Async Processing, Notifications & Monitoring | 0/TBD | Not started | - |
-| 8. Fulfillment Orchestration | 3/3 | Complete   | 2026-04-18 |
+| 8. Fulfillment Orchestration | 3/3 | Complete    | 2026-04-18 |
 | 9. Custom Orders, Marketplace Assets & Admin Ops | 0/TBD | Not started | - |
