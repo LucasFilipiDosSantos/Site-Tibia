@@ -126,9 +126,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 06-01-PLAN.md — Add Mercado Pago SDK payment request creation flow linked to immutable order reference and checkout return metadata.
-- [ ] 06-02-PLAN.md — Implement webhook endpoint + signature validation + idempotent payment event processing and persistence audit trail.
-- [ ] 06-03-PLAN.md — Wire verified payment confirmation to legal lifecycle transition to `Paid`, with conflict-safe behavior and integration tests.
+- [x] 06-01-PLAN.md — Add Mercado Pago SDK payment request creation flow linked to immutable order reference and checkout return metadata.
+- [x] 06-02-PLAN.md — Implement webhook endpoint + signature validation + idempotent payment event processing and persistence audit trail.
+- [x] 06-03-PLAN.md — Wire verified payment confirmation to legal lifecycle transition to `Paid`, with conflict-safe behavior and integration tests.
 
 ### Phase 7: Async Processing, Notifications & Monitoring
 **Goal**: Critical side effects run durably with retries, while operators can observe flow health.
