@@ -89,6 +89,8 @@ public static class CheckoutEndpoints
                 order.DeliveryInstructions.Select(x => new CheckoutDeliveryInstructionResponseDto(
                     x.ProductId,
                     x.FulfillmentType.ToString(),
+                    x.Status.ToString(),
+                    x.CompletedAtUtc,
                     x.TargetCharacter,
                     x.TargetServer,
                     x.DeliveryChannelOrContact,
@@ -181,6 +183,8 @@ public static class CheckoutEndpoints
             response.DeliveryInstructions.Select(x => new CheckoutDeliveryInstructionResponseDto(
                 x.ProductId,
                 x.FulfillmentType.ToString(),
+                x.Status.ToString(),
+                x.CompletedAtUtc,
                 x.TargetCharacter,
                 x.TargetServer,
                 x.DeliveryChannelOrContact,

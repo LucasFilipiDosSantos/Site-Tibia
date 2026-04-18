@@ -32,6 +32,8 @@ public sealed record CheckoutOrderItemDto(
 public sealed record CheckoutDeliveryInstructionResponseDto(
     Guid ProductId,
     string FulfillmentType,
+    string Status,
+    DateTime? CompletedAtUtc,
     string? TargetCharacter,
     string? TargetServer,
     string? DeliveryChannelOrContact,

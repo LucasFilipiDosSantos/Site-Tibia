@@ -112,6 +112,8 @@ public sealed class CheckoutService
                 .Select(x => new CheckoutDeliveryInstructionResponse(
                     x.ProductId,
                     x.FulfillmentType,
+                    x.Status,
+                    x.CompletedAtUtc,
                     x.TargetCharacter,
                     x.TargetServer,
                     x.DeliveryChannelOrContact,
