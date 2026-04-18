@@ -15,6 +15,7 @@ using Infrastructure.Identity.Repositories;
 using Infrastructure.Identity.Options;
 using Infrastructure.Identity.Services;
 using Infrastructure.Jobs;
+using Infrastructure.Notifications;
 using Infrastructure.Persistence;
 using Infrastructure.Payments.MercadoPago;
 using Infrastructure.Payments.Repositories;
@@ -111,6 +112,12 @@ public static class DependencyInjection
                 SigningKey = cfg["Jwt:SigningKey"] ?? "01234567890123456789012345678901"
             });
         });
+
+        services.AddOptions<WhatsAppOptions>()
+            .Bind(configuration.GetSection(WhatsAppOptions.SectionName))
+            .ValidateOnStart();
+        services.AddSingleton<IValidateOptions<WhatsAppOptions>, WhatsAppOptionsValidator>();
+        services.AddHttpClient<IWhatsAppNotificationService, WhatsAppNotificationService>();
 
         return services;
     }
