@@ -46,8 +46,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **FUL-01**: System can route paid order items to automated or manual delivery workflows based on product type
 - [x] **FUL-02**: System tracks delivery status per order with delivery type and completion timestamp
-- [ ] **FUL-03**: User can see delivery progress from customer area
-- [ ] **FUL-04**: Admin can manually complete or correct fulfillment tasks when automation fails
+- [x] **FUL-03**: User can see delivery progress from customer area
+- [x] **FUL-04**: Admin can manually complete or correct fulfillment tasks when automation fails
 
 ### Authentication and Access
 
@@ -134,8 +134,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PAY-04 | Phase 6 | Pending |
 | FUL-01 | Phase 8 | Complete |
 | FUL-02 | Phase 8 | Complete |
-| FUL-03 | Phase 8 | Pending |
-| FUL-04 | Phase 8 | Pending |
+| FUL-03 | Phase 8 | Complete |
+| FUL-04 | Phase 8 | Complete |
 | AUTH-01 | Phase 1 | Complete |
 | AUTH-02 | Phase 1 | Complete |
 | AUTH-03 | Phase 1 | Complete |

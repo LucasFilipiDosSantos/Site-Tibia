@@ -17,7 +17,7 @@ This roadmap delivers a reliability-first Tibia commerce backend from secure acc
 - [x] **Phase 5: Order Lifecycle & Timeline Visibility** - Legal order state transitions with customer/admin tracking. (completed 2026-04-17)
 - [ ] **Phase 6: Mercado Pago Payment Confirmation** - Idempotent payment flow with verified paid transitions.
 - [ ] **Phase 7: Async Processing, Notifications & Monitoring** - Durable background execution, lifecycle notifications, and observability.
-- [ ] **Phase 8: Fulfillment Orchestration** - Automated/manual delivery routing and fulfillment correction workflows.
+- [x] **Phase 8: Fulfillment Orchestration** - Automated/manual delivery routing and fulfillment correction workflows. (completed 2026-04-18)
 - [ ] **Phase 9: Custom Orders, Marketplace Assets & Admin Ops** - Custom request lifecycle, script/macro access, and admin audit operations.
 
 ## Phase Details
@@ -159,8 +159,8 @@ Plans:
 
 Plans:
 - [x] 08-01-PLAN.md — Delivery status model + persistence
-- [ ] 08-02-PLAN.md — Fulfillment routing at payment + automated completion
-- [ ] 08-03-PLAN.md — Customer visibility API + admin correction endpoint
+- [x] 08-02-PLAN.md — Fulfillment routing at payment + automated completion
+- [x] 08-03-PLAN.md — Customer visibility API + admin correction endpoint
 
 ### Phase 9: Custom Orders, Marketplace Assets & Admin Ops
 **Goal**: Specialized product flows and operational governance are complete for production operation.
@@ -186,5 +186,5 @@ Plans:
 | 5. Order Lifecycle & Timeline Visibility | 3/3 | Complete   | 2026-04-17 |
 | 6. Mercado Pago Payment Confirmation | 0/3 | Not started | - |
 | 7. Async Processing, Notifications & Monitoring | 0/TBD | Not started | - |
-| 8. Fulfillment Orchestration | 1/3 | In Progress|  |
+| 8. Fulfillment Orchestration | 3/3 | Complete   | 2026-04-18 |
 | 9. Custom Orders, Marketplace Assets & Admin Ops | 0/TBD | Not started | - |
