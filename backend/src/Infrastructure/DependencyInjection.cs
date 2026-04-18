@@ -66,6 +66,8 @@ public static class DependencyInjection
         services.AddScoped<OrderLifecycleService>();
         services.AddScoped<IFulfillmentService, FulfillmentService>();
         services.AddScoped<IAdminFulfillmentService, AdminFulfillmentService>();
+        services.AddScoped<ICustomOrderRepository, CustomOrderRepository>();
+        services.AddScoped<ICustomOrderService, CustomOrderService>();
         services.AddScoped<PaymentConfirmationService>();
         services.AddScoped<PaymentPreferenceSettings>(sp =>
         {

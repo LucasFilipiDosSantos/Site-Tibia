@@ -6,6 +6,7 @@ using API.ErrorHandling;
 using API.Inventory;
 using API.Jobs;
 using API.Payments;
+using API.CustomOrders;
 using Application.Catalog.Services;
 using Application.Checkout.Services;
 using Application.Identity.Contracts;
@@ -119,6 +120,7 @@ public partial class Program
         app.MapInventoryEndpoints();
         app.MapCheckoutEndpoints();
         app.MapPaymentWebhookEndpoints();
+        app.MapCustomOrderEndpoints();
         app.MapHangfireDashboard();
         app.MapNotificationJobEndpoints();
 
