@@ -6,10 +6,14 @@ namespace Application.Checkout.Services;
 public sealed class OrderLifecycleService
 {
     private readonly IOrderLifecycleRepository _repository;
+    private readonly IFulfillmentService _fulfillmentService;
 
-    public OrderLifecycleService(IOrderLifecycleRepository repository)
+    public OrderLifecycleService(
+        IOrderLifecycleRepository repository,
+        IFulfillmentService fulfillmentService)
     {
         _repository = repository;
+        _fulfillmentService = fulfillmentService;
     }
 
     public async Task ApplySystemTransitionAsync(Guid orderId, CancellationToken cancellationToken = default)
@@ -19,6 +23,9 @@ public sealed class OrderLifecycleService
 
         order.ApplyTransition(OrderStatus.Paid, TransitionSourceType.System, DateTimeOffset.UtcNow);
         await _repository.SaveAsync(order, cancellationToken);
+
+        // Route fulfillment after Paid transition (same transaction scope)
+        await _fulfillmentService.RouteFulfillmentAsync(orderId, cancellationToken);
     }
 
     public async Task ApplyCustomerCancelAsync(Guid orderId, CancellationToken cancellationToken = default)
