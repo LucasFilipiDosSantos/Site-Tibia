@@ -120,6 +120,7 @@ public partial class Program
         app.MapCheckoutEndpoints();
         app.MapPaymentWebhookEndpoints();
         app.MapHangfireDashboard();
+        app.MapNotificationJobEndpoints();
 
         app.Run();
     }
