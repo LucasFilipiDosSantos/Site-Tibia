@@ -4,6 +4,7 @@ using Domain.Identity;
 using Domain.Inventory;
 using Domain.Payments;
 using Microsoft.EntityFrameworkCore;
+using Infrastructure.Persistence.Configurations;
 
 namespace Infrastructure.Persistence;
 
@@ -29,6 +30,9 @@ public sealed class AppDbContext : DbContext
     public DbSet<DeliveryInstruction> DeliveryInstructions => Set<DeliveryInstruction>();
     public DbSet<OrderStatusTransitionEvent> OrderStatusTransitionEvents => Set<OrderStatusTransitionEvent>();
     public DbSet<PaymentLink> PaymentLinks => Set<PaymentLink>();
+    public DbSet<PaymentWebhookLogEntity> PaymentWebhookLogs => Set<PaymentWebhookLogEntity>();
+    public DbSet<PaymentStatusEventEntity> PaymentStatusEvents => Set<PaymentStatusEventEntity>();
+    public DbSet<PaymentEventDedupEntity> PaymentEventDedups => Set<PaymentEventDedupEntity>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

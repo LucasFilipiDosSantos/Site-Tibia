@@ -3,6 +3,7 @@ using Application.Checkout.Contracts;
 using Application.Identity.Contracts;
 using Application.Inventory.Contracts;
 using Application.Payments.Contracts;
+using Application.Payments.Services;
 using Domain.Identity;
 using Infrastructure.Catalog.Repositories;
 using Infrastructure.Checkout;
@@ -51,6 +52,11 @@ public static class DependencyInjection
         services.AddScoped<IMercadoPagoPreferenceGateway>(sp =>
             new MercadoPagoPreferenceGateway(sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value));
         services.AddScoped<IPaymentWebhookSignatureValidator, MercadoPagoWebhookSignatureValidator>();
+        services.AddScoped<PaymentWebhookIngressService>();
+        services.AddScoped<IPaymentWebhookProcessor, PaymentWebhookProcessor>();
+        services.AddScoped<IPaymentWebhookLogRepository, PaymentWebhookLogRepository>();
+        services.AddScoped<IPaymentStatusEventRepository, PaymentStatusEventRepository>();
+        services.AddScoped<IPaymentEventDedupRepository, PaymentEventDedupRepository>();
         services.AddScoped<IPaymentLinkRepository, PaymentLinkRepository>();
         services.AddScoped<PaymentPreferenceSettings>(sp =>
         {

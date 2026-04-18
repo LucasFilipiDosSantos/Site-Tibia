@@ -4,6 +4,7 @@ using API.Catalog;
 using API.Checkout;
 using API.ErrorHandling;
 using API.Inventory;
+using API.Payments;
 using Application.Catalog.Services;
 using Application.Checkout.Services;
 using Application.Identity.Contracts;
@@ -108,6 +109,7 @@ public partial class Program
         app.MapCatalogEndpoints();
         app.MapInventoryEndpoints();
         app.MapCheckoutEndpoints();
+        app.MapPaymentWebhookEndpoints();
 
         app.Run();
     }
