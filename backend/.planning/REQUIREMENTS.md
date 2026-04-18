@@ -142,8 +142,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | AUTH-04 | Phase 1 | Pending |
 | CUS-01 | Phase 9 | Pending |
 | CUS-02 | Phase 9 | Pending |
-| MKT-01 | Phase 9 | Pending |
-| MKT-02 | Phase 9 | Pending |
+| MKT-01 | Phase 9 | Complete |
+| MKT-02 | Phase 9 | Complete |
 | NTF-01 | Phase 7 | Pending |
 | NTF-02 | Phase 7 | Pending |
 | NTF-03 | Phase 7 | Pending |
