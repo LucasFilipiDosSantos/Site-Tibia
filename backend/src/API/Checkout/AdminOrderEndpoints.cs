@@ -6,6 +6,12 @@ using System.Security.Claims;
 
 namespace API.Checkout;
 
+public sealed record ForceCompleteDeliveryDto(
+    Guid OrderId,
+    Guid ProductId,
+    string AdminNote
+);
+
 public static class AdminOrderEndpoints
 {
     public static IEndpointRouteBuilder MapAdminOrderEndpoints(this IEndpointRouteBuilder app)
@@ -36,6 +42,18 @@ public static class AdminOrderEndpoints
                 
             return Results.Ok(new PaginatedOrderListDto(items, page, pageSize, items.Count));
         });
+
+        // Per D-10, D-11: Admin force-complete delivery
+        group.MapPost("/deliveries/complete", async (
+            ForceCompleteDeliveryDto request,
+            IAdminFulfillmentService service,
+            CancellationToken ct) =>
+        {
+            await service.ForceCompleteAsync(request.OrderId, request.ProductId, request.AdminNote, ct);
+            return Results.Ok();
+        })
+        .WithName("ForceCompleteDelivery")
+        .WithTags("Admin");
 
         // Per D-14, D-16: Admin explicit cancel action
         group.MapPost("/{orderId:guid}/actions/cancel", async (
