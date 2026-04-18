@@ -172,7 +172,12 @@ Plans:
   3. Entitled users can download paid scripts/macros, and policy-allowed free assets are downloadable without payment.
   4. Admin APIs support product, stock, user, and order operations required by existing dashboard integration.
   5. Critical write actions and webhook processing outcomes are auditable via admin-inspectable logs.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [x] 09-01-PLAN.md — Custom order domain model and lifecycle with status tracking
+- [x] 09-02-PLAN.md — Marketplace downloads with entitlement-based signed URL access
+- [x] 09-03-PLAN.md — Admin CRUD, audit logging, and webhook log inspection
 **UI hint**: yes
 
 ## Progress
@@ -187,4 +192,4 @@ Plans:
 | 6. Mercado Pago Payment Confirmation | 0/3 | Not started | - |
 | 7. Async Processing, Notifications & Monitoring | 0/TBD | Not started | - |
 | 8. Fulfillment Orchestration | 3/3 | Complete    | 2026-04-18 |
-| 9. Custom Orders, Marketplace Assets & Admin Ops | 0/TBD | Not started | - |
+| 9. Custom Orders, Marketplace Assets & Admin Ops | 3/3 | Complete    | 2026-04-18 |
