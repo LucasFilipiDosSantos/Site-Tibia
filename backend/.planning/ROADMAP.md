@@ -139,7 +139,12 @@ Plans:
   2. Key order/payment/delivery events enqueue WhatsApp notifications and optional email notifications.
   3. Transient notification failures retry automatically through background processing.
   4. Structured logs and monitoring signals expose critical flow outcomes for operations.
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Hangfire infrastructure setup with PostgreSQL storage, dashboard, health checks
+- [ ] 07-02-PLAN.md — WhatsApp notification service via Meta Cloud API
+- [ ] 07-03-PLAN.md — Event-to-notification wiring with retry jobs
 
 ### Phase 8: Fulfillment Orchestration
 **Goal**: Paid orders reach completion through tracked automated/manual fulfillment workflows.
