@@ -155,8 +155,12 @@ Plans:
   2. Delivery status is tracked per order with delivery type and completion timestamp.
   3. Customer can view delivery progress for each order.
   4. Admin can manually complete or correct fulfillment tasks when automation fails.
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 3 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Delivery status model + persistence
+- [ ] 08-02-PLAN.md — Fulfillment routing at payment + automated completion
+- [ ] 08-03-PLAN.md — Customer visibility API + admin correction endpoint
 
 ### Phase 9: Custom Orders, Marketplace Assets & Admin Ops
 **Goal**: Specialized product flows and operational governance are complete for production operation.
