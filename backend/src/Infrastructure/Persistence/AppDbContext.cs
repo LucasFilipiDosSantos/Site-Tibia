@@ -33,6 +33,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<PaymentWebhookLogEntity> PaymentWebhookLogs => Set<PaymentWebhookLogEntity>();
     public DbSet<PaymentStatusEventEntity> PaymentStatusEvents => Set<PaymentStatusEventEntity>();
     public DbSet<PaymentEventDedupEntity> PaymentEventDedups => Set<PaymentEventDedupEntity>();
+    public DbSet<CustomRequest> CustomRequests => Set<CustomRequest>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
