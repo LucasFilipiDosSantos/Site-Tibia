@@ -4,6 +4,7 @@ using API.Catalog;
 using API.Checkout;
 using API.ErrorHandling;
 using API.Inventory;
+using API.Jobs;
 using API.Payments;
 using Application.Catalog.Services;
 using Application.Checkout.Services;
@@ -11,8 +12,10 @@ using Application.Identity.Contracts;
 using Application.Identity.Services;
 using Application.Inventory.Services;
 using Application.Payments.Services;
+using HealthChecks.Hangfire;
 using Infrastructure;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
 
 public partial class Program
@@ -28,6 +31,12 @@ public partial class Program
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        builder.Services.AddHealthChecks()
+            .AddHangfire(options =>
+            {
+                options.MaximumJobsFailed = 10;
+                options.MinimumAvailableServers = 1;
+            });
 
         builder.Services.AddInfrastructure(builder.Configuration);
         builder.Services.AddAuthPolicies();
@@ -110,6 +119,7 @@ public partial class Program
         app.MapInventoryEndpoints();
         app.MapCheckoutEndpoints();
         app.MapPaymentWebhookEndpoints();
+        app.MapHangfireDashboard();
 
         app.Run();
     }

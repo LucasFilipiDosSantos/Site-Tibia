@@ -14,6 +14,7 @@ using Infrastructure.Inventory.Repositories;
 using Infrastructure.Identity.Repositories;
 using Infrastructure.Identity.Options;
 using Infrastructure.Identity.Services;
+using Infrastructure.Jobs;
 using Infrastructure.Persistence;
 using Infrastructure.Payments.MercadoPago;
 using Infrastructure.Payments.Repositories;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres";
 
+        services.AddHangfireServices(configuration);
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString, npgsql => npgsql.MapEnum<UserRole>("user_role")));
 
