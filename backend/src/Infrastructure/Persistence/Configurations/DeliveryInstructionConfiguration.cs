@@ -23,6 +23,19 @@ public sealed class DeliveryInstructionConfiguration : IEntityTypeConfiguration<
             .HasMaxLength(32)
             .IsRequired();
 
+        builder.Property(x => x.Status)
+            .HasConversion<int>()
+            .HasDefaultValue(DeliveryStatus.Pending);
+
+        builder.Property(x => x.CompletedAtUtc)
+            .HasColumnName("completed_at_utc");
+
+        builder.Property(x => x.FailureReason)
+            .HasMaxLength(500)
+            .HasColumnName("failure_reason");
+
+        builder.HasIndex(x => x.Status);
+
         builder.Property(x => x.TargetCharacter)
             .HasMaxLength(128);
 
