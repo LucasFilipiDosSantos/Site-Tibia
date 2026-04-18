@@ -8,6 +8,8 @@ public sealed class MercadoPagoOptions
 
     public string PublicKey { get; set; } = string.Empty;
 
+    public string WebhookSecret { get; set; } = string.Empty;
+
     public string NotificationUrl { get; set; } = string.Empty;
 
     public string SuccessUrl { get; set; } = string.Empty;

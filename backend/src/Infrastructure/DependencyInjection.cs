@@ -50,6 +50,7 @@ public static class DependencyInjection
         services.AddSingleton<IValidateOptions<MercadoPagoOptions>, MercadoPagoOptionsValidator>();
         services.AddScoped<IMercadoPagoPreferenceGateway>(sp =>
             new MercadoPagoPreferenceGateway(sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value));
+        services.AddScoped<IPaymentWebhookSignatureValidator, MercadoPagoWebhookSignatureValidator>();
         services.AddScoped<IPaymentLinkRepository, PaymentLinkRepository>();
         services.AddScoped<PaymentPreferenceSettings>(sp =>
         {
