@@ -119,11 +119,25 @@ public sealed class PaymentPreferenceServiceTests
     private sealed class InMemoryPaymentLinkRepository : IPaymentLinkRepository
     {
         public PaymentLinkSnapshot? LastSaved { get; private set; }
+        public PaymentLinkSnapshot? LastLookup { get; private set; }
 
         public Task SaveAsync(PaymentLinkSnapshot snapshot, CancellationToken cancellationToken = default)
         {
             LastSaved = snapshot;
             return Task.CompletedTask;
+        }
+
+        public Task<PaymentLinkSnapshot?> GetByProviderPaymentIdAsync(
+            string providerPaymentId,
+            CancellationToken cancellationToken = default)
+        {
+            LastLookup = new PaymentLinkSnapshot(
+                Guid.NewGuid(),
+                providerPaymentId,
+                100.00m,
+                "BRL",
+                DateTimeOffset.UtcNow);
+            return Task.FromResult<PaymentLinkSnapshot?>(LastLookup);
         }
     }
 }

@@ -158,7 +158,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — Delivery status model + persistence
+- [x] 08-01-PLAN.md — Delivery status model + persistence
 - [ ] 08-02-PLAN.md — Fulfillment routing at payment + automated completion
 - [ ] 08-03-PLAN.md — Customer visibility API + admin correction endpoint
 
@@ -186,5 +186,5 @@ Plans:
 | 5. Order Lifecycle & Timeline Visibility | 3/3 | Complete   | 2026-04-17 |
 | 6. Mercado Pago Payment Confirmation | 0/3 | Not started | - |
 | 7. Async Processing, Notifications & Monitoring | 0/TBD | Not started | - |
-| 8. Fulfillment Orchestration | 0/TBD | Not started | - |
+| 8. Fulfillment Orchestration | 1/3 | In Progress|  |
 | 9. Custom Orders, Marketplace Assets & Admin Ops | 0/TBD | Not started | - |

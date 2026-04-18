@@ -8,6 +8,11 @@ public sealed class PaymentLink
 
     public string PreferenceId { get; private set; }
 
+    /// <summary>
+    /// Provider payment ID from webhook callback (data.id from Mercado Pago)
+    /// </summary>
+    public string? ProviderPaymentId { get; private set; }
+
     public decimal ExpectedAmount { get; private set; }
 
     public string ExpectedCurrency { get; private set; }
@@ -32,6 +37,16 @@ public sealed class PaymentLink
             : throw new ArgumentOutOfRangeException(nameof(expectedAmount), "Expected amount cannot be negative.");
         ExpectedCurrency = NormalizeCurrency(expectedCurrency);
         CreatedAtUtc = createdAtUtc;
+    }
+
+    /// <summary>
+    /// Set provider payment ID when webhook confirms payment
+    /// </summary>
+    public void SetProviderPaymentId(string providerPaymentId)
+    {
+        ProviderPaymentId = string.IsNullOrWhiteSpace(providerPaymentId)
+            ? null
+            : providerPaymentId.Trim();
     }
 
     private static string NormalizeCurrency(string currency)

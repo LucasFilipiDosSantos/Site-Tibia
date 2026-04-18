@@ -1,6 +1,7 @@
 using Application.Payments.Contracts;
 using Domain.Payments;
 using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Payments.Repositories;
 
@@ -27,5 +28,27 @@ public sealed class PaymentLinkRepository : IPaymentLinkRepository
 
         await _dbContext.PaymentLinks.AddAsync(entity, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<PaymentLinkSnapshot?> GetByProviderPaymentIdAsync(
+        string providerPaymentId,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(providerPaymentId);
+
+        var entity = await _dbContext.PaymentLinks
+            .FirstOrDefaultAsync(p => p.ProviderPaymentId == providerPaymentId, cancellationToken);
+
+        if (entity == null)
+        {
+            return null;
+        }
+
+        return new PaymentLinkSnapshot(
+            entity.OrderId,
+            entity.ProviderPaymentId ?? entity.PreferenceId,
+            entity.ExpectedAmount,
+            entity.ExpectedCurrency,
+            entity.CreatedAtUtc);
     }
 }

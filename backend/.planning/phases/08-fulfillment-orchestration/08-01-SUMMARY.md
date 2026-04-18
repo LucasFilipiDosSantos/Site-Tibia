@@ -96,6 +96,13 @@ None - no external service configuration required.
 - Status tracking available for customer visibility API (08-03)
 - FUL-01 and FUL-02 requirements partially addressed
 
+## Self-Check: PASSED
+- [x] DeliveryStatus enum created at src/Domain/Checkout/DeliveryStatus.cs
+- [x] DeliveryInstruction has Status, CompletedAtUtc, FailureReason properties
+- [x] EF configuration updated with column mappings and index
+- [x] Migration files created: 20260418211604_AddDeliveryStatus.cs and Designer.cs
+- [x] All commits verified in git log
+
 ---
 *Phase: 08-fulfillment-orchestration*
 *Completed: 2026-04-18*
