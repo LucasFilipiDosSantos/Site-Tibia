@@ -1,5 +1,7 @@
 using Application.Catalog.Contracts;
+using Application.Checkout;
 using Application.Checkout.Contracts;
+using Application.Checkout.Services;
 using Application.Identity.Contracts;
 using Application.Inventory.Contracts;
 using Application.Payments.Contracts;
@@ -58,6 +60,8 @@ public static class DependencyInjection
         services.AddScoped<IPaymentStatusEventRepository, PaymentStatusEventRepository>();
         services.AddScoped<IPaymentEventDedupRepository, PaymentEventDedupRepository>();
         services.AddScoped<IPaymentLinkRepository, PaymentLinkRepository>();
+        services.AddScoped<OrderLifecycleService>();
+        services.AddScoped<PaymentConfirmationService>();
         services.AddScoped<PaymentPreferenceSettings>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value;
