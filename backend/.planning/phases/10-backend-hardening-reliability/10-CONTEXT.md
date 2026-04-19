@@ -1,75 +1,130 @@
-# Phase 10: Backend Hardening & Reliability - Context
+# Phase 10: backend-hardening-reliability - Context
 
-**Gathered:** 2026-04-19  
+**Gathered:** 2026-04-19
 **Status:** Ready for planning
 
 <domain>
 ## Phase Boundary
 
-Phase 10 is strictly backend hardening against unresolved P0/P1 gaps.
+Close unresolved backend P0/P1 hardening gaps from milestone carryover by implementing reliable notification automation wiring, deterministic notification contact sourcing, deployed-environment HTTPS/HSTS verification evidence, and evidence-gated audit/observability closure for reliability/security requirements.
 
-In scope:
-1. Notification automation wiring and retry-safe delivery reliability.
-2. Customer contact data wiring for automated notification dispatch.
-3. Security/reliability verification closure (HTTPS/HSTS proof, requirement evidence coherence).
-4. Audit and observability consistency for critical operational flows.
-
-Out of scope:
-- Frontend/UI work of any kind.
-- New business feature expansion unrelated to listed P0/P1 carryover.
-- v2-only analytics/fraud initiatives unless needed to close a P0/P1 hardening blocker.
+This phase is backend-only and does not introduce new product capabilities.
 
 </domain>
 
-<locked_decisions>
-## Locked Decisions (Non-negotiable)
+<decisions>
+## Implementation Decisions
 
-- **D-10-01:** Backend-only phase. Reject frontend tasks.
-- **D-10-02:** Preserve P0/P1 priorities from the gap register verbatim (no downgrade to “nice-to-have”).
-- **D-10-03:** No scope reduction: unresolved P0/P1 carryover remains in phase until addressed or explicitly re-prioritized in milestone governance.
-- **D-10-04:** Requirement completion status updates require concrete evidence links (automated test/UAT artifact), not narrative-only claims.
-- **D-10-05:** Reliability/security closure work must keep architecture boundaries intact (API -> Application -> Domain, Infrastructure implements abstractions).
+### Lifecycle auto-enqueue
+- **D-01:** Automatic WhatsApp notification enqueue triggers on `Order Paid`, `Delivery Completed`, and `Delivery Failed` events.
+- **D-02:** Enqueue idempotency key is `OrderId + EventType + StatusAtUtc` to dedupe duplicates while preserving legitimate later events.
+- **D-03:** Auto-enqueue orchestration belongs in Application lifecycle services (transition orchestration paths), not API endpoints or persistence hooks.
+- **D-04:** If enqueue fails after a lifecycle transition succeeds, business transition is not rolled back; failure is persisted as retryable signal/outbox state.
+- **D-05:** Existing manual notification trigger endpoints remain as admin fallback/replay path, not the primary execution path.
+- **D-06:** Delivery notifications are per-order aggregate, not per-item fan-out.
 
-</locked_decisions>
+### Notification contact source
+- **D-07:** Canonical notification phone source is the customer profile phone (normalized/validated account-level value).
+- **D-08:** Selected phone is snapshotted immutably on order notification metadata at checkout/order creation time for deterministic replay/audit.
+- **D-09:** Missing profile phone does not block checkout; order proceeds with explicit `notification unavailable/missing-contact` state and later retry path.
+- **D-10:** Phone numbers are persisted in canonical E.164 format; invalid numbers are rejected at phone-set/update boundaries.
 
-<initial_decisions>
-## Initial Decision List (Mapped from Gap Register)
+### HTTPS/HSTS proof contract
+- **D-11:** SEC-01 runtime proof executes in staging with production-like ingress/TLS termination topology.
+- **D-12:** Required verification checks are: HTTP->HTTPS redirect, HSTS header on HTTPS responses, and absence of publicly reachable insecure HTTP endpoints.
+- **D-13:** Proof artifacts are evidence-based: CI smoke output plus dated artifact folder containing requests/responses/headers and environment stamp, then linked from verification artifacts.
 
-| Decision ID | Gap Register Ref | Priority | Decision | Why |
-|---|---|---|---|---|
-| D-10-A | P0-01 | P0 | Implement lifecycle-driven automatic enqueue for notifications with idempotent guards | Removes manual trigger dependency for core event communication |
-| D-10-B | P0-02 | P0 | Introduce canonical persisted customer notification contact path in checkout/order flow | Enables deterministic automated WhatsApp dispatch |
-| D-10-C | P0-03 | P0 | Add deployed-environment HTTPS/HSTS verification evidence path and recording convention | Closes SEC-01 proof gap at runtime trust boundary |
-| D-10-D | P0-04 | P0 | Reconcile ADM-02 requirement status against concrete audit coverage and close missing paths | Restores operational forensics/compliance confidence |
-| D-10-E | P0-05 | P0 | Establish explicit REL-01/REL-02 closure verification criteria and tests | Prevents paper-complete reliability claims |
-| D-10-F | P1-03 | P1 | Add end-to-end observability assertions across payment→order→fulfillment→notification pipeline | Improves incident detection and debugging speed |
+### Reliability and observability closure gate
+- **D-14:** REL-02 mandatory correlation coverage spans full chain: Payment -> Order -> Fulfillment -> Notification.
+- **D-15:** ADM-02 closure requires representative critical admin write coverage (product/stock/order mutation paths plus webhook-inspection actions) with integration assertions for actor/action/entity/before-after metadata.
+- **D-16:** REL-01/REL-02 status transitions to complete only through evidence-gated checklist entries (tests + telemetry assertions + artifact links), never narrative-only updates.
+- **D-17:** Observability closure includes failure-path assertions (invalid signature, dedupe duplicate, notification retry exhaustion), not only happy-path telemetry.
 
-</initial_decisions>
+### the agent's Discretion
+- Exact implementation shape for enqueue outbox/retry persistence (table/entity naming and retention), provided D-01 through D-06 remain true.
+- Exact API/DTO naming for notification fallback/replay operational endpoints, provided role boundaries and auditability remain intact.
+- Exact metric/log field naming conventions, provided cross-hop correlation and required evidence gating remain intact.
+
+</decisions>
 
 <canonical_refs>
 ## Canonical References
 
-Downstream planning/execution agents MUST read:
+**Downstream agents MUST read these before planning or implementing.**
 
-- `.planning/quick/260418-tlr-complete-current-milestone-and-start-nex/260418-tlr-gap-register.md`
-- `.planning/ROADMAP.md` (Phase 10 section)
-- `.planning/REQUIREMENTS.md` (REL-01, REL-02, SEC-01, SEC-02, ADM-02)
-- `.planning/phases/07-async-processing-notifications-monitoring/07-03-SUMMARY.md`
-- `.planning/phases/01-identity-security-foundation/01-VERIFICATION.md`
-- `.planning/phases/01-identity-security-foundation/01-HUMAN-UAT.md`
+### Phase scope and carryover mandate
+- `.planning/ROADMAP.md` - Phase 10 goal/dependency anchor and milestone context.
+- `.planning/REQUIREMENTS.md` - REL-01, REL-02, SEC-01, SEC-02, ADM-02 requirement contracts.
+- `.planning/PROJECT.md` - backend-only, Clean Architecture, reliability/security non-negotiables.
+- `.planning/quick/260418-tlr-complete-current-milestone-and-start-nex/260418-tlr-gap-register.md` - authoritative P0/P1 carryover list and closure intent.
+
+### Prior-phase context that constrains implementation
+- `.planning/phases/07-async-processing-notifications-monitoring/07-CONTEXT.md` - existing notification channel, retry strategy, and monitoring decisions.
+- `.planning/phases/07-async-processing-notifications-monitoring/07-03-SUMMARY.md` - known issue baseline (manual trigger + missing phone wiring).
+- `.planning/phases/06-mercado-pago-payment-confirmation/06-CONTEXT.md` - webhook trust/idempotency and async processing guardrails.
+- `.planning/phases/05-order-lifecycle-timeline-visibility/05-CONTEXT.md` - legal lifecycle transitions and timeline idempotency constraints.
+- `.planning/phases/01-identity-security-foundation/01-CONTEXT.md` - security boundary and role-policy baseline.
+- `.planning/phases/01-identity-security-foundation/01-VERIFICATION.md` - SEC-01 human-needed verification gap definition.
+- `.planning/phases/01-identity-security-foundation/01-HUMAN-UAT.md` - pending HTTPS/HSTS runtime validation checkpoint.
+
+### Existing code anchors for this phase
+- `src/API/Program.cs` - endpoint wiring, middleware ordering, health checks, Hangfire dashboard mapping.
+- `src/API/Auth/HttpsSecurityExtensions.cs` - current `UseHttpsRedirection` and `UseHsts` behavior.
+- `src/Application/Checkout/Services/CheckoutService.cs` - order creation and delivery-instruction flow where notification metadata snapshot context can be integrated.
+- `src/Domain/Checkout/DeliveryInstruction.cs` - existing contact-related fields and fulfillment status transitions.
+- `src/Infrastructure/Notifications/NotificationJobs.cs` - current notification job contracts/retry policy.
+- `src/API/Jobs/NotificationJobEndpoints.cs` - manual fallback endpoints retained as admin replay path.
+- `src/Infrastructure/Notifications/WhatsAppNotificationService.cs` - channel adapter behavior/logging.
+- `src/API/Payments/PaymentWebhookEndpoints.cs` - webhook ingest + async enqueue pattern.
+- `src/Application/Payments/Services/PaymentWebhookProcessor.cs` - idempotent processing and status transition coupling.
+- `src/API/Admin/AdminAuditEndpoints.cs` - audit query surface used for evidence closure.
+- `src/API/Admin/AdminWebhookLogEndpoints.cs` - webhook inspection surface tied to ADM-03/ADM-02 evidence alignment.
 
 </canonical_refs>
+
+<code_context>
+## Existing Code Insights
+
+### Reusable Assets
+- `src/Infrastructure/Notifications/NotificationJobs.cs`: already defines Hangfire retry schedule and typed job args; can be reused for automatic lifecycle enqueue payloads.
+- `src/API/Payments/PaymentWebhookEndpoints.cs`: established fast-ack + background job pattern for critical async processing.
+- `src/Application/Payments/Services/PaymentWebhookProcessor.cs`: existing idempotency and monotonic status handling patterns suitable for notification enqueue dedupe discipline.
+- `src/API/Auth/HttpsSecurityExtensions.cs`: current HTTPS/HSTS middleware hook, providing base for runtime proof criteria.
+- `src/API/Admin/AdminAuditEndpoints.cs` and `src/API/Admin/AdminWebhookLogEndpoints.cs`: operational visibility endpoints for evidence collection.
+
+### Established Patterns
+- Lifecycle-critical operations are application-service orchestrated with idempotent guards and conflict-safe behavior.
+- Async work uses Hangfire with explicit retry strategy; operator fallback endpoints already exist.
+- API layer remains transport/composition; business orchestration belongs in Application; persistence/integration concerns remain in Infrastructure.
+- Reliability/security requirement closure has shown drift risk when not tied to executable evidence.
+
+### Integration Points
+- Add automatic notification enqueue hooks in lifecycle transition paths (order paid + delivery status updates).
+- Extend checkout/order notification metadata persistence with immutable phone snapshot and missing-contact state markers.
+- Add/extend verification artifacts pipeline for SEC-01 staging proof and REL-01/REL-02 evidence-gated closure.
+- Expand integration-level telemetry/audit assertions across payment->order->fulfillment->notification path including failure scenarios.
+
+</code_context>
+
+<specifics>
+## Specific Ideas
+
+- Keep commerce transitions resilient: notification failures must not roll back lifecycle state.
+- Preserve deterministic operations: replay and incident forensics depend on immutable contact snapshot and correlation continuity.
+- Treat requirement closure as evidence, not narrative: every completion claim must include executable proof links.
+
+</specifics>
 
 <deferred>
 ## Deferred Ideas
 
-- Frontend delivery-status UX refinements (outside backend-only scope).
-- Advanced anti-fraud heuristics and analytics dashboards (v2 track unless required for hardening blockers).
-- Non-critical platform expansion not tied to current P0/P1 closure.
+- Frontend delivery-status UX refinements (out of backend-only phase scope).
+- Advanced anti-fraud heuristics and analytics dashboards (v2 scope unless they become hard blockers).
+- Broader system-wide "audit every write" expansion beyond representative critical paths (potential future phase).
 
 </deferred>
 
 ---
 
-*Phase: 10-backend-hardening-reliability*  
-*Context initialized: 2026-04-19*
+*Phase: 10-backend-hardening-reliability*
+*Context gathered: 2026-04-19*
