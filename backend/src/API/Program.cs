@@ -1,4 +1,5 @@
 using System.Text;
+using API.Admin;
 using API.Auth;
 using API.Catalog;
 using API.Checkout;
@@ -15,6 +16,7 @@ using Application.Inventory.Services;
 using Application.Payments.Services;
 using HealthChecks.Hangfire;
 using Infrastructure;
+using Infrastructure.Logging;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.IdentityModel.Tokens;
@@ -113,6 +115,7 @@ public partial class Program
         app.UseHttpsSecurity();
         app.UseAuthentication();
         app.UseAuthorization();
+        app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseMiddleware<AuthRateLimitMiddleware>();
 
         app.MapAuthEndpoints();
@@ -121,6 +124,9 @@ public partial class Program
         app.MapCheckoutEndpoints();
         app.MapPaymentWebhookEndpoints();
         app.MapCustomOrderEndpoints();
+        app.MapAdminEndpoints();
+        app.MapAdminAuditEndpoints();
+        app.MapAdminWebhookLogEndpoints();
         app.MapHangfireDashboard();
         app.MapNotificationJobEndpoints();
 

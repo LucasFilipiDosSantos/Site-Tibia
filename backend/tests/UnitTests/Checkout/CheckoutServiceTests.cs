@@ -16,11 +16,12 @@ public sealed class CheckoutServiceTests
 
         var cartRepository = new InMemoryCartRepository(cart);
         var checkoutRepository = new InMemoryCheckoutRepository();
+        var customerRepository = new MockCustomerRepository("+5511999999999");
         var inventoryGateway = new SuccessReserveGateway();
         var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
             new CheckoutProductSnapshot(productId, "Gold Pack", "gold-pack", "gold", 12.50m, "BRL", FulfillmentType.Automated));
 
-        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+        var sut = CreateSut(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
 
         var response = await sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
             customerId,
@@ -44,11 +45,12 @@ public sealed class CheckoutServiceTests
 
         var cartRepository = new InMemoryCartRepository(cart);
         var checkoutRepository = new InMemoryCheckoutRepository();
+        var customerRepository = new MockCustomerRepository("+5511999999999");
         var inventoryGateway = new SuccessReserveGateway();
         var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
             new CheckoutProductSnapshot(productId, "Manual Service", "manual-service", "services", 20m, "BRL", FulfillmentType.Manual));
 
-        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+        var sut = CreateSut(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
             sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
@@ -68,12 +70,13 @@ public sealed class CheckoutServiceTests
 
         var cartRepository = new InMemoryCartRepository(cart);
         var checkoutRepository = new InMemoryCheckoutRepository();
+        var customerRepository = new MockCustomerRepository("+5511999999999");
         var inventoryGateway = new ConflictReserveGateway(lineB, requestedQuantity: 3, availableQuantity: 1);
         var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
             new CheckoutProductSnapshot(lineA, "A", "a", "cat", 1m, "BRL", FulfillmentType.Automated),
             new CheckoutProductSnapshot(lineB, "B", "b", "cat", 2m, "BRL", FulfillmentType.Automated));
 
-        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+        var sut = CreateSut(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
 
         var ex = await Assert.ThrowsAsync<CheckoutReservationConflictException>(() =>
             sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
@@ -103,12 +106,13 @@ public sealed class CheckoutServiceTests
 
         var cartRepository = new InMemoryCartRepository(cart);
         var checkoutRepository = new InMemoryCheckoutRepository();
+        var customerRepository = new MockCustomerRepository("+5511999999999");
         var inventoryGateway = new TrackingReserveGateway(lineB, requestedQuantity: 2, availableQuantity: 1);
         var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
             new CheckoutProductSnapshot(lineA, "A", "a", "cat", 1m, "BRL", FulfillmentType.Automated),
             new CheckoutProductSnapshot(lineB, "B", "b", "cat", 2m, "BRL", FulfillmentType.Automated));
 
-        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+        var sut = CreateSut(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
 
         await Assert.ThrowsAsync<CheckoutReservationConflictException>(() =>
             sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
@@ -142,8 +146,9 @@ public sealed class CheckoutServiceTests
         var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
             new CheckoutProductSnapshot(lineA, "A", "a", "cat", 1m, "BRL", FulfillmentType.Automated),
             new CheckoutProductSnapshot(lineB, "B", "b", "cat", 2m, "BRL", FulfillmentType.Automated));
+        var customerRepository = new MockCustomerRepository("+5511999999999");
 
-        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+        var sut = CreateSut(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
 
         var ex = await Assert.ThrowsAsync<CheckoutReservationCompensationException>(() =>
             sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
@@ -168,11 +173,12 @@ public sealed class CheckoutServiceTests
 
         var cartRepository = new InMemoryCartRepository(cart);
         var checkoutRepository = new InMemoryCheckoutRepository();
+        var customerRepository = new MockCustomerRepository("+5511999999999");
         var inventoryGateway = new SuccessReserveGateway();
         var catalogGateway = new InMemoryCheckoutProductCatalogGateway(
             new CheckoutProductSnapshot(productId, "Fast Gold", "fast-gold", "gold", 5m, "BRL", FulfillmentType.Automated));
 
-        var sut = CreateSut(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+        var sut = CreateSut(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
 
         await sut.SubmitCheckoutAsync(new SubmitCheckoutRequest(
             customerId,
@@ -185,10 +191,11 @@ public sealed class CheckoutServiceTests
     private static Application.Checkout.Services.CheckoutService CreateSut(
         ICartRepository cartRepository,
         ICheckoutRepository checkoutRepository,
+        ICustomerRepository customerRepository,
         ICheckoutInventoryGateway inventoryGateway,
         ICheckoutProductCatalogGateway catalogGateway)
     {
-        return new Application.Checkout.Services.CheckoutService(cartRepository, checkoutRepository, inventoryGateway, catalogGateway);
+        return new Application.Checkout.Services.CheckoutService(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
     }
 
     private sealed class InMemoryCartRepository : ICartRepository
@@ -386,6 +393,24 @@ public sealed class CheckoutServiceTests
                 && perProduct.TryGetValue(productId, out var quantity)
                 ? quantity
                 : 0;
+        }
+    }
+
+    /// <summary>
+    /// Mock ICustomerRepository for testing.
+    /// </summary>
+    private sealed class MockCustomerRepository : ICustomerRepository
+    {
+        private readonly string? _phone;
+
+        public MockCustomerRepository(string? phone)
+        {
+            _phone = phone;
+        }
+
+        public Task<string?> GetNotificationPhoneAsync(Guid customerId, CancellationToken ct = default)
+        {
+            return Task.FromResult(_phone);
         }
     }
 }

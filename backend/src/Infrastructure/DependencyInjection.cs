@@ -1,3 +1,6 @@
+using Application.Audit.Contracts;
+using Application.Audit.Services;
+using Infrastructure.Audit;
 using Application.Catalog.Contracts;
 using Application.Checkout;
 using Application.Checkout.Contracts;
@@ -122,6 +125,10 @@ public static class DependencyInjection
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<WhatsAppOptions>, WhatsAppOptionsValidator>();
         services.AddHttpClient<IWhatsAppNotificationService, WhatsAppNotificationService>();
+
+        // Audit services
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
+        services.AddScoped<IAuditLogService, AuditLogService>();
 
         return services;
     }

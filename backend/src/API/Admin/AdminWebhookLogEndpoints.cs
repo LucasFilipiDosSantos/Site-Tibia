@@ -25,43 +25,55 @@ public static class AdminWebhookLogEndpoints
         IPaymentWebhookLogRepository repo,
         CancellationToken ct)
     {
-        // Get all logs and filter in memory (Phase 6 implementation)
-        var allLogs = await repo.GetByProviderResourceIdAsync("*", ct);
-        
-        IEnumerable<PaymentWebhookLogEntry> filtered = allLogs;
-
-        if (!string.IsNullOrEmpty(query.Status))
+        if (!TryParseOutcome(query.Status, out var outcome))
         {
-            filtered = filtered.Where(l => l.ValidationOutcome.ToString() == query.Status);
+            return Results.BadRequest(new
+            {
+                error = $"Invalid status '{query.Status}'. Expected one of: {string.Join(", ", Enum.GetNames<PaymentWebhookValidationOutcome>())}"
+            });
         }
 
-        if (!string.IsNullOrEmpty(query.PaymentId))
-        {
-            filtered = filtered.Where(l => l.ProviderResourceId == query.PaymentId);
-        }
+        var paged = await repo.QueryAsync(
+            query.From,
+            query.To,
+            outcome,
+            query.PaymentId,
+            query.Page,
+            query.PageSize,
+            ct);
 
-        if (query.From.HasValue)
-        {
-            filtered = filtered.Where(l => l.ReceivedAtUtc >= query.From.Value);
-        }
-
-        if (query.To.HasValue)
-        {
-            filtered = filtered.Where(l => l.ReceivedAtUtc <= query.To.Value);
-        }
-
-        var paged = filtered
-            .Skip((query.Page - 1) * query.PageSize)
-            .Take(query.PageSize)
-            .ToList();
+        var totalCount = await repo.CountAsync(
+            query.From,
+            query.To,
+            outcome,
+            query.PaymentId,
+            ct);
 
         return Results.Ok(new
         {
             items = paged,
             page = query.Page,
             pageSize = query.PageSize,
-            totalCount = paged.Count
+            totalCount
         });
+    }
+
+    private static bool TryParseOutcome(string? status, out PaymentWebhookValidationOutcome? outcome)
+    {
+        if (string.IsNullOrWhiteSpace(status))
+        {
+            outcome = null;
+            return true;
+        }
+
+        if (Enum.TryParse<PaymentWebhookValidationOutcome>(status, ignoreCase: true, out var parsed))
+        {
+            outcome = parsed;
+            return true;
+        }
+
+        outcome = null;
+        return false;
     }
 
     private static async Task<IResult> GetWebhookLogById(

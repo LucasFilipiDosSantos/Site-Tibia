@@ -53,18 +53,100 @@ public sealed class PaymentWebhookLogRepository : IPaymentWebhookLogRepository
         string providerResourceId, 
         CancellationToken cancellationToken = default)
     {
-        var entities = await _context.PaymentWebhookLogs
+        var queryable = _context.PaymentWebhookLogs
             .Where(e => e.ProviderResourceId == providerResourceId)
-            .OrderByDescending(e => e.ReceivedAtUtc)
+            .OrderByDescending(e => e.ReceivedAtUtc);
+
+        return await queryable
+            .Select(e => MapToEntry(e))
             .ToListAsync(cancellationToken);
-            
-        return entities.Select(e => new PaymentWebhookLogEntry(
-            Id: e.Id,
-            RequestId: e.RequestId,
-            Topic: e.Topic,
-            Action: e.Action,
-            ProviderResourceId: e.ProviderResourceId,
-            ReceivedAtUtc: e.ReceivedAtUtc,
-            ValidationOutcome: (PaymentWebhookValidationOutcome)e.ValidationOutcome)).ToList();
+    }
+
+    public async Task<IReadOnlyList<PaymentWebhookLogEntry>> QueryAsync(
+        DateTime? from,
+        DateTime? to,
+        PaymentWebhookValidationOutcome? validationOutcome,
+        string? providerResourceId,
+        int page,
+        int pageSize,
+        CancellationToken cancellationToken = default)
+    {
+        var queryable = ApplyFilters(
+            _context.PaymentWebhookLogs.AsQueryable(),
+            from,
+            to,
+            validationOutcome,
+            providerResourceId);
+
+        var entities = await queryable
+            .OrderByDescending(e => e.ReceivedAtUtc)
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(e => MapToEntry(e))
+            .ToListAsync(cancellationToken);
+
+        return entities;
+    }
+
+    public async Task<long> CountAsync(
+        DateTime? from,
+        DateTime? to,
+        PaymentWebhookValidationOutcome? validationOutcome,
+        string? providerResourceId,
+        CancellationToken cancellationToken = default)
+    {
+        var queryable = ApplyFilters(
+            _context.PaymentWebhookLogs.AsQueryable(),
+            from,
+            to,
+            validationOutcome,
+            providerResourceId);
+
+        return await queryable.LongCountAsync(cancellationToken);
+    }
+
+    private static IQueryable<PaymentWebhookLogEntity> ApplyFilters(
+        IQueryable<PaymentWebhookLogEntity> queryable,
+        DateTime? from,
+        DateTime? to,
+        PaymentWebhookValidationOutcome? validationOutcome,
+        string? providerResourceId)
+    {
+        if (from.HasValue)
+        {
+            var fromUtc = new DateTimeOffset(DateTime.SpecifyKind(from.Value, DateTimeKind.Utc));
+            queryable = queryable.Where(e => e.ReceivedAtUtc >= fromUtc);
+        }
+
+        if (to.HasValue)
+        {
+            var toUtc = new DateTimeOffset(DateTime.SpecifyKind(to.Value, DateTimeKind.Utc));
+            queryable = queryable.Where(e => e.ReceivedAtUtc <= toUtc);
+        }
+
+        if (validationOutcome.HasValue)
+        {
+            var outcome = (int)validationOutcome.Value;
+            queryable = queryable.Where(e => e.ValidationOutcome == outcome);
+        }
+
+        if (!string.IsNullOrWhiteSpace(providerResourceId))
+        {
+            queryable = queryable.Where(e => e.ProviderResourceId == providerResourceId);
+        }
+
+        return queryable;
+    }
+
+    private static PaymentWebhookLogEntry MapToEntry(PaymentWebhookLogEntity entity)
+    {
+        return new PaymentWebhookLogEntry(
+            Id: entity.Id,
+            RequestId: entity.RequestId,
+            Topic: entity.Topic,
+            Action: entity.Action,
+            ProviderResourceId: entity.ProviderResourceId,
+            ReceivedAtUtc: entity.ReceivedAtUtc,
+            ValidationOutcome: (PaymentWebhookValidationOutcome)entity.ValidationOutcome);
     }
 }

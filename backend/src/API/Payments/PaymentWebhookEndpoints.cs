@@ -1,6 +1,7 @@
 using API.Auth;
 using Application.Payments.Contracts;
 using Application.Payments.Services;
+using Infrastructure.Logging;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq.Expressions;
@@ -9,6 +10,8 @@ namespace API.Payments;
 
 /// <summary>
 /// Mercado Pago webhook ingress endpoint - validates signature and enqueues async processing (D-13)
+/// D-14: Correlation spans full chain - extract or generate correlation ID
+/// D-17: Observability closure includes failure-path assertions
 /// </summary>
 public static class PaymentWebhookEndpoints
 {
@@ -21,12 +24,19 @@ public static class PaymentWebhookEndpoints
         group.MapPost("/webhook", async (
             [FromHeader(Name = "x-signature")] string? signature,
             [FromHeader(Name = "x-request-id")] string? requestId,
+            [FromHeader(Name = RequestLoggingMiddleware.CorrelationIdHeader)] string? correlationIdHeader,
             [FromBody] WebhookNotificationDto body,
             PaymentWebhookIngressService ingressService,
             IPaymentWebhookLogRepository logRepository,
             IBackgroundJobClient jobClient,
+            HttpContext httpContext,
             CancellationToken ct) =>
         {
+            // D-14: Extract correlation ID from header or generate new
+            var correlationId = correlationIdHeader 
+                ?? httpContext.Items[RequestLoggingMiddleware.CorrelationIdItemKey] as string 
+                ?? Guid.NewGuid().ToString("N");
+
             // Parse notification envelope
             var notification = new PaymentWebhookNotification(
                 Type: body.Type ?? "payment",
@@ -65,7 +75,7 @@ public static class PaymentWebhookEndpoints
             
             if (!validationResult.IsAccepted)
             {
-                // Log rejection but don't mutate any order/payment state
+                // D-17: Log rejection for failure-path observability
                 await logRepository.LogAsync(new PaymentWebhookLogEntry(
                     Id: Guid.NewGuid(),
                     RequestId: requestId ?? Guid.NewGuid().ToString(),
@@ -92,12 +102,12 @@ public static class PaymentWebhookEndpoints
             
             await logRepository.LogAsync(logEntry, ct);
 
-            // Enqueue async processing job
+            // D-14: Enqueue async processing job with correlation ID
             jobClient.Enqueue<PaymentWebhookProcessor>(processor => 
-                processor.ProcessAsync(logEntry.Id, ct));
+                processor.ProcessAsync(logEntry.Id, correlationId, ct));
 
             // Return 200 for idempotent retries, 201 for initial delivery
-            return Results.Created($"/payments/webhook/{logEntry.Id}", new { requestId = logEntry.RequestId });
+            return Results.Created($"/payments/webhook/{logEntry.Id}", new { requestId = logEntry.RequestId, correlationId });
         });
 
         return app;

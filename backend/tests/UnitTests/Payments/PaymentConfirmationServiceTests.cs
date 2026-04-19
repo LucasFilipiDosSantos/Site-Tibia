@@ -1,5 +1,6 @@
 using Application.Checkout.Contracts;
 using Application.Checkout.Services;
+using Application.Notifications;
 using Application.Payments.Contracts;
 using Application.Payments.Services;
 using Domain.Checkout;
@@ -115,7 +116,10 @@ public sealed class PaymentConfirmationServiceTests
         var lifecycleRepo = new SpyOrderLifecycleRepository();
         var statusEventRepo = new SpyPaymentStatusEventRepository();
         var paymentLinkRepo = new SpyPaymentLinkRepository();
-        var lifecycleService = new OrderLifecycleService(lifecycleRepo);
+        var fulfillmentService = new MockFulfillmentService();
+        var notificationPublisher = new MockNotificationPublisher();
+        NullLogger<OrderLifecycleService> logger = NullLogger<OrderLifecycleService>.Instance;
+        var lifecycleService = new OrderLifecycleService(lifecycleRepo, fulfillmentService, notificationPublisher, logger);
         
         var service = new PaymentConfirmationService(
             lifecycleRepo,
@@ -137,7 +141,10 @@ public sealed class PaymentConfirmationServiceTests
         var lifecycleRepo = new SpyOrderLifecycleRepository();
         var statusEventRepo = new SpyPaymentStatusEventRepository() { ReturnStatus = "processed" };
         var paymentLinkRepo = new SpyPaymentLinkRepository();
-        var lifecycleService = new OrderLifecycleService(lifecycleRepo);
+        var fulfillmentService = new MockFulfillmentService();
+        var notificationPublisher = new MockNotificationPublisher();
+        NullLogger<OrderLifecycleService> logger = NullLogger<OrderLifecycleService>.Instance;
+        var lifecycleService = new OrderLifecycleService(lifecycleRepo, fulfillmentService, notificationPublisher, logger);
         
         var service = new PaymentConfirmationService(
             lifecycleRepo,
@@ -159,7 +166,10 @@ public sealed class PaymentConfirmationServiceTests
         var lifecycleRepo = new SpyOrderLifecycleRepository();
         var statusEventRepo = new SpyPaymentStatusEventRepository() { ReturnStatus = "pending" };
         var paymentLinkRepo = new SpyPaymentLinkRepository();
-        var lifecycleService = new OrderLifecycleService(lifecycleRepo);
+        var fulfillmentService = new MockFulfillmentService();
+        var notificationPublisher = new MockNotificationPublisher();
+        NullLogger<OrderLifecycleService> logger = NullLogger<OrderLifecycleService>.Instance;
+        var lifecycleService = new OrderLifecycleService(lifecycleRepo, fulfillmentService, notificationPublisher, logger);
         
         var service = new PaymentConfirmationService(
             lifecycleRepo,
@@ -181,7 +191,10 @@ public sealed class PaymentConfirmationServiceTests
         var lifecycleRepo = new SpyOrderLifecycleRepository();
         var statusEventRepo = new SpyPaymentStatusEventRepository() { ReturnStatus = "authorized" };
         var paymentLinkRepo = new SpyPaymentLinkRepository();
-        var lifecycleService = new OrderLifecycleService(lifecycleRepo);
+        var fulfillmentService = new MockFulfillmentService();
+        var notificationPublisher = new MockNotificationPublisher();
+        NullLogger<OrderLifecycleService> logger = NullLogger<OrderLifecycleService>.Instance;
+        var lifecycleService = new OrderLifecycleService(lifecycleRepo, fulfillmentService, notificationPublisher, logger);
         
         var service = new PaymentConfirmationService(
             lifecycleRepo,
@@ -203,7 +216,10 @@ public sealed class PaymentConfirmationServiceTests
         var lifecycleRepo = new SpyOrderLifecycleRepository();
         var statusEventRepo = new SpyPaymentStatusEventRepository() { ReturnStatus = "rejected" };
         var paymentLinkRepo = new SpyPaymentLinkRepository();
-        var lifecycleService = new OrderLifecycleService(lifecycleRepo);
+        var fulfillmentService = new MockFulfillmentService();
+        var notificationPublisher = new MockNotificationPublisher();
+        NullLogger<OrderLifecycleService> logger = NullLogger<OrderLifecycleService>.Instance;
+        var lifecycleService = new OrderLifecycleService(lifecycleRepo, fulfillmentService, notificationPublisher, logger);
         
         var service = new PaymentConfirmationService(
             lifecycleRepo,
@@ -225,7 +241,10 @@ public sealed class PaymentConfirmationServiceTests
         var lifecycleRepo = new SpyOrderLifecycleRepository();
         var statusEventRepo = new SpyPaymentStatusEventRepository() { ReturnStatus = "cancelled" };
         var paymentLinkRepo = new SpyPaymentLinkRepository();
-        var lifecycleService = new OrderLifecycleService(lifecycleRepo);
+        var fulfillmentService = new MockFulfillmentService();
+        var notificationPublisher = new MockNotificationPublisher();
+        NullLogger<OrderLifecycleService> logger = NullLogger<OrderLifecycleService>.Instance;
+        var lifecycleService = new OrderLifecycleService(lifecycleRepo, fulfillmentService, notificationPublisher, logger);
         
         var service = new PaymentConfirmationService(
             lifecycleRepo,
@@ -247,7 +266,10 @@ public sealed class PaymentConfirmationServiceTests
         var lifecycleRepo = new SpyOrderLifecycleRepository();
         var statusEventRepo = new SpyPaymentStatusEventRepository() { ReturnStatus = "refunded" };
         var paymentLinkRepo = new SpyPaymentLinkRepository();
-        var lifecycleService = new OrderLifecycleService(lifecycleRepo);
+        var fulfillmentService = new MockFulfillmentService();
+        var notificationPublisher = new MockNotificationPublisher();
+        NullLogger<OrderLifecycleService> logger = NullLogger<OrderLifecycleService>.Instance;
+        var lifecycleService = new OrderLifecycleService(lifecycleRepo, fulfillmentService, notificationPublisher, logger);
         
         var service = new PaymentConfirmationService(
             lifecycleRepo,
@@ -260,5 +282,37 @@ public sealed class PaymentConfirmationServiceTests
         
         Assert.True(result.IsSuccess);
         Assert.Equal(LifecycleTransitionDecision.NoPaidTransition, result.Decision);
+    }
+
+    /// <summary>
+    /// Mock IFulfillmentService for testing.
+    /// </summary>
+    private sealed class MockFulfillmentService : IFulfillmentService
+    {
+        public Task RouteFulfillmentAsync(Guid orderId, CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// Mock INotificationPublisher for testing.
+    /// </summary>
+    private sealed class MockNotificationPublisher : INotificationPublisher
+    {
+        public Task PublishOrderPaidAsync(Order order, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task PublishDeliveryCompletedAsync(Order order, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task PublishDeliveryFailedAsync(Order order, string failureReason, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+        {
+            return Task.CompletedTask;
+        }
     }
 }

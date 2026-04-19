@@ -1,3 +1,4 @@
+using Domain.Audit;
 using Domain.Catalog;
 using Domain.Checkout;
 using Domain.Identity;
@@ -34,6 +35,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<PaymentStatusEventEntity> PaymentStatusEvents => Set<PaymentStatusEventEntity>();
     public DbSet<PaymentEventDedupEntity> PaymentEventDedups => Set<PaymentEventDedupEntity>();
     public DbSet<CustomRequest> CustomRequests => Set<CustomRequest>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

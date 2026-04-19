@@ -4,12 +4,16 @@ using Microsoft.Extensions.Logging;
 
 namespace Infrastructure.Notifications;
 
+/// <summary>
+/// D-14: Correlation spans full chain - includes correlation ID for observability.
+/// </summary>
 public class OrderNotificationJobArgs
 {
     public Guid OrderId { get; set; }
     public string OrderNumber { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
     public NotificationType NotificationType { get; set; }
+    public string? CorrelationId { get; set; }
 }
 
 [AutomaticRetry(Attempts = 5, DelaysInSeconds = new[] { 60, 300, 900, 3600, 86400 })]
@@ -51,9 +55,10 @@ public class OrderNotificationJob
             parameters,
             ct);
 
+        // D-14: Log with correlation ID for full chain observability
         _logger.LogInformation(
-            "Notification sent for order {OrderId} ({OrderNumber}), type: {NotificationType}, messageId: {MessageId}",
-            args.OrderId, args.OrderNumber, args.NotificationType, messageId);
+            "Notification sent for order {OrderId} ({OrderNumber}), type: {NotificationType}, messageId: {MessageId}, correlationId: {CorrelationId}",
+            args.OrderId, args.OrderNumber, args.NotificationType, messageId, args.CorrelationId);
     }
 }
 

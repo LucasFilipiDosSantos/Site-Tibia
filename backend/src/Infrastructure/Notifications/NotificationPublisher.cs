@@ -11,6 +11,7 @@ namespace Infrastructure.Notifications;
 /// D-01: Automatic notification enqueue on lifecycle events.
 /// D-02: Idempotency key = OrderId + EventType + StatusAtUtc
 /// D-04: Failure does not rollback business transition.
+/// D-14: Correlation spans full chain: Payment -> Order -> Fulfillment -> Notification.
 /// </summary>
 public sealed class NotificationPublisher : INotificationPublisher
 {
@@ -28,7 +29,7 @@ public sealed class NotificationPublisher : INotificationPublisher
         _logger = logger;
     }
 
-    public async Task PublishOrderPaidAsync(Order order, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+    public async Task PublishOrderPaidAsync(Order order, DateTimeOffset statusAtUtc, string? correlationId = null, CancellationToken ct = default)
     {
         // D-02: Idempotency key = OrderId + EventType + StatusAtUtc
         var idempotencyKey = $"{order.Id}:OrderPaid:{statusAtUtc:O}";
@@ -36,14 +37,22 @@ public sealed class NotificationPublisher : INotificationPublisher
         // Check for duplicate
         if (await _outboxRepository.ExistsAsync(idempotencyKey, ct))
         {
-            _logger.LogInformation("Skipping duplicate notification for order {OrderId} ({EventType})", order.Id, NotificationEventType.OrderPaid);
+            _logger.LogInformation(
+                "Skipping duplicate notification for order {OrderId} ({EventType}), correlation ID: {CorrelationId}",
+                order.Id,
+                NotificationEventType.OrderPaid,
+                correlationId);
             return;
         }
 
         // D-09: Check if notification is available
         if (!order.NotificationAvailable || string.IsNullOrWhiteSpace(order.NotificationPhone))
         {
-            _logger.LogWarning("Notification not available for order {OrderId}. Reason: {Reason}", order.Id, order.NotificationFailedReason ?? "missing-contact");
+            _logger.LogWarning(
+                "Notification not available for order {OrderId}. Reason: {Reason}, correlation ID: {CorrelationId}",
+                order.Id,
+                order.NotificationFailedReason ?? "missing-contact",
+                correlationId);
 
             // Save to outbox for potential retry later (D-04)
             await _outboxRepository.SaveFailedAsync(new NotificationOutboxEntry
@@ -66,27 +75,39 @@ public sealed class NotificationPublisher : INotificationPublisher
             OrderId = order.Id,
             OrderNumber = order.OrderIntentKey,
             CustomerPhone = order.NotificationPhone,
-            NotificationType = NotificationType.PaymentApproved
+            NotificationType = NotificationType.PaymentApproved,
+            CorrelationId = correlationId
         };
 
         _backgroundJobClient.Enqueue<OrderNotificationJob>(job => job.ExecuteAsync(args, ct));
 
-        _logger.LogInformation("Enqueued OrderPaid notification for order {OrderId}, idempotencyKey: {Key}", order.Id, idempotencyKey);
+        _logger.LogInformation(
+            "Enqueued OrderPaid notification for order {OrderId}, idempotencyKey: {Key}, correlation ID: {CorrelationId}",
+            order.Id,
+            idempotencyKey,
+            correlationId);
     }
 
-    public async Task PublishDeliveryCompletedAsync(Order order, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+    public async Task PublishDeliveryCompletedAsync(Order order, DateTimeOffset statusAtUtc, string? correlationId = null, CancellationToken ct = default)
     {
         var idempotencyKey = $"{order.Id}:DeliveryCompleted:{statusAtUtc:O}";
 
         if (await _outboxRepository.ExistsAsync(idempotencyKey, ct))
         {
-            _logger.LogInformation("Skipping duplicate notification for order {OrderId} ({EventType})", order.Id, NotificationEventType.DeliveryCompleted);
+            _logger.LogInformation(
+                "Skipping duplicate notification for order {OrderId} ({EventType}), correlation ID: {CorrelationId}",
+                order.Id,
+                NotificationEventType.DeliveryCompleted,
+                correlationId);
             return;
         }
 
         if (!order.NotificationAvailable || string.IsNullOrWhiteSpace(order.NotificationPhone))
         {
-            _logger.LogWarning("Notification not available for order {OrderId}.", order.Id);
+            _logger.LogWarning(
+                "Notification not available for order {OrderId}, correlation ID: {CorrelationId}.",
+                order.Id,
+                correlationId);
 
             await _outboxRepository.SaveFailedAsync(new NotificationOutboxEntry
             {
@@ -107,27 +128,38 @@ public sealed class NotificationPublisher : INotificationPublisher
             OrderId = order.Id,
             OrderNumber = order.OrderIntentKey,
             CustomerPhone = order.NotificationPhone,
-            NotificationType = NotificationType.DeliveryCompleted
+            NotificationType = NotificationType.DeliveryCompleted,
+            CorrelationId = correlationId
         };
 
         _backgroundJobClient.Enqueue<OrderNotificationJob>(job => job.ExecuteAsync(args, ct));
 
-        _logger.LogInformation("Enqueued DeliveryCompleted notification for order {OrderId}", order.Id);
+        _logger.LogInformation(
+            "Enqueued DeliveryCompleted notification for order {OrderId}, correlation ID: {CorrelationId}",
+            order.Id,
+            correlationId);
     }
 
-    public async Task PublishDeliveryFailedAsync(Order order, string failureReason, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+    public async Task PublishDeliveryFailedAsync(Order order, string failureReason, DateTimeOffset statusAtUtc, string? correlationId = null, CancellationToken ct = default)
     {
         var idempotencyKey = $"{order.Id}:DeliveryFailed:{statusAtUtc:O}";
 
         if (await _outboxRepository.ExistsAsync(idempotencyKey, ct))
         {
-            _logger.LogInformation("Skipping duplicate notification for order {OrderId} ({EventType})", order.Id, NotificationEventType.DeliveryFailed);
+            _logger.LogInformation(
+                "Skipping duplicate notification for order {OrderId} ({EventType}), correlation ID: {CorrelationId}",
+                order.Id,
+                NotificationEventType.DeliveryFailed,
+                correlationId);
             return;
         }
 
         if (!order.NotificationAvailable || string.IsNullOrWhiteSpace(order.NotificationPhone))
         {
-            _logger.LogWarning("Notification not available for order {OrderId}.", order.Id);
+            _logger.LogWarning(
+                "Notification not available for order {OrderId}, correlation ID: {CorrelationId}.",
+                order.Id,
+                correlationId);
 
             await _outboxRepository.SaveFailedAsync(new NotificationOutboxEntry
             {
@@ -148,11 +180,16 @@ public sealed class NotificationPublisher : INotificationPublisher
             OrderId = order.Id,
             OrderNumber = order.OrderIntentKey,
             CustomerPhone = order.NotificationPhone,
-            NotificationType = NotificationType.DeliveryStarted // Using DeliveryStarted as template for delivery issue
+            NotificationType = NotificationType.DeliveryStarted,
+            CorrelationId = correlationId
         };
 
         _backgroundJobClient.Enqueue<OrderNotificationJob>(job => job.ExecuteAsync(args, ct));
 
-        _logger.LogInformation("Enqueued DeliveryFailed notification for order {OrderId}, reason: {Reason}", order.Id, failureReason);
+        _logger.LogInformation(
+            "Enqueued DeliveryFailed notification for order {OrderId}, reason: {Reason}, correlation ID: {CorrelationId}",
+            order.Id,
+            failureReason,
+            correlationId);
     }
 }

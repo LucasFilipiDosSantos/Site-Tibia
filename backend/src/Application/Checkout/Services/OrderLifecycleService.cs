@@ -28,8 +28,9 @@ public sealed class OrderLifecycleService
     /// D-01: Automatic notification enqueue triggers on Order Paid transition.
     /// D-03: Enqueue orchestration in Application lifecycle service.
     /// D-04: Failure does not rollback business transition.
+    /// D-14: Correlation spans full chain: Payment -> Order -> Fulfillment -> Notification.
     /// </summary>
-    public async Task ApplySystemTransitionAsync(Guid orderId, CancellationToken cancellationToken = default)
+    public async Task ApplySystemTransitionAsync(Guid orderId, string? correlationId = null, CancellationToken cancellationToken = default)
     {
         var order = await _repository.GetByIdAsync(orderId, cancellationToken)
             ?? throw new InvalidOperationException($"Order {orderId} not found.");
@@ -38,18 +39,27 @@ public sealed class OrderLifecycleService
         order.ApplyTransition(OrderStatus.Paid, TransitionSourceType.System, now);
         await _repository.SaveAsync(order, cancellationToken);
 
+        _logger.LogInformation(
+            "Order {OrderId} transitioned to Paid with correlation ID {CorrelationId}",
+            orderId,
+            correlationId);
+
         // Route fulfillment after Paid transition (same transaction scope)
-        await _fulfillmentService.RouteFulfillmentAsync(orderId, cancellationToken);
+        await _fulfillmentService.RouteFulfillmentAsync(orderId, correlationId, cancellationToken);
 
         // D-01: Enqueue WhatsApp notification after successful Paid transition
         // D-04: Failure does not roll back the business transition
         try
         {
-            await _notificationPublisher.PublishOrderPaidAsync(order, now, cancellationToken);
+            await _notificationPublisher.PublishOrderPaidAsync(order, now, correlationId, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Failed to enqueue notification for order {OrderId}. Business transition completed.", orderId);
+            _logger.LogWarning(
+                ex,
+                "Failed to enqueue notification for order {OrderId} (CorrelationId: {CorrelationId}). Business transition completed.",
+                orderId,
+                correlationId);
         }
     }
 

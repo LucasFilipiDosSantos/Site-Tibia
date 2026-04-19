@@ -33,12 +33,15 @@ public sealed class PaymentConfirmationService
 
     /// <summary>
     /// Apply a verified payment confirmation, mapping status to lifecycle decision per D-09 to D-12
+    /// D-14: Correlation spans full chain.
     /// </summary>
     /// <param name="providerPaymentId">The Mercado Pago payment ID (provider resource ID)</param>
+    /// <param name="correlationId">Correlation ID for full chain observability</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Result with lifecycle transition decision</returns>
     public async Task<PaymentConfirmationResult> ApplyVerifiedConfirmationAsync(
         string providerPaymentId,
+        string? correlationId = null,
         CancellationToken cancellationToken = default)
     {
         // Resolve orderId from payment link (D-01 binding via external_reference)
@@ -65,7 +68,7 @@ public sealed class PaymentConfirmationService
         switch (decision)
         {
             case LifecycleTransitionDecision.MarkPaid:
-                return await ApplyMarkPaidTransitionAsync(orderId, providerPaymentId, cancellationToken);
+                return await ApplyMarkPaidTransitionAsync(orderId, providerPaymentId, correlationId, cancellationToken);
 
             case LifecycleTransitionDecision.KeepPending:
                 _logger.LogInformation(
@@ -118,10 +121,12 @@ public sealed class PaymentConfirmationService
     /// <summary>
     /// D-09: Apply Paid transition via lifecycle service
     /// D-12: Handle already-paid idempotent no-op
+    /// D-14: Pass correlation ID through chain
     /// </summary>
     private async Task<PaymentConfirmationResult> ApplyMarkPaidTransitionAsync(
         Guid orderId,
         string providerPaymentId,
+        string? correlationId,
         CancellationToken cancellationToken)
     {
         var order = await _repository.GetByIdAsync(orderId, cancellationToken);
@@ -142,12 +147,14 @@ public sealed class PaymentConfirmationService
         }
 
         // D-09: Apply system transition through lifecycle service (not direct order.ApplyTransition)
-        await _lifecycleService.ApplySystemTransitionAsync(orderId, cancellationToken);
+        // D-14: Pass correlation ID through chain
+        await _lifecycleService.ApplySystemTransitionAsync(orderId, correlationId, cancellationToken);
 
         _logger.LogInformation(
-            "Order {OrderId} transitioned to Paid via verified payment {ProviderPaymentId}",
+            "Order {OrderId} transitioned to Paid via verified payment {ProviderPaymentId}, correlation ID: {CorrelationId}",
             orderId,
-            providerPaymentId);
+            providerPaymentId,
+            correlationId);
 
         return PaymentConfirmationResult.MarkedPaid();
     }

@@ -22,10 +22,10 @@ public sealed class FulfillmentService : IFulfillmentService
     }
 
     /// <summary>
-    /// Routes fulfillment for an order after Paid transition.
+    /// D-14: Routes fulfillment for an order after Paid transition with correlation ID.
     /// Automated deliveries are immediately completed (D-01).
     /// </summary>
-    public async Task RouteFulfillmentAsync(Guid orderId, CancellationToken ct = default)
+    public async Task RouteFulfillmentAsync(Guid orderId, string? correlationId = null, CancellationToken ct = default)
     {
         var order = await _repository.GetByIdAsync(orderId, ct)
             ?? throw new InvalidOperationException($"Order {orderId} not found.");
@@ -37,27 +37,36 @@ public sealed class FulfillmentService : IFulfillmentService
             if (instruction.FulfillmentType == FulfillmentType.Automated)
             {
                 instruction.Complete();
-                // D-01: Publish DeliveryCompleted notification
+                // D-01: Publish DeliveryCompleted notification with correlation ID
                 try
                 {
-                    await _notificationPublisher.PublishDeliveryCompletedAsync(order, now, ct);
+                    await _notificationPublisher.PublishDeliveryCompletedAsync(order, now, correlationId, ct);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to enqueue DeliveryCompleted notification for order {OrderId}.", orderId);
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to enqueue DeliveryCompleted notification for order {OrderId} (CorrelationId: {CorrelationId}).",
+                        orderId,
+                        correlationId);
                 }
             }
             // Manual fulfillment stays Pending for admin to complete later
         }
 
+        _logger.LogInformation(
+            "Fulfillment routed for order {OrderId} with correlation ID {CorrelationId}",
+            orderId,
+            correlationId);
+
         await _repository.SaveAsync(order, ct);
     }
 
     /// <summary>
-    /// Marks a delivery as failed and publishes notification (D-01).
+    /// D-14: Marks a delivery as failed and publishes notification (D-01).
     /// D-04: Failure does not rollback business transition.
     /// </summary>
-    public async Task MarkDeliveryFailedAsync(Guid orderId, string failureReason, CancellationToken ct = default)
+    public async Task MarkDeliveryFailedAsync(Guid orderId, string failureReason, string? correlationId = null, CancellationToken ct = default)
     {
         var order = await _repository.GetByIdAsync(orderId, ct)
             ?? throw new InvalidOperationException($"Order {orderId} not found.");
@@ -69,17 +78,27 @@ public sealed class FulfillmentService : IFulfillmentService
             if (instruction.Status == DeliveryStatus.Pending)
             {
                 instruction.Fail(failureReason);
-                // D-01: Publish DeliveryFailed notification
+                // D-01: Publish DeliveryFailed notification with correlation ID
                 try
                 {
-                    await _notificationPublisher.PublishDeliveryFailedAsync(order, failureReason, now, ct);
+                    await _notificationPublisher.PublishDeliveryFailedAsync(order, failureReason, now, correlationId, ct);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Failed to enqueue DeliveryFailed notification for order {OrderId}.", orderId);
+                    _logger.LogWarning(
+                        ex,
+                        "Failed to enqueue DeliveryFailed notification for order {OrderId} (CorrelationId: {CorrelationId}).",
+                        orderId,
+                        correlationId);
                 }
             }
         }
+
+        _logger.LogInformation(
+            "Fulfillment marked as failed for order {OrderId}, reason: {FailureReason}, correlation ID: {CorrelationId}",
+            orderId,
+            failureReason,
+            correlationId);
 
         await _repository.SaveAsync(order, ct);
     }
