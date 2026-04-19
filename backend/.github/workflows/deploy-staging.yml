@@ -1,0 +1,115 @@
+name: Deploy Staging
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to deploy'
+        required: false
+        default: 'main'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    outputs:
+      docker-tag: ${{ steps.meta.outputs.tags }}
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix=
+            type=raw,value=staging,enable={{ Is default }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  verify:
+    name: Verify HTTPS/HSTS
+    runs-on: ubuntu-latest
+    needs: build
+    environment: staging
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            scripts/verify-https-staging.sh
+          sparse-checkout-cone-mode: false
+
+      - name: Verify staging endpoint
+        run: |
+          STAGING_HOST="${{ vars.STAGING_HOST }}"
+          echo "Verifying HTTPS/HSTS for staging: $STAGING_HOST"
+          
+          # HTTP redirect test
+          echo "=== HTTP Redirect Test ==="
+          HTTP_RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" -I "http://$STAGING_HOST/" 2>/dev/null || echo "000")
+          echo "HTTP response code: $HTTP_RESPONSE"
+          
+          if [ "$HTTP_RESPONSE" != "301" ]; then
+            echo "FAILED: Expected 301 redirect, got $HTTP_RESPONSE"
+            exit 1
+          fi
+          
+          # HSTS header test
+          echo "=== HSTS Header Test ==="
+          HSTS_HEADER=$(curl -s -D - "https://$STAGING_HOST/" -o /dev/null 2>/dev/null | grep -i "Strict-Transport-Security" || echo "")
+          
+          if [ -z "$HSTS_HEADER" ]; then
+            echo "FAILED: HSTS header not found"
+            exit 1
+          fi
+          
+          echo "HSTS Header: $HSTS_HEADER"
+          
+          # Verify HSTS properties
+          if ! echo "$HSTS_HEADER" | grep -q "max-age=31536000"; then
+            echo "FAILED: HSTS max-age incorrect"
+            exit 1
+          fi
+          
+          echo "=== All SEC-01 checks passed ==="
+          
+      - name: Upload verification artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sec01-verification
+          path: |
+            scripts/verify-https-staging.sh
+          retention-days: 30
