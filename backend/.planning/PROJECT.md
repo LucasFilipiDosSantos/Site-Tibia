@@ -51,6 +51,8 @@ Customers can reliably buy Tibia goods and receive confirmed, trackable delivery
 | Use auto-mode workflow initialization | Provided requirements document is detailed and suitable for direct synthesis | — Pending |
 | Commit planning artifacts to git | Selected in workflow preferences for traceability and collaboration | — Pending |
 | Use Fine granularity with parallel execution and quality agents enabled | Chosen to decompose broad scope into focused, verifiable phases | — Pending |
+| Close v1 milestone and carry unresolved backend P0/P1 items forward explicitly | Prevent hidden debt and planning drift between completed and upcoming milestone work | v1 marked complete; carryover tracked in `260418-tlr-gap-register.md` |
+| Initialize next backend milestone with Phase 10 hardening-first scope | Highest-risk reliability/security/performance gaps remain and should precede new feature expansion | Phase 10 bootstrap created as backend-only, no-priority-downgrade boundary |
 
 ## Evolution
 
@@ -70,4 +72,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-04-18 after Phase 8 completion*
+*Last updated: 2026-04-19 after v1 milestone closure and Phase 10 bootstrap*
