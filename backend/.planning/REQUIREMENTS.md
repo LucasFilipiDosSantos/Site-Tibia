@@ -65,9 +65,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Notifications
 
-- [ ] **NTF-01**: System can enqueue WhatsApp sale notifications on key order/payment/delivery events
+- [x] **NTF-01**: System can enqueue WhatsApp sale notifications on key order/payment/delivery events
 - [ ] **NTF-02**: System can send optional email notifications for the same lifecycle events
-- [ ] **NTF-03**: System retries transient notification failures through background processing
+- [x] **NTF-03**: System retries transient notification failures through background processing
 
 ### Admin Operations and Audit
 
@@ -144,9 +144,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CUS-02 | Phase 9 | Pending |
 | MKT-01 | Phase 9 | Complete |
 | MKT-02 | Phase 9 | Complete |
-| NTF-01 | Phase 7 | Pending |
+| NTF-01 | Phase 7 | Complete |
 | NTF-02 | Phase 7 | Pending |
-| NTF-03 | Phase 7 | Pending |
+| NTF-03 | Phase 7 | Complete |
 | ADM-01 | Phase 9 | Pending |
 | ADM-02 | Phase 9 | Pending |
 | ADM-03 | Phase 9 | Pending |
