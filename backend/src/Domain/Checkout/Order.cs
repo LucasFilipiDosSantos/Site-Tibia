@@ -15,6 +15,11 @@ public sealed class Order
     public IReadOnlyList<OrderStatusTransitionEvent> StatusHistory => _statusHistory;
     public DateTimeOffset CreatedAtUtc { get; private set; }
 
+    // Notification metadata snapshot (immutable after order creation)
+    public string? NotificationPhone { get; private set; }
+    public bool NotificationAvailable { get; private set; }
+    public string? NotificationFailedReason { get; private set; }
+
     public Order(Guid id, Guid customerId, string orderIntentKey)
     {
         Id = id == Guid.Empty ? throw new ArgumentException("Order id is required.", nameof(id)) : id;
@@ -36,6 +41,17 @@ public sealed class Order
     public void AddDeliveryInstruction(DeliveryInstruction instruction)
     {
         _deliveryInstructions.Add(instruction);
+    }
+
+    /// <summary>
+    /// Set notification phone metadata at order creation time (D-08, D-09, D-10).
+    /// Phone is snapshotted immutably for deterministic notification replay.
+    /// </summary>
+    public void SetNotificationMetadata(string? phone, bool available, string? failedReason = null)
+    {
+        NotificationPhone = available && !string.IsNullOrWhiteSpace(phone) ? phone : null;
+        NotificationAvailable = available && NotificationPhone is not null;
+        NotificationFailedReason = !NotificationAvailable ? (failedReason ?? "missing-contact") : null;
     }
 
     /// <summary>

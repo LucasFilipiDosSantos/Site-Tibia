@@ -7,17 +7,20 @@ public sealed class CheckoutService
 {
     private readonly ICartRepository _cartRepository;
     private readonly ICheckoutRepository _checkoutRepository;
+    private readonly ICustomerRepository _customerRepository;
     private readonly ICheckoutInventoryGateway _inventoryGateway;
     private readonly ICheckoutProductCatalogGateway _catalogGateway;
 
     public CheckoutService(
         ICartRepository cartRepository,
         ICheckoutRepository checkoutRepository,
+        ICustomerRepository customerRepository,
         ICheckoutInventoryGateway inventoryGateway,
         ICheckoutProductCatalogGateway catalogGateway)
     {
         _cartRepository = cartRepository ?? throw new ArgumentNullException(nameof(cartRepository));
         _checkoutRepository = checkoutRepository ?? throw new ArgumentNullException(nameof(checkoutRepository));
+        _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
         _inventoryGateway = inventoryGateway ?? throw new ArgumentNullException(nameof(inventoryGateway));
         _catalogGateway = catalogGateway ?? throw new ArgumentNullException(nameof(catalogGateway));
     }
@@ -72,6 +75,9 @@ public sealed class CheckoutService
 
         var order = new Order(orderId, request.CustomerId, orderIntentKey);
 
+        // D-08: Snapshot notification phone at order creation time (D-07, D-09, D-10)
+        await SetNotificationMetadataAsync(order, request.CustomerId, cancellationToken);
+
         foreach (var line in cart.Lines)
         {
             var snapshot = await _catalogGateway.GetSnapshotAsync(line.ProductId, cancellationToken);
@@ -120,6 +126,30 @@ public sealed class CheckoutService
                     x.RequestBrief,
                     x.ContactHandle))
                 .ToList());
+    }
+
+    /// <summary>
+    /// D-08: Snapshot notification phone from customer profile at checkout.
+    /// Phone is validated for E.164 format; missing/invalid phone marks notification unavailable.
+    /// </summary>
+    private async Task SetNotificationMetadataAsync(Order order, Guid customerId, CancellationToken ct)
+    {
+        var phone = await _customerRepository.GetNotificationPhoneAsync(customerId, ct);
+        var isValid = IsValidE164Phone(phone);
+        order.SetNotificationMetadata(phone, isValid, isValid ? null : "missing-contact");
+    }
+
+    /// <summary>
+    /// D-10: Validates phone is in E.164 format (+[country code][number]).
+    /// </summary>
+    private static bool IsValidE164Phone(string? phone)
+    {
+        if (string.IsNullOrWhiteSpace(phone))
+            return false;
+
+        // E.164 format: starts with + followed by 1-15 digits
+        return phone.StartsWith("+") && phone.Length >= 3 && phone.Length <= 16 
+               && phone.Skip(1).All(char.IsDigit);
     }
 
     private async Task CompensateReservationsOrThrowAsync(string orderIntentKey, CancellationToken cancellationToken)
