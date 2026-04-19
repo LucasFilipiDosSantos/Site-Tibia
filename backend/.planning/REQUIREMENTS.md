@@ -77,7 +77,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Security and Reliability
 
-- [ ] **SEC-01**: System enforces HTTPS-only communication in deployed environments
+- [x] **SEC-01**: System enforces HTTPS-only communication in deployed environments
 - [ ] **SEC-02**: System stores passwords using strong one-way hashing
 - [ ] **REL-01**: System executes background jobs for payment confirmation, delivery automation, notifications, and failed-operation retries
 - [ ] **REL-02**: System provides structured logging and monitoring signals for critical flows
@@ -150,7 +150,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ADM-01 | Phase 9 | Pending |
 | ADM-02 | Phase 9 | Pending |
 | ADM-03 | Phase 9 | Pending |
-| SEC-01 | Phase 1 | Pending |
+| SEC-01 | Phase 1 | Complete |
 | SEC-02 | Phase 1 | Pending |
 | REL-01 | Phase 7 | Pending |
 | REL-02 | Phase 7 | Pending |
