@@ -17,8 +17,10 @@ using Application.Payments.Services;
 using HealthChecks.Hangfire;
 using Infrastructure;
 using Infrastructure.Logging;
+using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 public partial class Program
@@ -34,6 +36,22 @@ public partial class Program
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("FrontendDev", policy =>
+            {
+                policy
+                    .WithOrigins(
+                        "http://localhost:5173",
+                        "http://127.0.0.1:5173",
+                        "http://localhost:4173",
+                        "http://127.0.0.1:4173",
+                        "http://localhost",
+                        "http://127.0.0.1")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
         builder.Services.AddHealthChecks()
             .AddHangfire(options =>
             {
@@ -98,6 +116,29 @@ public partial class Program
 
         var app = builder.Build();
 
+        using (var scope = app.Services.CreateScope())
+        {
+            var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            if (app.Environment.IsDevelopment())
+            {
+                try
+                {
+                    dbContext.Database.Migrate();
+                }
+                catch (InvalidOperationException ex) when (ex.Message.Contains("PendingModelChangesWarning", StringComparison.Ordinal))
+                {
+                    dbContext.Database.EnsureDeleted();
+                    dbContext.Database.EnsureCreated();
+                }
+
+                DevelopmentDataSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
+            }
+            else
+            {
+                dbContext.Database.Migrate();
+            }
+        }
+
         // Configure the HTTP request pipeline.
         Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
         app.UseExceptionHandler();
@@ -113,6 +154,7 @@ public partial class Program
         }
 
         app.UseHttpsSecurity();
+        app.UseCors("FrontendDev");
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseMiddleware<RequestLoggingMiddleware>();

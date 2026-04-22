@@ -8,15 +8,18 @@ public static class CatalogEndpoints
     public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/products", async (
-            [AsParameters] ProductListQueryRequest query,
+            string? category,
+            string? slug,
+            int? page,
+            int? pageSize,
             CatalogService catalogService,
             CancellationToken ct) =>
         {
             var request = new Application.Catalog.Contracts.ListProductsRequest(
-                Page: query.Page,
-                PageSize: query.PageSize,
-                Category: query.Category,
-                Slug: query.Slug
+                Page: page ?? 1,
+                PageSize: pageSize ?? 20,
+                Category: category,
+                Slug: slug
             );
 
             var result = await catalogService.ListProducts(request, ct);
@@ -27,7 +30,7 @@ public static class CatalogEndpoints
                 result.Items.Select(x => new ProductListItemResponse(x.Name, x.Slug, x.Description, x.Price, x.CategorySlug)).ToList(),
                 result.Page,
                 result.PageSize,
-                new ProductListAppliedFiltersResponse(query.Category, query.Slug),
+                new ProductListAppliedFiltersResponse(category, slug),
                 new ProductListPaginationResponse(result.Page, result.PageSize, hasPreviousPage, hasNextPage)));
         })
         .WithTags("Public Catalog");

@@ -12,6 +12,9 @@ services:
       Jwt__Issuer: tibia-webstore
       Jwt__Audience: tibia-webstore-client
       Jwt__SigningKey: "01234567890123456789012345678901"
+      WhatsApp__AccessToken: dev-whatsapp-token
+      WhatsApp__PhoneNumberId: dev-phone-number-id
+      WhatsApp__WhatsAppBusinessId: dev-business-id
       IdentityTokenDelivery__Provider: smtp
       IdentityTokenDelivery__Smtp__Host: mailpit
       IdentityTokenDelivery__Smtp__Port: 1025
@@ -31,42 +34,10 @@ services:
     container_name: tibia-webstore-nginx
     ports:
       - "80:80"
-      - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - api
-    restart: unless-stopped
-
-# Staging environment profile with TLS termination
-# Usage: docker-compose --profile staging up -d
-(staging):
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: tibia-webstore-api-staging
-    ports:
-      - "8080:8080"
-    environment:
-      ASPNETCORE_ENVIRONMENT: Staging
-      STAGING: "true"
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres
-      Jwt__Issuer: tibia-webstore-staging
-      Jwt__Audience: tibia-webstore-client
-      Jwt__SigningKey: "01234567890123456789012345678901"
-      IdentityTokenDelivery__Provider: smtp
-      IdentityTokenDelivery__Smtp__Host: mailpit
-      IdentityTokenDelivery__Smtp__Port: 1025
-      IdentityTokenDelivery__Smtp__Username: mailpit-local-user
-      IdentityTokenDelivery__Smtp__Password: mailpit-local-pass
-      IdentityTokenDelivery__Smtp__FromEmail: noreply@staging.local
-      IdentityTokenDelivery__Smtp__UseTls: false
-    depends_on:
-      postgres:
-        condition: service_healthy
-      mailpit:
-        condition: service_healthy
     restart: unless-stopped
 
   mailpit:
@@ -99,6 +70,37 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+# Staging environment profile with TLS termination
+# Usage: docker compose --profile staging up -d
+# (staging):
+#   api:
+#     build:
+#       context: .
+#       dockerfile: Dockerfile
+#     container_name: tibia-webstore-api-staging
+#     ports:
+#       - "8080:8080"
+#     environment:
+#       ASPNETCORE_ENVIRONMENT: Staging
+#       STAGING: "true"
+#       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres
+#       Jwt__Issuer: tibia-webstore-staging
+#       Jwt__Audience: tibia-webstore-client
+#       Jwt__SigningKey: "01234567890123456789012345678901"
+#       IdentityTokenDelivery__Provider: smtp
+#       IdentityTokenDelivery__Smtp__Host: mailpit
+#       IdentityTokenDelivery__Smtp__Port: 1025
+#       IdentityTokenDelivery__Smtp__Username: mailpit-local-user
+#       IdentityTokenDelivery__Smtp__Password: mailpit-local-pass
+#       IdentityTokenDelivery__Smtp__FromEmail: noreply@staging.local
+#       IdentityTokenDelivery__Smtp__UseTls: false
+#     depends_on:
+#       postgres:
+#         condition: service_healthy
+#       mailpit:
+#         condition: service_healthy
+#     restart: unless-stopped
 
 volumes:
   postgres-data:

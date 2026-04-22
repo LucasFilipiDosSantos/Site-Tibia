@@ -7,6 +7,7 @@ using Application.Checkout.Contracts;
 using Application.Checkout.Services;
 using Application.Identity.Contracts;
 using Application.Inventory.Contracts;
+using Application.Notifications;
 using Application.Payments.Contracts;
 using Application.Payments.Services;
 using Domain.Identity;
@@ -23,6 +24,7 @@ using Infrastructure.Persistence;
 using Infrastructure.Payments.MercadoPago;
 using Infrastructure.Payments.Repositories;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -38,7 +40,9 @@ public static class DependencyInjection
 
         services.AddHangfireServices(configuration);
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString, npgsql => npgsql.MapEnum<UserRole>("user_role")));
+            options
+                .UseNpgsql(connectionString, npgsql => npgsql.MapEnum<UserRole>("user_role"))
+                .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshSessionRepository, RefreshSessionRepository>();
@@ -48,10 +52,15 @@ public static class DependencyInjection
         services.AddScoped<IInventoryRepository, InventoryRepository>();
         services.AddScoped<ICartRepository, CartRepository>();
         services.AddScoped<ICheckoutRepository, CheckoutRepository>();
+        services.AddScoped<ICustomerRepository, CustomerRepository>();
         services.AddScoped<IOrderLifecycleRepository, OrderLifecycleRepository>();
         services.AddScoped<ICartProductAvailabilityGateway, CartProductAvailabilityGateway>();
         services.AddScoped<ICheckoutProductCatalogGateway, CheckoutProductCatalogGateway>();
         services.AddScoped<ICheckoutInventoryGateway, CheckoutInventoryGateway>();
+        services.AddDbContext<NotificationDbContext>(options =>
+            options
+                .UseNpgsql(connectionString, npgsql => npgsql.MapEnum<UserRole>("user_role"))
+                .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
         services
             .AddOptions<MercadoPagoOptions>()
             .Bind(configuration.GetSection(MercadoPagoOptions.SectionName))
@@ -66,6 +75,8 @@ public static class DependencyInjection
         services.AddScoped<IPaymentStatusEventRepository, PaymentStatusEventRepository>();
         services.AddScoped<IPaymentEventDedupRepository, PaymentEventDedupRepository>();
         services.AddScoped<IPaymentLinkRepository, PaymentLinkRepository>();
+        services.AddScoped<INotificationOutboxRepository, NotificationOutboxRepository>();
+        services.AddScoped<INotificationPublisher, NotificationPublisher>();
         services.AddScoped<OrderLifecycleService>();
         services.AddScoped<IFulfillmentService, FulfillmentService>();
         services.AddScoped<IAdminFulfillmentService, AdminFulfillmentService>();
