@@ -1,4 +1,5 @@
 using System.Text;
+using System.IO.Compression;
 using API.Admin;
 using API.Auth;
 using API.Catalog;
@@ -20,14 +21,25 @@ using Infrastructure.Logging;
 using Infrastructure.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Threading.RateLimiting;
 
 public partial class Program
 {
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        var renderPort = Environment.GetEnvironmentVariable("PORT");
+        if (!string.IsNullOrWhiteSpace(renderPort))
+        {
+            builder.WebHost.UseUrls($"http://0.0.0.0:{renderPort}");
+        }
+
         if (builder.Environment.IsEnvironment("Testing"))
         {
             builder.Logging.ClearProviders();
@@ -42,10 +54,45 @@ public partial class Program
         builder.Services.AddOpenApi();
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+        builder.Services.AddMemoryCache();
+        builder.Services.AddResponseCompression(options =>
+        {
+            options.EnableForHttps = true;
+            options.Providers.Add<BrotliCompressionProvider>();
+            options.Providers.Add<GzipCompressionProvider>();
+        });
+        builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest;
+        });
+        builder.Services.Configure<GzipCompressionProviderOptions>(options =>
+        {
+            options.Level = CompressionLevel.Fastest;
+        });
+        builder.Services.Configure<ForwardedHeadersOptions>(options =>
+        {
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+            options.KnownIPNetworks.Clear();
+            options.KnownProxies.Clear();
+        });
+        builder.Services.AddRateLimiter(options =>
+        {
+            options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+            options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+            {
+                var clientIp = context.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                return RateLimitPartition.GetFixedWindowLimiter(clientIp, _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 120,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                    AutoReplenishment = true
+                });
+            });
+        });
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-        var frontendOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
-            ?? [];
+        var frontendOrigins = GetFrontendOrigins(builder.Configuration);
         var defaultFrontendOrigins = new[]
         {
             "http://localhost:5173",
@@ -55,7 +102,7 @@ public partial class Program
             "http://localhost",
             "http://127.0.0.1"
         };
-        var allowedFrontendOrigins = defaultFrontendOrigins
+        var allowedFrontendOrigins = (builder.Environment.IsDevelopment() ? defaultFrontendOrigins : Array.Empty<string>())
             .Concat(frontendOrigins)
             .Where(origin => !string.IsNullOrWhiteSpace(origin))
             .Select(origin => origin.Trim().TrimEnd('/'))
@@ -72,12 +119,15 @@ public partial class Program
                     .AllowAnyMethod();
             });
         });
-        builder.Services.AddHealthChecks()
-            .AddHangfire(options =>
+        var healthChecks = builder.Services.AddHealthChecks();
+        if (builder.Configuration.GetValue("Hangfire:Enabled", true))
+        {
+            healthChecks.AddHangfire(options =>
             {
                 options.MaximumJobsFailed = 10;
                 options.MinimumAvailableServers = 1;
             });
+        }
 
         builder.Services.AddInfrastructure(builder.Configuration);
         builder.Services.AddAuthPolicies();
@@ -175,6 +225,8 @@ public partial class Program
         // Configure the HTTP request pipeline.
         Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
         app.UseExceptionHandler();
+        app.UseForwardedHeaders();
+        app.UseResponseCompression();
         if (app.Environment.IsDevelopment())
         {
             app.MapOpenApi();
@@ -188,6 +240,7 @@ public partial class Program
 
         app.UseHttpsSecurity();
         app.UseCors("Frontend");
+        app.UseRateLimiter();
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseMiddleware<RequestLoggingMiddleware>();
@@ -208,6 +261,24 @@ public partial class Program
         app.MapAdminEndpoints();
         app.MapAdminAuditEndpoints();
         app.MapAdminWebhookLogEndpoints();
+        app.MapGet("/healthz", () => Results.Ok(new
+        {
+            status = "ok",
+            environment = app.Environment.EnvironmentName,
+            checkedAtUtc = DateTimeOffset.UtcNow
+        }))
+        .AllowAnonymous()
+        .WithName("Healthz")
+        .WithTags("Health");
+        app.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            ResultStatusCodes =
+            {
+                [HealthStatus.Healthy] = StatusCodes.Status200OK,
+                [HealthStatus.Degraded] = StatusCodes.Status200OK,
+                [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+            }
+        }).AllowAnonymous();
         if (hangfireEnabled)
         {
             app.MapHangfireDashboard();
@@ -215,5 +286,29 @@ public partial class Program
         }
 
         app.Run();
+    }
+
+    private static string[] GetFrontendOrigins(IConfiguration configuration)
+    {
+        var configuredOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? [];
+        var frontendUrl = configuration["Frontend:BaseUrl"];
+        var corsOrigins = configuration["CORS_ALLOWED_ORIGINS"];
+
+        return configuredOrigins
+            .Concat(SplitOrigins(frontendUrl))
+            .Concat(SplitOrigins(corsOrigins))
+            .ToArray();
+    }
+
+    private static IEnumerable<string> SplitOrigins(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return [];
+        }
+
+        return value
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
     }
 }

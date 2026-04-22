@@ -99,6 +99,39 @@ public sealed class CatalogServiceFilterAndPaginationTests
                 )));
     }
 
+    [Fact]
+    public async Task DeleteProduct_HidesProductInsteadOfRemovingIt()
+    {
+        var categoryRepository = new InMemoryCategoryRepository();
+        var productRepository = new InMemoryProductRepository();
+        var product = new Product("Gold Starter", "gold-starter", "Gold product", 5m, Guid.NewGuid(), "gold");
+        productRepository.Seed(product);
+
+        var service = new CatalogService(productRepository, categoryRepository);
+
+        await service.DeleteProduct("gold-starter");
+        var list = await service.ListProducts(new ListProductsRequest(Page: 1, PageSize: 10));
+
+        Assert.True(product.IsHidden);
+        Assert.Empty(list.Items);
+        Assert.True(await productRepository.ExistsBySlugAsync("gold-starter"));
+    }
+
+    [Fact]
+    public async Task DeleteProduct_WhenIdentifierIsProductId_HidesProduct()
+    {
+        var categoryRepository = new InMemoryCategoryRepository();
+        var productRepository = new InMemoryProductRepository();
+        var product = new Product("Gold Starter", "gold-starter", "Gold product", 5m, Guid.NewGuid(), "gold");
+        productRepository.Seed(product);
+
+        var service = new CatalogService(productRepository, categoryRepository);
+
+        await service.DeleteProduct(product.Id.ToString());
+
+        Assert.True(product.IsHidden);
+    }
+
     private sealed class InMemoryCategoryRepository : ICategoryRepository
     {
         private readonly List<Category> _categories = new();
@@ -136,6 +169,11 @@ public sealed class CatalogServiceFilterAndPaginationTests
 
         public void Seed(Product product) => _products.Add(product);
 
+        public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(_products.SingleOrDefault(p => p.Id == id));
+        }
+
         public Task<Product?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_products.SingleOrDefault(p => p.Slug == slug));
@@ -143,7 +181,7 @@ public sealed class CatalogServiceFilterAndPaginationTests
 
         public Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
-            var product = _products.SingleOrDefault(p => p.Slug == slug);
+            var product = _products.SingleOrDefault(p => p.Slug == slug && !p.IsHidden);
             return Task.FromResult(product is null ? null : new CatalogProductProjection(product, AvailableStock: 10));
         }
 
@@ -166,7 +204,7 @@ public sealed class CatalogServiceFilterAndPaginationTests
         {
             LastListQuery = query;
 
-            IEnumerable<Product> filtered = _products;
+            IEnumerable<Product> filtered = _products.Where(p => !p.IsHidden);
             if (!string.IsNullOrWhiteSpace(query.CategorySlug))
             {
                 filtered = filtered.Where(p => p.CategorySlug == query.CategorySlug);
@@ -201,7 +239,7 @@ public sealed class CatalogServiceFilterAndPaginationTests
 
         public Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
         {
-            _products.Remove(product);
+            product.Hide();
             return Task.CompletedTask;
         }
 

@@ -1,5 +1,6 @@
 using API.Auth;
 using Application.Catalog.Services;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace API.Catalog;
 
@@ -13,6 +14,7 @@ public static class CatalogEndpoints
             int? page,
             int? pageSize,
             CatalogService catalogService,
+            IMemoryCache cache,
             CancellationToken ct) =>
         {
             var request = new Application.Catalog.Contracts.ListProductsRequest(
@@ -22,33 +24,48 @@ public static class CatalogEndpoints
                 Slug: slug
             );
 
-            var result = await catalogService.ListProducts(request, ct);
-            var hasPreviousPage = result.Page > 1;
-            var hasNextPage = result.Items.Count == result.PageSize;
+            var cacheKey = $"catalog:products:{request.Page}:{request.PageSize}:{request.Category?.Trim().ToLowerInvariant()}:{request.Slug?.Trim().ToLowerInvariant()}";
+            var response = await cache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+                entry.SlidingExpiration = TimeSpan.FromSeconds(10);
 
-            return Results.Ok(new ProductListResponse(
-                result.Items.Select(x => new ProductListItemResponse(
-                    x.Id,
-                    x.Name,
-                    x.Slug,
-                    x.Description,
-                    x.Price,
-                    x.CategorySlug,
-                    x.ImageUrl,
-                    x.Server,
-                    x.AvailableStock,
-                    x.Rating,
-                    x.SalesCount)).ToList(),
-                result.Page,
-                result.PageSize,
-                new ProductListAppliedFiltersResponse(category, slug),
-                new ProductListPaginationResponse(result.Page, result.PageSize, hasPreviousPage, hasNextPage)));
+                var result = await catalogService.ListProducts(request, ct);
+                var hasPreviousPage = result.Page > 1;
+                var hasNextPage = result.Items.Count == result.PageSize;
+
+                return new ProductListResponse(
+                    result.Items.Select(x => new ProductListItemResponse(
+                        x.Id,
+                        x.Name,
+                        x.Slug,
+                        x.Description,
+                        x.Price,
+                        x.CategorySlug,
+                        x.ImageUrl,
+                        x.Server,
+                        x.AvailableStock,
+                        x.Rating,
+                        x.SalesCount)).ToList(),
+                    result.Page,
+                    result.PageSize,
+                    new ProductListAppliedFiltersResponse(category, slug),
+                    new ProductListPaginationResponse(result.Page, result.PageSize, hasPreviousPage, hasNextPage));
+            });
+
+            return Results.Ok(response);
         })
         .WithTags("Public Catalog");
 
-        app.MapGet("/products/{slug}", async (string slug, CatalogService catalogService, CancellationToken ct) =>
+        app.MapGet("/products/{slug}", async (string slug, CatalogService catalogService, IMemoryCache cache, CancellationToken ct) =>
         {
-            var product = await catalogService.GetBySlug(slug, ct);
+            var cacheKey = $"catalog:product:{slug.Trim().ToLowerInvariant()}";
+            var product = await cache.GetOrCreateAsync(cacheKey, async entry =>
+            {
+                entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30);
+                entry.SlidingExpiration = TimeSpan.FromSeconds(10);
+                return await catalogService.GetBySlug(slug, ct);
+            });
             if (product is null)
             {
                 return Results.NotFound();

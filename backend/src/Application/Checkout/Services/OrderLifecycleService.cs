@@ -1,5 +1,6 @@
 using Domain.Checkout;
 using Application.Checkout.Contracts;
+using Application.Inventory.Contracts;
 using Application.Notifications;
 using Microsoft.Extensions.Logging;
 
@@ -11,17 +12,20 @@ public sealed class OrderLifecycleService
     private readonly IFulfillmentService _fulfillmentService;
     private readonly INotificationPublisher _notificationPublisher;
     private readonly ILogger<OrderLifecycleService> _logger;
+    private readonly ICheckoutInventoryGateway? _inventoryGateway;
 
     public OrderLifecycleService(
         IOrderLifecycleRepository repository,
         IFulfillmentService fulfillmentService,
         INotificationPublisher notificationPublisher,
-        ILogger<OrderLifecycleService> logger)
+        ILogger<OrderLifecycleService> logger,
+        ICheckoutInventoryGateway? inventoryGateway = null)
     {
         _repository = repository;
         _fulfillmentService = fulfillmentService;
         _notificationPublisher = notificationPublisher;
         _logger = logger;
+        _inventoryGateway = inventoryGateway;
     }
 
     /// <summary>
@@ -70,6 +74,7 @@ public sealed class OrderLifecycleService
 
         order.ApplyTransition(OrderStatus.Cancelled, TransitionSourceType.Customer, DateTimeOffset.UtcNow);
         await _repository.SaveAsync(order, cancellationToken);
+        await ReleaseReservationForCancelledOrderAsync(order, cancellationToken);
     }
 
     public async Task ApplyAdminCancelAsync(Guid orderId, Guid actorUserId, string reason, CancellationToken cancellationToken = default)
@@ -82,8 +87,43 @@ public sealed class OrderLifecycleService
             TransitionSourceType.Admin,
             DateTimeOffset.UtcNow,
             actorUserId,
-            string.IsNullOrWhiteSpace(reason) ? null : reason);
+                string.IsNullOrWhiteSpace(reason) ? null : reason);
 
         await _repository.SaveAsync(order, cancellationToken);
+        await ReleaseReservationForCancelledOrderAsync(order, cancellationToken);
+    }
+
+    public async Task ApplySystemCancelAsync(Guid orderId, string? reason = null, CancellationToken cancellationToken = default)
+    {
+        var order = await _repository.GetByIdAsync(orderId, cancellationToken)
+            ?? throw new InvalidOperationException($"Order {orderId} not found.");
+
+        if (order.Status == OrderStatus.Paid)
+        {
+            _logger.LogInformation("Order {OrderId} is already Paid; system cancellation ignored.", orderId);
+            return;
+        }
+
+        order.ApplyTransition(
+            OrderStatus.Cancelled,
+            TransitionSourceType.System,
+            DateTimeOffset.UtcNow,
+            reason: string.IsNullOrWhiteSpace(reason) ? null : reason);
+
+        await _repository.SaveAsync(order, cancellationToken);
+        await ReleaseReservationForCancelledOrderAsync(order, cancellationToken);
+    }
+
+    private async Task ReleaseReservationForCancelledOrderAsync(Order order, CancellationToken cancellationToken)
+    {
+        if (_inventoryGateway is null)
+        {
+            return;
+        }
+
+        await _inventoryGateway.ReleaseCheckoutReservationAsync(
+            order.OrderIntentKey,
+            ReservationReleaseReason.OrderCanceled,
+            cancellationToken);
     }
 }

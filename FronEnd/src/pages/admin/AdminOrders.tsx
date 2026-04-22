@@ -135,7 +135,7 @@ const AdminOrders = () => {
               <th className="px-4 py-3">Cliente</th>
               <th className="px-4 py-3">Data</th>
               <th className="px-4 py-3 text-right">Total</th>
-              <th className="px-4 py-3">Intento</th>
+              <th className="px-4 py-3">Referencia</th>
               <th className="px-4 py-3">Status</th>
               <th className="px-4 py-3 text-right">Acoes</th>
             </tr>

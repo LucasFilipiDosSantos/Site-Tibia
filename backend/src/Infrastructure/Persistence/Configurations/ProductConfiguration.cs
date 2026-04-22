@@ -49,6 +49,10 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(x => x.SalesCount)
             .IsRequired();
 
+        builder.Property(x => x.IsHidden)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 
@@ -57,6 +61,10 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
 
         builder.HasIndex(x => x.Slug)
             .IsUnique();
+
+        builder.HasIndex(x => new { x.IsHidden, x.CategorySlug });
+
+        builder.HasIndex(x => new { x.IsHidden, x.CreatedAtUtc });
 
         builder.HasIndex(x => x.CategoryId);
 

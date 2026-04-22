@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ShoppingCart, SlidersHorizontal, X } from "lucide-react";
+import { ShoppingCart, SlidersHorizontal, Star, X } from "lucide-react";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { ProductImage } from "@/components/lootera/ProductImage";
-import WorldOptions from "@/components/lootera/WorldOptions";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import { CATEGORY_OPTIONS } from "@/features/products/utils/catalog";
 import { useCart } from "@/contexts/CartContext";
@@ -68,7 +67,7 @@ const Products = () => {
           <div>
             <h1 className="font-display text-xl font-bold text-foreground lg:text-2xl">Produtos</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              {queryParam ? `Resultados para "${queryParam}"` : "Lista alimentada pela API real do catalogo."}
+              {queryParam ? `Resultados para "${queryParam}"` : "Escolha produtos disponiveis para compra."}
             </p>
           </div>
           <button
@@ -143,7 +142,7 @@ const Products = () => {
 
             {isError && (
               <p className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
-                Nao foi possivel carregar os produtos. Confirme se o backend esta respondendo em `VITE_API_BASE_URL`.
+                Nao foi possivel carregar os produtos agora. Tente novamente em instantes.
               </p>
             )}
 
@@ -162,17 +161,26 @@ const Products = () => {
                     <Link
                       key={product.slug}
                       to={`/produto/${product.slug}`}
-                      className="group flex flex-col rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/30"
+                      className="font-body group flex flex-col items-start rounded-xl border border-border bg-card p-4 text-left transition-all hover:border-primary/30"
                     >
                       <ProductImage src={product.image} alt={product.name} fallbackLabel={product.category} className="mb-3 h-24 lg:h-32" />
-                      <span className="mb-1 text-[10px] font-medium uppercase text-primary">{product.category}</span>
-                      <h3 className="line-clamp-2 text-sm font-medium text-foreground">{product.name}</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">Servidor: {product.server}</p>
-                      <p className="mt-1 text-xs text-muted-foreground">Estoque: {product.stock} disponiveis</p>
-                      <p className="mt-1 text-xs text-muted-foreground">{product.rating.toFixed(1)} estrelas · {product.sales} vendas</p>
-                      <WorldOptions />
-                      <div className="mt-auto flex items-end justify-between pt-3">
-                        <p className="text-base font-bold text-primary">R$ {product.price.toFixed(2)}</p>
+                      <span className="mb-1 rounded border border-primary/25 bg-primary/10 px-1.5 py-0.5 text-[9px] leading-none text-primary">{product.category}</span>
+                      <h3 className="font-body line-clamp-2 text-sm text-foreground">{product.name}</h3>
+                      <p className="mt-2 text-xs text-muted-foreground">
+                        <span className="inline-flex rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] leading-none text-foreground">{product.server}</span>
+                        <span className="mx-1.5 text-muted-foreground">|</span>
+                        {product.stock} disponiveis
+                      </p>
+                      {product.rating > 0 && (
+                        <div className="mt-2 flex items-center gap-0.5 text-brand-gold" aria-label={`${product.rating.toFixed(1)} estrelas`}>
+                          {Array.from({ length: Math.round(product.rating) }).map((_, index) => (
+                            <Star key={index} size={12} className="fill-current" />
+                          ))}
+                        </div>
+                      )}
+                      {product.sales > 0 && <p className="mt-1 text-xs text-muted-foreground">{product.sales} vendidos</p>}
+                      <div className="mt-auto flex w-full items-end justify-between pt-3">
+                        <p className="text-base font-semibold text-primary">R$ {product.price.toFixed(2)}</p>
                         <button
                           onClick={(event) => {
                             event.preventDefault();
@@ -184,7 +192,8 @@ const Products = () => {
                               image: product.image,
                             });
                           }}
-                          className="rounded-lg bg-primary p-2 text-primary-foreground transition-colors hover:bg-primary/90"
+                          className="rounded-lg bg-brand-gold p-2 text-background transition-colors hover:bg-brand-gold/90"
+                          aria-label={`Adicionar ${product.name} ao carrinho`}
                         >
                           <ShoppingCart size={14} />
                         </button>

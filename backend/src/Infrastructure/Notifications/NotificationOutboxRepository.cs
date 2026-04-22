@@ -21,6 +21,7 @@ public sealed class NotificationOutboxRepository : INotificationOutboxRepository
     public async Task<bool> ExistsAsync(string idempotencyKey, CancellationToken ct = default)
     {
         return await _context.NotificationOutbox
+            .AsNoTracking()
             .AnyAsync(x => x.IdempotencyKey == idempotencyKey, ct);
     }
 

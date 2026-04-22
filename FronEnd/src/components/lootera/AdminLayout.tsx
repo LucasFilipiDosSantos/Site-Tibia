@@ -22,7 +22,9 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
       {/* Sidebar Desktop */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-secondary lg:flex">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <img src={logoImg} alt="Lootera" className="h-8 w-auto" />
+          <Link to="/" aria-label="Ir para a home da loja" className="rounded transition-opacity hover:opacity-85">
+            <img src={logoImg} alt="Lootera" className="h-8 w-auto" />
+          </Link>
           <span className="font-display text-xs font-semibold text-brand-gold">Admin</span>
         </div>
         <nav className="flex-1 px-3 py-4 space-y-1">
@@ -51,7 +53,9 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border bg-secondary px-4 py-3 lg:hidden">
           <div className="flex items-center gap-2">
-            <img src={logoImg} alt="Lootera" className="h-8 w-auto" />
+            <Link to="/" aria-label="Ir para a home da loja" className="rounded transition-opacity hover:opacity-85">
+              <img src={logoImg} alt="Lootera" className="h-8 w-auto" />
+            </Link>
             <span className="font-display text-xs font-semibold text-brand-gold">Admin</span>
           </div>
           <button onClick={() => setSidebarOpen(!sidebarOpen)} className="text-muted-foreground">

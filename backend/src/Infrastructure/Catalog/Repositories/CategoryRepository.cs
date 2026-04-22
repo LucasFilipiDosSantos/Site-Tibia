@@ -16,7 +16,7 @@ public sealed class CategoryRepository : ICategoryRepository
 
     public Task<Category?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
-        return _dbContext.Categories.SingleOrDefaultAsync(x => x.Slug == slug, cancellationToken);
+        return _dbContext.Categories.AsNoTracking().SingleOrDefaultAsync(x => x.Slug == slug, cancellationToken);
     }
 
     public async Task AddAsync(Category category, CancellationToken cancellationToken = default)

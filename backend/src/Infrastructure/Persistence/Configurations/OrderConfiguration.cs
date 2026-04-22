@@ -39,9 +39,15 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
             .IsRequired()
             .HasConversion<int>();
 
+        builder.Property(x => x.IsHidden)
+            .IsRequired()
+            .HasDefaultValue(false);
+
         builder.HasIndex(x => x.CustomerId);
         builder.HasIndex(x => x.Status);
         builder.HasIndex(x => x.CreatedAtUtc);
+        builder.HasIndex(x => new { x.IsHidden, x.CreatedAtUtc });
+        builder.HasIndex(x => new { x.IsHidden, x.Status });
         builder.HasIndex(x => x.OrderIntentKey)
             .IsUnique();
 

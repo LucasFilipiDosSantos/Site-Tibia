@@ -175,18 +175,21 @@ public sealed class CatalogService
     public async Task DeleteProduct(string slug, CancellationToken cancellationToken = default)
     {
         var normalizedSlug = NormalizeSlugOrNull(slug)
-            ?? throw new ArgumentException("Product slug is required.", nameof(slug));
+            ?? throw new ArgumentException("Product identifier is required.", nameof(slug));
 
         var product = await _productRepository.GetBySlugAsync(normalizedSlug, cancellationToken)
-            ?? throw new ArgumentException("Product slug not found.", nameof(slug));
-
-        if (await _productRepository.HasProtectedReferencesAsync(product.Id, cancellationToken))
-        {
-            throw new InvalidOperationException("Cannot delete product with linked orders or reservations.");
-        }
+            ?? await GetProductByIdIfIdentifierIsGuid(slug, cancellationToken)
+            ?? throw new ArgumentException("Product not found.", nameof(slug));
 
         await _productRepository.DeleteAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    private Task<Product?> GetProductByIdIfIdentifierIsGuid(string identifier, CancellationToken cancellationToken)
+    {
+        return Guid.TryParse(identifier, out var productId)
+            ? _productRepository.GetByIdAsync(productId, cancellationToken)
+            : Task.FromResult<Product?>(null);
     }
 
     private static string? NormalizeSlugOrNull(string? slug)

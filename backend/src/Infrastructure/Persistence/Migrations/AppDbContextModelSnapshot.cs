@@ -85,6 +85,11 @@ namespace Infrastructure.Persistence.Migrations
                         .HasMaxLength(2048)
                         .HasColumnType("character varying(2048)");
 
+                    b.Property<bool>("IsHidden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -115,6 +120,10 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
+
+                    b.HasIndex("IsHidden", "CategorySlug");
+
+                    b.HasIndex("IsHidden", "CreatedAtUtc");
 
                     b.HasIndex("Slug")
                         .IsUnique();
@@ -224,6 +233,11 @@ namespace Infrastructure.Persistence.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("character varying(256)");
 
+                    b.Property<bool>("IsHidden")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<string>("OrderIntentKey")
                         .IsRequired()
                         .HasMaxLength(128)
@@ -241,6 +255,10 @@ namespace Infrastructure.Persistence.Migrations
                     b.HasIndex("CreatedAtUtc");
 
                     b.HasIndex("CustomerId");
+
+                    b.HasIndex("IsHidden", "CreatedAtUtc");
+
+                    b.HasIndex("IsHidden", "Status");
 
                     b.HasIndex("OrderIntentKey")
                         .IsUnique();

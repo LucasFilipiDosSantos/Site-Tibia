@@ -14,9 +14,10 @@ interface ProductCardProps {
 
 const ProductCard = ({ title, server, price, originalPrice, rating, image, tag, variant = "commercial" }: ProductCardProps) => {
   const isFantasy = variant === "fantasy";
+  const visibleRating = Math.max(0, Math.min(5, Math.round(rating)));
 
   return (
-    <div className={`group flex flex-col rounded-xl transition-all overflow-hidden
+    <div className={`font-body group flex flex-col items-start overflow-hidden rounded-xl text-left transition-all
       ${isFantasy
         ? "bg-card border border-brand-gold/10 hover:border-brand-gold/30 shadow-lg shadow-brand-purple/5"
         : "bg-card border border-border hover:border-primary/30 shadow-md shadow-black/20"
@@ -32,22 +33,26 @@ const ProductCard = ({ title, server, price, originalPrice, rating, image, tag, 
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
-        {server && <span className="mb-1 text-xs text-muted-foreground">{server}</span>}
-        <h3 className="mb-2 text-sm font-semibold text-foreground line-clamp-2">{title}</h3>
-        <div className="mb-3 flex items-center gap-1">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Star key={i} size={12} className={i < rating ? "fill-brand-gold text-brand-gold" : "text-muted-foreground/30"} />
-          ))}
-          <span className="ml-1 text-xs text-muted-foreground">{rating}.0</span>
-        </div>
-        <div className="mt-auto flex items-end justify-between">
+      <div className="flex flex-1 flex-col items-start p-4">
+        {server && (
+          <span className="mb-2 rounded border border-border bg-muted/40 px-1.5 py-0.5 text-[10px] leading-none text-foreground">
+            {server}
+          </span>
+        )}
+        <h3 className="font-body mb-2 line-clamp-2 text-sm text-foreground">{title}</h3>
+        {visibleRating > 0 && (
+          <div className="mb-3 flex items-center gap-0.5 text-brand-gold" aria-label={`${rating.toFixed(1)} estrelas`}>
+            {Array.from({ length: visibleRating }).map((_, index) => (
+              <Star key={index} size={12} className="fill-current" />
+            ))}
+          </div>
+        )}
+        <div className="mt-auto flex w-full items-end justify-between">
           <div>
             {originalPrice && <span className="text-xs text-muted-foreground line-through">{originalPrice}</span>}
-            <p className={`text-lg font-bold ${isFantasy ? "text-brand-gold" : "text-primary"}`}>{price}</p>
+            <p className={`text-lg font-semibold ${isFantasy ? "text-brand-gold" : "text-primary"}`}>{price}</p>
           </div>
-          <button className={`flex h-9 w-9 items-center justify-center rounded-lg transition-colors
-            ${isFantasy ? "bg-brand-gold/20 text-brand-gold hover:bg-brand-gold/30" : "bg-primary/10 text-primary hover:bg-primary/20"}`}>
+          <button className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-gold text-background transition-colors hover:bg-brand-gold/90">
             <ShoppingCart size={16} />
           </button>
         </div>

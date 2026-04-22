@@ -97,6 +97,7 @@ public static class AdminOrderEndpoints
             Guid orderId,
             AdminUpdateOrderDto request,
             AppDbContext dbContext,
+            ICheckoutInventoryGateway inventoryGateway,
             CancellationToken ct) =>
         {
             var order = await dbContext.Orders
@@ -113,6 +114,7 @@ public static class AdminOrderEndpoints
                 return Results.BadRequest(new { message = "Status invalido." });
             }
 
+            var wasCancelled = order.Status == OrderStatus.Cancelled;
             order.SetAdminEditableData(
                 request.CustomerName,
                 request.CustomerEmail,
@@ -121,6 +123,14 @@ public static class AdminOrderEndpoints
                 status);
 
             await dbContext.SaveChangesAsync(ct);
+
+            if (status == OrderStatus.Cancelled && !wasCancelled)
+            {
+                await inventoryGateway.ReleaseCheckoutReservationAsync(
+                    order.OrderIntentKey,
+                    Application.Inventory.Contracts.ReservationReleaseReason.OrderCanceled,
+                    ct);
+            }
 
             return Results.Ok(new OrderListItemDto(
                 order.Id,
@@ -139,29 +149,29 @@ public static class AdminOrderEndpoints
         group.MapDelete("/{orderId:guid}", async (
             Guid orderId,
             AppDbContext dbContext,
+            ICheckoutInventoryGateway inventoryGateway,
             CancellationToken ct) =>
         {
-            var deletedEvents = await dbContext.OrderStatusTransitionEvents
-                .Where(x => x.OrderId == orderId)
-                .ExecuteDeleteAsync(ct);
+            var order = await dbContext.Orders
+                .SingleOrDefaultAsync(x => x.Id == orderId, ct);
 
-            await dbContext.InventoryReservations
-                .Where(x => x.OrderId == orderId)
-                .ExecuteDeleteAsync(ct);
+            if (order is null)
+            {
+                return Results.NotFound();
+            }
 
-            await dbContext.PaymentStatusEvents
-                .Where(x => x.OrderId == orderId)
-                .ExecuteDeleteAsync(ct);
+            if (!order.IsHidden)
+            {
+                order.Hide();
+                await dbContext.SaveChangesAsync(ct);
 
-            await dbContext.CustomRequests
-                .Where(x => x.OrderId == orderId)
-                .ExecuteDeleteAsync(ct);
+                await inventoryGateway.ReleaseCheckoutReservationAsync(
+                    order.OrderIntentKey,
+                    Application.Inventory.Contracts.ReservationReleaseReason.OrderCanceled,
+                    ct);
+            }
 
-            var deletedOrders = await dbContext.Orders
-                .Where(x => x.Id == orderId)
-                .ExecuteDeleteAsync(ct);
-
-            return deletedOrders == 0 ? Results.NotFound() : Results.NoContent();
+            return Results.NoContent();
         });
 
         return app;

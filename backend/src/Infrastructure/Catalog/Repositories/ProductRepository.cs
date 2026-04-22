@@ -14,6 +14,11 @@ public sealed class ProductRepository : IProductRepository
         _dbContext = dbContext;
     }
 
+    public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return _dbContext.Products.SingleOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
     public Task<Product?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
         return _dbContext.Products.SingleOrDefaultAsync(x => x.Slug == slug, cancellationToken);
@@ -26,7 +31,7 @@ public sealed class ProductRepository : IProductRepository
             join stock in _dbContext.InventoryStocks.AsNoTracking()
                 on product.Id equals stock.ProductId into stockJoin
             from stock in stockJoin.DefaultIfEmpty()
-            where product.Slug == slug
+            where product.Slug == slug && !product.IsHidden
             select new
             {
                 Product = product,
@@ -60,6 +65,7 @@ public sealed class ProductRepository : IProductRepository
     {
         var source = _dbContext.Products
             .AsNoTracking()
+            .Where(x => !x.IsHidden)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.CategorySlug))
@@ -83,6 +89,7 @@ public sealed class ProductRepository : IProductRepository
     {
         var source = _dbContext.Products
             .AsNoTracking()
+            .Where(x => !x.IsHidden)
             .AsQueryable();
 
         if (!string.IsNullOrWhiteSpace(query.CategorySlug))
@@ -120,21 +127,11 @@ public sealed class ProductRepository : IProductRepository
         return Task.CompletedTask;
     }
 
-    public async Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
     {
-        await _dbContext.CartLines
-            .Where(x => x.ProductId == product.Id)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        await _dbContext.StockAdjustmentAudits
-            .Where(x => x.ProductId == product.Id)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        await _dbContext.InventoryStocks
-            .Where(x => x.ProductId == product.Id)
-            .ExecuteDeleteAsync(cancellationToken);
-
-        _dbContext.Products.Remove(product);
+        product.Hide();
+        _dbContext.Products.Update(product);
+        return Task.CompletedTask;
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)

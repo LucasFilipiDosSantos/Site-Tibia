@@ -13,6 +13,7 @@ public sealed class Product
     public string? ImageUrl { get; private set; }
     public decimal Rating { get; private set; }
     public int SalesCount { get; private set; }
+    public bool IsHidden { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
@@ -38,6 +39,7 @@ public sealed class Product
         Server = RequireText(server, nameof(server));
         Rating = ValidateRating(rating, nameof(rating));
         SalesCount = ValidateSalesCount(salesCount, nameof(salesCount));
+        IsHidden = false;
         CreatedAtUtc = DateTimeOffset.UtcNow;
         UpdatedAtUtc = CreatedAtUtc;
     }
@@ -67,6 +69,17 @@ public sealed class Product
         Server = RequireText(server, nameof(server));
         Rating = ValidateRating(rating, nameof(rating));
         SalesCount = ValidateSalesCount(salesCount, nameof(salesCount));
+        Touch();
+    }
+
+    public void Hide()
+    {
+        if (IsHidden)
+        {
+            return;
+        }
+
+        IsHidden = true;
         Touch();
     }
 

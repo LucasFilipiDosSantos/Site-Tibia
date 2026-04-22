@@ -84,6 +84,15 @@ public sealed class PaymentConfirmationService
                     "Payment status {Status} for order {OrderId} does not transition to Paid",
                     latestStatusEvent.Status,
                     orderId);
+
+                if (IsTerminalNoPaidStatus(latestStatusEvent.Status))
+                {
+                    await _lifecycleService.ApplySystemCancelAsync(
+                        orderId,
+                        $"payment-{latestStatusEvent.Status}",
+                        cancellationToken);
+                }
+
                 return decision == LifecycleTransitionDecision.AlreadyPaidNoOp
                     ? PaymentConfirmationResult.AlreadyPaidNoOp()
                     : PaymentConfirmationResult.NoTransition();
@@ -116,6 +125,14 @@ public sealed class PaymentConfirmationService
         // D-11: rejected, cancelled, refunded, unknown never mark as Paid
         // Also covers invalid signature case
         return LifecycleTransitionDecision.NoPaidTransition;
+    }
+
+    private static bool IsTerminalNoPaidStatus(string status)
+    {
+        return status.Equals("rejected", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("cancelled", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("canceled", StringComparison.OrdinalIgnoreCase) ||
+               status.Equals("refunded", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

@@ -12,6 +12,7 @@ services:
       Jwt__Issuer: tibia-webstore
       Jwt__Audience: tibia-webstore-client
       Jwt__SigningKey: "01234567890123456789012345678901"
+      MercadoPago__WebhookSecret: dev-webhook-secret
       WhatsApp__AccessToken: dev-whatsapp-token
       WhatsApp__PhoneNumberId: dev-phone-number-id
       WhatsApp__WhatsAppBusinessId: dev-business-id

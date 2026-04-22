@@ -43,6 +43,12 @@ public sealed class CheckoutService
         var orderIntentKey = $"checkout-{Guid.NewGuid():N}";
         var conflicts = new List<CheckoutLineConflict>();
         var hasSuccessfulReserve = false;
+        var snapshotsByProductId = new Dictionary<Guid, CheckoutProductSnapshot>();
+
+        foreach (var line in cart.Lines)
+        {
+            snapshotsByProductId[line.ProductId] = await _catalogGateway.GetSnapshotAsync(line.ProductId, cancellationToken);
+        }
 
         foreach (var line in cart.Lines)
         {
@@ -80,7 +86,7 @@ public sealed class CheckoutService
 
         foreach (var line in cart.Lines)
         {
-            var snapshot = await _catalogGateway.GetSnapshotAsync(line.ProductId, cancellationToken);
+            var snapshot = snapshotsByProductId[line.ProductId];
             var instructionRequest = request.DeliveryInstructions.SingleOrDefault(x => x.ProductId == line.ProductId)
                 ?? throw new ArgumentException($"Missing delivery instructions for product '{line.ProductId}'.", nameof(request));
 

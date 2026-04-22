@@ -390,6 +390,9 @@ public sealed class InventoryEndpointsTests
 
         public void Seed(Product product) => _products.Add(product);
 
+        public Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+            => Task.FromResult(_products.SingleOrDefault(x => x.Id == id));
+
         public Task<Product?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default)
             => Task.FromResult(_products.SingleOrDefault(x => x.Slug == slug));
 
@@ -404,13 +407,13 @@ public sealed class InventoryEndpointsTests
 
         public Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
-            var product = _products.SingleOrDefault(x => x.Slug == slug);
+            var product = _products.SingleOrDefault(x => x.Slug == slug && !x.IsHidden);
             return Task.FromResult(product is null ? null : new CatalogProductProjection(product, AvailableStock: 10));
         }
 
         public Task<IReadOnlyList<Product>> ListAsync(ProductListQuery query, CancellationToken cancellationToken = default)
         {
-            var source = _products.AsEnumerable();
+            var source = _products.Where(x => !x.IsHidden);
             if (!string.IsNullOrWhiteSpace(query.CategorySlug))
             {
                 source = source.Where(x => x.CategorySlug == query.CategorySlug);
@@ -433,7 +436,7 @@ public sealed class InventoryEndpointsTests
         public Task UpdateAsync(Product product, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
         {
-            _products.Remove(product);
+            product.Hide();
             return Task.CompletedTask;
         }
 

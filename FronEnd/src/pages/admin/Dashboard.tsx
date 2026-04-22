@@ -23,7 +23,9 @@ const Dashboard = () => {
   });
 
   const loading = loadingProducts || loadingOrders || loadingUsers;
-  const totalRevenue = 0;
+  const totalRevenue = orders
+    .filter((order) => order.status === "paid")
+    .reduce((sum, order) => sum + order.totalAmount, 0);
   const totalOrders = orders.length;
   const totalUsers = users.filter((user) => user.role === "customer").length;
   const totalProducts = products.length;
@@ -84,7 +86,7 @@ const Dashboard = () => {
         </Link>
       </div>
 
-      {loading && <p className="mb-4 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando dados do backend...</p>}
+      {loading && <p className="mb-4 rounded-lg border border-border bg-card p-4 text-sm text-muted-foreground">Carregando informacoes da loja...</p>}
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {[
@@ -170,7 +172,7 @@ const Dashboard = () => {
                 <th className="px-6 py-3">Data</th>
                 <th className="px-6 py-3 text-right">Total</th>
                 <th className="px-6 py-3">Status</th>
-                <th className="px-6 py-3">Intento</th>
+                <th className="px-6 py-3">Referencia</th>
                 <th className="px-6 py-3 text-right">Acoes</th>
               </tr>
             </thead>

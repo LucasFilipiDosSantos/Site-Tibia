@@ -1,0 +1,70 @@
+services:
+  - type: web
+    name: lootera-api
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ConnectionStrings__DefaultConnection
+        fromDatabase:
+          name: lootera-postgres
+          property: connectionString
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: Frontend__BaseUrl
+        sync: false
+      - key: Jwt__Issuer
+        sync: false
+      - key: Jwt__Audience
+        sync: false
+      - key: Jwt__SigningKey
+        generateValue: true
+      - key: Hangfire__Enabled
+        value: "true"
+      - key: Hangfire__WorkerCount
+        value: "1"
+      - key: IdentityTokenDelivery__Provider
+        value: smtp
+      - key: IdentityTokenDelivery__Smtp__Host
+        sync: false
+      - key: IdentityTokenDelivery__Smtp__Port
+        sync: false
+      - key: IdentityTokenDelivery__Smtp__Username
+        sync: false
+      - key: IdentityTokenDelivery__Smtp__Password
+        sync: false
+      - key: IdentityTokenDelivery__Smtp__FromEmail
+        sync: false
+      - key: IdentityTokenDelivery__Smtp__UseTls
+        value: "true"
+      - key: MercadoPago__AccessToken
+        sync: false
+      - key: MercadoPago__PublicKey
+        sync: false
+      - key: MercadoPago__WebhookSecret
+        sync: false
+      - key: MercadoPago__NotificationUrl
+        sync: false
+      - key: MercadoPago__SuccessUrl
+        sync: false
+      - key: MercadoPago__FailureUrl
+        sync: false
+      - key: MercadoPago__PendingUrl
+        sync: false
+      - key: WhatsApp__AccessToken
+        sync: false
+      - key: WhatsApp__PhoneNumberId
+        sync: false
+      - key: WhatsApp__WhatsAppBusinessId
+        sync: false
+
+databases:
+  - name: lootera-postgres
+    plan: free
+    databaseName: lootera
+    user: lootera

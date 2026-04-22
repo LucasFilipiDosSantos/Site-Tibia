@@ -97,7 +97,7 @@ const AdminProducts = () => {
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["admin", "products"] });
-      toast.success("Produto salvo no backend");
+      toast.success("Produto salvo no catalogo");
       closeForm();
     },
     onError: (error) => {

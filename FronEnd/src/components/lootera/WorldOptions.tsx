@@ -1,17 +1,17 @@
-const WORLD_OPTIONS = ["Eternia", "Em breve"];
+const WORLD_OPTIONS = ["Eternia"];
 
 const WorldOptions = () => {
   return (
-    <div className="mt-2 flex flex-wrap gap-1.5" aria-label="Opcoes de mundo">
+    <div className="mt-2 inline-flex flex-wrap gap-1" aria-label="Opcoes de mundo">
       {WORLD_OPTIONS.map((world) => (
         <span
           key={world}
           className={world === "Eternia"
-            ? "rounded-md border border-primary/30 bg-primary/10 px-2 py-1 text-[10px] font-medium text-primary"
-            : "rounded-md border border-border bg-muted/60 px-2 py-1 text-[10px] font-medium text-muted-foreground"
+            ? "rounded border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] leading-none text-primary"
+            : "rounded border border-border bg-muted/60 px-1.5 py-0.5 text-[9px] leading-none text-muted-foreground"
           }
         >
-          Mundo: {world}
+          {world}
         </span>
       ))}
     </div>

@@ -39,9 +39,14 @@ public static class DependencyInjection
             ?? "Host=localhost;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres";
 
         services.AddHangfireServices(configuration);
-        services.AddDbContext<AppDbContext>(options =>
+        services.AddDbContextPool<AppDbContext>(options =>
             options
-                .UseNpgsql(connectionString, npgsql => npgsql.MapEnum<UserRole>("user_role"))
+                .UseNpgsql(connectionString, npgsql =>
+                {
+                    npgsql.MapEnum<UserRole>("user_role");
+                    npgsql.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null);
+                    npgsql.CommandTimeout(15);
+                })
                 .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
         services.AddScoped<IUserRepository, UserRepository>();
@@ -57,9 +62,14 @@ public static class DependencyInjection
         services.AddScoped<ICartProductAvailabilityGateway, CartProductAvailabilityGateway>();
         services.AddScoped<ICheckoutProductCatalogGateway, CheckoutProductCatalogGateway>();
         services.AddScoped<ICheckoutInventoryGateway, CheckoutInventoryGateway>();
-        services.AddDbContext<NotificationDbContext>(options =>
+        services.AddDbContextPool<NotificationDbContext>(options =>
             options
-                .UseNpgsql(connectionString, npgsql => npgsql.MapEnum<UserRole>("user_role"))
+                .UseNpgsql(connectionString, npgsql =>
+                {
+                    npgsql.MapEnum<UserRole>("user_role");
+                    npgsql.EnableRetryOnFailure(3, TimeSpan.FromSeconds(5), null);
+                    npgsql.CommandTimeout(15);
+                })
                 .ConfigureWarnings(warnings => warnings.Ignore(RelationalEventId.PendingModelChangesWarning)));
         services
             .AddOptions<MercadoPagoOptions>()
@@ -135,7 +145,10 @@ public static class DependencyInjection
             .Bind(configuration.GetSection(WhatsAppOptions.SectionName))
             .ValidateOnStart();
         services.AddSingleton<IValidateOptions<WhatsAppOptions>, WhatsAppOptionsValidator>();
-        services.AddHttpClient<IWhatsAppNotificationService, WhatsAppNotificationService>();
+        services.AddHttpClient<IWhatsAppNotificationService, WhatsAppNotificationService>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
 
         // Audit services
         services.AddScoped<IAuditLogRepository, AuditLogRepository>();

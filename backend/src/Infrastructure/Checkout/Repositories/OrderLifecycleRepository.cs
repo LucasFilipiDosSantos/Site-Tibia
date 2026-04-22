@@ -27,7 +27,8 @@ public sealed class OrderLifecycleRepository : IOrderLifecycleRepository
         var offset = Math.Max(page - 1, 0) * pageSize;
 
         return await _context.Orders
-            .Where(o => o.CustomerId == customerId)
+            .AsNoTracking()
+            .Where(o => o.CustomerId == customerId && !o.IsHidden)
             .OrderByDescending(o => o.CreatedAtUtc)
             .Skip(offset)
             .Take(pageSize)

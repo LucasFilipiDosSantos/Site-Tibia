@@ -37,7 +37,10 @@ public sealed class CheckoutRepository : ICheckoutRepository
         int pageSize,
         CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Orders.AsQueryable();
+        var query = _dbContext.Orders
+            .AsNoTracking()
+            .Where(o => !o.IsHidden)
+            .AsQueryable();
         
         if (status.HasValue)
             query = query.Where(o => o.Status == status.Value);

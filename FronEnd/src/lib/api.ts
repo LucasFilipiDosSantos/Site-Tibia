@@ -38,9 +38,9 @@ const buildHeaders = (headers?: HeadersInit, auth = false): Headers => {
 const parseErrorMessage = async (response: Response): Promise<string> => {
   try {
     const body = await response.json() as { detail?: string; title?: string; message?: string };
-    return body.detail || body.message || body.title || `Erro HTTP ${response.status}`;
+    return body.detail || body.message || body.title || "Nao foi possivel completar a solicitacao.";
   } catch {
-    return `Erro HTTP ${response.status}`;
+    return "Nao foi possivel completar a solicitacao.";
   }
 };
 

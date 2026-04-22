@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+.git/
+.github/
+.planning/
+docs/
+tests/
+*.md
+docker-compose.yml
+nginx.conf

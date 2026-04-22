@@ -30,7 +30,7 @@ const Login = () => {
           <div className="mb-8 text-center">
             <img src={logoImg} alt="Lootera" className="mx-auto mb-4 h-16 w-auto" />
             <h1 className="font-display text-xl font-bold text-foreground">Entrar</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta usando o backend real.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta para acompanhar compras e pedidos.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -62,7 +62,7 @@ const Login = () => {
           </form>
 
           <p className="mt-4 rounded-lg border border-border bg-card p-3 text-center text-sm text-muted-foreground">
-            Se o login falhar, confirme se a API esta ativa em <code>VITE_API_BASE_URL</code>.
+            Se nao conseguir entrar, confira seu e-mail e senha ou tente novamente em instantes.
           </p>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">

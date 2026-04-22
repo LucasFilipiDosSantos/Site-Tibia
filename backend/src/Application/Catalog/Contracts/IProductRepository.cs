@@ -4,6 +4,7 @@ namespace Application.Catalog.Contracts;
 
 public interface IProductRepository
 {
+    Task<Product?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
     Task<Product?> GetBySlugAsync(string slug, CancellationToken cancellationToken = default);
     Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default);
     Task<bool> ExistsBySlugAsync(string slug, CancellationToken cancellationToken = default);

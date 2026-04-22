@@ -10,6 +10,7 @@ public sealed class Order
     public Guid CustomerId { get; private set; }
     public string OrderIntentKey { get; private set; }
     public OrderStatus Status { get; private set; } = OrderStatus.Pending;
+    public bool IsHidden { get; private set; }
     public IReadOnlyList<OrderItemSnapshot> Items => _items;
     public IReadOnlyList<DeliveryInstruction> DeliveryInstructions => _deliveryInstructions;
     public IReadOnlyList<OrderStatusTransitionEvent> StatusHistory => _statusHistory;
@@ -35,6 +36,7 @@ public sealed class Order
             : orderIntentKey.Trim();
         CreatedAtUtc = DateTimeOffset.UtcNow;
         Status = OrderStatus.Pending;
+        IsHidden = false;
     }
 
     public void AddItemSnapshot(OrderItemSnapshot item)
@@ -72,6 +74,11 @@ public sealed class Order
         Status = status;
     }
 
+    public void Hide()
+    {
+        IsHidden = true;
+    }
+
     /// <summary>
     /// Apply transition - records event only if status actually changes (D-04, D-05)
     /// </summary>
@@ -103,8 +110,8 @@ public sealed class Order
     {
         return (current, source) switch
         {
-            // Pending: System can set Paid (D-03)
-            (OrderStatus.Pending, TransitionSourceType.System) => [OrderStatus.Paid],
+            // Pending: System can set Paid or cancel after a terminal payment failure/cancellation.
+            (OrderStatus.Pending, TransitionSourceType.System) => [OrderStatus.Paid, OrderStatus.Cancelled],
             // Pending: Customer/Admin can cancel (D-02)
             (OrderStatus.Pending, TransitionSourceType.Customer) => [OrderStatus.Cancelled],
             (OrderStatus.Pending, TransitionSourceType.Admin) => [OrderStatus.Cancelled],
