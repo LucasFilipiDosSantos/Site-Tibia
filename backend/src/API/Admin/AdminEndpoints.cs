@@ -17,7 +17,7 @@ public static class AdminEndpoints
 {
     public static IEndpointRouteBuilder MapAdminEndpoints(this IEndpointRouteBuilder app)
     {
-        var admin = app.MapGroup("/api/admin")
+        var admin = app.MapGroup("/admin")
             .RequireAuthorization(AuthPolicies.AdminOnly);
 
         // Products CRUD - existing via CatalogEndpoints

@@ -213,7 +213,7 @@ export const adminService = {
   },
 
   async getUsers(): Promise<AdminUser[]> {
-    const response = await apiRequest<UserListResponse>("/api/admin/users?page=1&pageSize=100", { auth: true });
+    const response = await apiRequest<UserListResponse>("/admin/users?page=1&pageSize=100", { auth: true });
     return response.items.map((user) => ({
       id: user.id,
       name: user.name,
@@ -225,7 +225,7 @@ export const adminService = {
   },
 
   async updateUser(input: AdminUserInput): Promise<AdminUser> {
-    const user = await apiRequest<UserListResponse["items"][number]>(`/api/admin/users/${encodeURIComponent(input.id)}`, {
+    const user = await apiRequest<UserListResponse["items"][number]>(`/admin/users/${encodeURIComponent(input.id)}`, {
       auth: true,
       method: "PUT",
       body: JSON.stringify({

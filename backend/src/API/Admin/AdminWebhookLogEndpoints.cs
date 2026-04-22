@@ -10,7 +10,7 @@ public static class AdminWebhookLogEndpoints
 {
     public static IEndpointRouteBuilder MapAdminWebhookLogEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/admin/webhooks")
+        var group = app.MapGroup("/admin/webhooks")
             .WithTags("Admin - Webhooks")
             .RequireAuthorization(AuthPolicies.AdminOnly);
 

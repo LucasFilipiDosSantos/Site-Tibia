@@ -6,11 +6,11 @@ namespace API.Jobs;
 
 public static class HangfireDashboardEndpoints
 {
-    public static WebApplication MapHangfireDashboard(this WebApplication app)
+    public static WebApplication MapHangfireDashboard(this WebApplication app, string path = "/hangfire")
     {
         var env = app.Environment;
 
-        app.UseHangfireDashboard("/hangfire", new DashboardOptions
+        app.UseHangfireDashboard(path, new DashboardOptions
         {
             Authorization = [new HangfireAuthorizationFilter(env)]
         });

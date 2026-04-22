@@ -10,7 +10,7 @@ public static class AdminAuditEndpoints
 {
     public static IEndpointRouteBuilder MapAdminAuditEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/admin/audit")
+        var group = app.MapGroup("/admin/audit")
             .WithTags("Admin - Audit")
             .RequireAuthorization(AuthPolicies.AdminOnly);
 

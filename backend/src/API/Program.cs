@@ -247,22 +247,23 @@ public partial class Program
         app.UseMiddleware<RequestLoggingMiddleware>();
         app.UseMiddleware<AuthRateLimitMiddleware>();
 
-        app.MapAuthEndpoints();
-        app.MapCatalogEndpoints();
-        app.MapInventoryEndpoints();
-        app.MapCheckoutEndpoints();
-        app.MapAdminOrderEndpoints();
+        var api = app.MapGroup("/api");
+        api.MapAuthEndpoints();
+        api.MapCatalogEndpoints();
+        api.MapInventoryEndpoints();
+        api.MapCheckoutEndpoints();
+        api.MapAdminOrderEndpoints();
         var hangfireEnabled = app.Configuration.GetValue("Hangfire:Enabled", true);
         if (hangfireEnabled)
         {
-            app.MapPaymentWebhookEndpoints();
+            api.MapPaymentWebhookEndpoints();
         }
 
-        app.MapCustomOrderEndpoints();
-        app.MapAdminEndpoints();
-        app.MapAdminAuditEndpoints();
-        app.MapAdminWebhookLogEndpoints();
-        app.MapGet("/healthz", () => Results.Ok(new
+        api.MapCustomOrderEndpoints();
+        api.MapAdminEndpoints();
+        api.MapAdminAuditEndpoints();
+        api.MapAdminWebhookLogEndpoints();
+        api.MapGet("/healthz", () => Results.Ok(new
         {
             status = "ok",
             environment = app.Environment.EnvironmentName,
@@ -271,6 +272,18 @@ public partial class Program
         .AllowAnonymous()
         .WithName("Healthz")
         .WithTags("Health");
+        api.MapHealthChecks("/health", new HealthCheckOptions
+        {
+            ResultStatusCodes =
+            {
+                [HealthStatus.Healthy] = StatusCodes.Status200OK,
+                [HealthStatus.Degraded] = StatusCodes.Status200OK,
+                [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
+            }
+        }).AllowAnonymous();
+        app.MapGet("/healthz", () => Results.Redirect("/api/healthz"))
+            .AllowAnonymous()
+            .ExcludeFromDescription();
         app.MapHealthChecks("/health", new HealthCheckOptions
         {
             ResultStatusCodes =
@@ -282,8 +295,8 @@ public partial class Program
         }).AllowAnonymous();
         if (hangfireEnabled)
         {
-            app.MapHangfireDashboard();
-            app.MapNotificationJobEndpoints();
+            app.MapHangfireDashboard("/api/hangfire");
+            api.MapNotificationJobEndpoints();
         }
 
         app.Run();

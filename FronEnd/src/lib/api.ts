@@ -16,7 +16,11 @@ export class ApiError extends Error {
   }
 }
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080").replace(/\/$/, "");
+const API_BASE_URL = (
+  import.meta.env.NEXT_PUBLIC_API_URL
+  ?? import.meta.env.VITE_API_BASE_URL
+  ?? (import.meta.env.PROD ? "/api" : "http://localhost:8080/api")
+).replace(/\/$/, "");
 
 const buildHeaders = (headers?: HeadersInit, auth = false): Headers => {
   const nextHeaders = new Headers(headers);

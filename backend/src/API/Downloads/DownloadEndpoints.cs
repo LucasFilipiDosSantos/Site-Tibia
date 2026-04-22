@@ -12,7 +12,7 @@ public static class DownloadEndpoints
 {
     public static IEndpointRouteBuilder MapDownloadEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/downloads")
+        var group = app.MapGroup("/downloads")
             .WithTags("Downloads");
 
         // Generate signed download URL (requires auth + purchase)

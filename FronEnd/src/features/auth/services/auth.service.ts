@@ -2,7 +2,11 @@ import type { AuthApiResponse, AuthSession, AuthTokens, LoginInput, RegisterInpu
 import { getStoredAuthSession, isTokenExpired, saveAuthSession } from "../utils/auth.session";
 import { buildUserFromAccessToken } from "../utils/jwt";
 
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8080").replace(/\/$/, "");
+const API_BASE_URL = (
+  import.meta.env.NEXT_PUBLIC_API_URL
+  ?? import.meta.env.VITE_API_BASE_URL
+  ?? (import.meta.env.PROD ? "/api" : "http://localhost:8080/api")
+).replace(/\/$/, "");
 
 const getErrorMessage = async (response: Response, fallback: string): Promise<string> => {
   try {
