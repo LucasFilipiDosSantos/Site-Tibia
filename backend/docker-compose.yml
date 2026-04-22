@@ -4,31 +4,43 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: tibia-webstore-api
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     environment:
-      ASPNETCORE_ENVIRONMENT: Development
-      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://0.0.0.0:8080
+      Https__Enabled: ${HTTPS_ENABLED:-false}
+      ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=tibia_webstore;Username=postgres;Password=${DB_PASSWORD:?DB_PASSWORD is required}
       Jwt__Issuer: tibia-webstore
       Jwt__Audience: tibia-webstore-client
-      Jwt__SigningKey: "01234567890123456789012345678901"
-      MercadoPago__WebhookSecret: dev-webhook-secret
-      WhatsApp__AccessToken: dev-whatsapp-token
-      WhatsApp__PhoneNumberId: dev-phone-number-id
-      WhatsApp__WhatsAppBusinessId: dev-business-id
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:?JWT_SIGNING_KEY is required}
+      MercadoPago__AccessToken: ${MERCADO_PAGO_ACCESS_TOKEN:?MERCADO_PAGO_ACCESS_TOKEN is required}
+      MercadoPago__PublicKey: ${MERCADO_PAGO_PUBLIC_KEY:?MERCADO_PAGO_PUBLIC_KEY is required}
+      MercadoPago__WebhookSecret: ${MERCADO_PAGO_WEBHOOK_SECRET:?MERCADO_PAGO_WEBHOOK_SECRET is required}
+      MercadoPago__NotificationUrl: ${MERCADO_PAGO_NOTIFICATION_URL:?MERCADO_PAGO_NOTIFICATION_URL is required}
+      MercadoPago__SuccessUrl: ${MERCADO_PAGO_SUCCESS_URL:?MERCADO_PAGO_SUCCESS_URL is required}
+      MercadoPago__FailureUrl: ${MERCADO_PAGO_FAILURE_URL:?MERCADO_PAGO_FAILURE_URL is required}
+      MercadoPago__PendingUrl: ${MERCADO_PAGO_PENDING_URL:?MERCADO_PAGO_PENDING_URL is required}
+      WhatsApp__AccessToken: ${WHATSAPP_ACCESS_TOKEN:?WHATSAPP_ACCESS_TOKEN is required}
+      WhatsApp__PhoneNumberId: ${WHATSAPP_PHONE_NUMBER_ID:?WHATSAPP_PHONE_NUMBER_ID is required}
+      WhatsApp__WhatsAppBusinessId: ${WHATSAPP_BUSINESS_ID:?WHATSAPP_BUSINESS_ID is required}
       IdentityTokenDelivery__Provider: smtp
-      IdentityTokenDelivery__Smtp__Host: mailpit
-      IdentityTokenDelivery__Smtp__Port: 1025
-      IdentityTokenDelivery__Smtp__Username: mailpit-local-user
-      IdentityTokenDelivery__Smtp__Password: mailpit-local-pass
-      IdentityTokenDelivery__Smtp__FromEmail: noreply@dev.local
-      IdentityTokenDelivery__Smtp__UseTls: false
+      IdentityTokenDelivery__Smtp__Host: ${SMTP_HOST:?SMTP_HOST is required}
+      IdentityTokenDelivery__Smtp__Port: ${SMTP_PORT:?SMTP_PORT is required}
+      IdentityTokenDelivery__Smtp__Username: ${SMTP_USERNAME:?SMTP_USERNAME is required}
+      IdentityTokenDelivery__Smtp__Password: ${SMTP_PASSWORD:?SMTP_PASSWORD is required}
+      IdentityTokenDelivery__Smtp__FromEmail: ${SMTP_FROM_EMAIL:?SMTP_FROM_EMAIL is required}
+      IdentityTokenDelivery__Smtp__UseTls: ${SMTP_USE_TLS:?SMTP_USE_TLS is required}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-}
+      Frontend__BaseUrl: ${FRONTEND_BASE_URL:-}
+      Hangfire__Enabled: ${HANGFIRE_ENABLED:-true}
+      Hangfire__WorkerCount: ${HANGFIRE_WORKER_COUNT:-1}
     depends_on:
       postgres:
         condition: service_healthy
-      mailpit:
-        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - lootera-net
 
   nginx:
     image: nginx:alpine
@@ -40,19 +52,8 @@ services:
     depends_on:
       - api
     restart: unless-stopped
-
-  mailpit:
-    image: axllent/mailpit:v1.29.7
-    container_name: tibia-webstore-mailpit
-    ports:
-      - "1025:1025"
-      - "8025:8025"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:8025 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+    networks:
+      - lootera-net
 
   postgres:
     image: postgres:17
@@ -60,9 +61,7 @@ services:
     environment:
       POSTGRES_DB: tibia_webstore
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -71,37 +70,12 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
-
-# Staging environment profile with TLS termination
-# Usage: docker compose --profile staging up -d
-# (staging):
-#   api:
-#     build:
-#       context: .
-#       dockerfile: Dockerfile
-#     container_name: tibia-webstore-api-staging
-#     ports:
-#       - "8080:8080"
-#     environment:
-#       ASPNETCORE_ENVIRONMENT: Staging
-#       STAGING: "true"
-#       ConnectionStrings__DefaultConnection: Host=postgres;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres
-#       Jwt__Issuer: tibia-webstore-staging
-#       Jwt__Audience: tibia-webstore-client
-#       Jwt__SigningKey: "01234567890123456789012345678901"
-#       IdentityTokenDelivery__Provider: smtp
-#       IdentityTokenDelivery__Smtp__Host: mailpit
-#       IdentityTokenDelivery__Smtp__Port: 1025
-#       IdentityTokenDelivery__Smtp__Username: mailpit-local-user
-#       IdentityTokenDelivery__Smtp__Password: mailpit-local-pass
-#       IdentityTokenDelivery__Smtp__FromEmail: noreply@staging.local
-#       IdentityTokenDelivery__Smtp__UseTls: false
-#     depends_on:
-#       postgres:
-#         condition: service_healthy
-#       mailpit:
-#         condition: service_healthy
-#     restart: unless-stopped
+    networks:
+      - lootera-net
 
 volumes:
   postgres-data:
+
+networks:
+  lootera-net:
+    driver: bridge

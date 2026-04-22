@@ -7,17 +7,15 @@ public static class HttpsSecurityExtensions
     public static IApplicationBuilder UseHttpsSecurity(this IApplicationBuilder app)
     {
         var hostEnvironment = app.ApplicationServices.GetRequiredService<IHostEnvironment>();
+        var configuration = app.ApplicationServices.GetRequiredService<IConfiguration>();
+        var httpsEnabled = configuration.GetValue("Https:Enabled", true);
         
-        // Enable HTTPS redirect in non-development environments (Staging, Production)
-        // Development mode allows HTTP for local debugging
-        if (!hostEnvironment.IsDevelopment())
+        if (!hostEnvironment.IsDevelopment() && httpsEnabled)
         {
             app.UseHttpsRedirection();
         }
 
-        // Enable HSTS in non-development environments
-        // Excludes development to avoid polluting browser HSTS cache during local testing
-        if (!hostEnvironment.IsDevelopment())
+        if (!hostEnvironment.IsDevelopment() && httpsEnabled)
         {
             app.UseHsts();
         }

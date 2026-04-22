@@ -21,7 +21,8 @@ RUN apt-get update \
 COPY --from=build /app/publish .
 
 ENV ASPNETCORE_ENVIRONMENT=Production \
-    ASPNETCORE_URLS=http://0.0.0.0:${PORT:-10000}
+    ASPNETCORE_URLS=http://0.0.0.0:8080 \
+    DOTNET_EnableDiagnostics=0
 
 EXPOSE 8080
 

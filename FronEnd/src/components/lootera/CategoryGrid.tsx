@@ -35,7 +35,7 @@ const CategoryGrid = ({ variant = "commercial" }: CategoryGridProps) => {
   return (
     <section className="py-8 lg:py-12">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-center gap-6 overflow-x-auto pb-2 lg:gap-10">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-start justify-center gap-x-6 gap-y-6 sm:gap-x-8 lg:gap-x-10">
           {cards.map((category) => {
             const Icon = category.icon;
 
@@ -43,10 +43,10 @@ const CategoryGrid = ({ variant = "commercial" }: CategoryGridProps) => {
               <button
                 key={`${category.slug}-${category.label}`}
                 onClick={() => navigate(`/produtos?category=${encodeURIComponent(category.slug)}`)}
-                className="group flex flex-col items-center gap-2 transition-all"
+                className="group flex w-24 flex-col items-center text-center transition-all sm:w-28"
               >
                 <div
-                  className={`flex h-16 w-16 items-center justify-center rounded-full border transition-all lg:h-20 lg:w-20 ${
+                  className={`flex h-16 w-16 shrink-0 items-center justify-center rounded-full border transition-all lg:h-20 lg:w-20 ${
                     isFantasy
                       ? "border-brand-gold/20 bg-brand-purple/60 text-brand-gold group-hover:border-brand-gold/50 group-hover:bg-brand-purple/80"
                       : "border-border bg-muted text-muted-foreground group-hover:border-primary/40 group-hover:text-primary"
@@ -54,7 +54,7 @@ const CategoryGrid = ({ variant = "commercial" }: CategoryGridProps) => {
                 >
                   <Icon size={28} />
                 </div>
-                <span className={`text-xs font-medium lg:text-sm ${isFantasy ? "text-brand-gold/80" : "text-muted-foreground"}`}>
+                <span className={`mt-2 min-h-8 text-balance text-center text-xs font-medium leading-tight lg:text-sm ${isFantasy ? "text-brand-gold/80" : "text-muted-foreground"}`}>
                   {category.label}
                 </span>
               </button>
