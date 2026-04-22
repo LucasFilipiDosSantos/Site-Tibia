@@ -11,6 +11,7 @@ public interface ITokenService
 
 public sealed record AccessTokenRequest(
     Guid UserId,
+    string Name,
     string Email,
     UserRole Role,
     bool EmailVerified,

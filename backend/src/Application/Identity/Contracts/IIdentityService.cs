@@ -10,10 +10,10 @@ public interface IIdentityService
     Task<bool> ConfirmPasswordResetAsync(string token, string newPassword, CancellationToken cancellationToken = default);
 }
 
-public sealed record RegisterCommand(string Email, string Password);
+public sealed record RegisterCommand(string Name, string Email, string Password);
 
 public sealed record LoginCommand(string Email, string Password, string? IpAddress = null);
 
-public sealed record RegisterResult(Guid UserId, string Email);
+public sealed record RegisterResult(Guid UserId, string Name, string Email);
 
 public sealed record LoginResult(string AccessToken, string RefreshToken, DateTimeOffset AccessTokenExpiresAtUtc, DateTimeOffset RefreshTokenExpiresAtUtc);

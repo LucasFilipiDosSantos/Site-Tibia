@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>mercadopago-sdk</id>
+    <version>2.11.0</version>
+    <authors>MercadoPago</authors>
+    <licenseUrl>https://raw.githubusercontent.com/mercadopago/dx-dotnet/master/LICENSE</licenseUrl>
+    <projectUrl>https://github.com/mercadopago/dx-dotnet</projectUrl>
+    <iconUrl>https://avatars2.githubusercontent.com/u/900583</iconUrl>
+    <description>Official .NET 6.0+ MercadoPago SDK</description>
+    <tags>mercadopago payment credit card checkout</tags>
+    <dependencies>
+      <group targetFramework="net6.0">
+        <dependency id="Newtonsoft.Json" version="13.0.1" exclude="Build,Analyzers" />
+        <dependency id="System.Configuration.ConfigurationManager" version="6.0.0" exclude="Build,Analyzers" />
+      </group>
+      <group targetFramework=".NETStandard2.1">
+        <dependency id="Newtonsoft.Json" version="13.0.1" exclude="Build,Analyzers" />
+        <dependency id="System.Configuration.ConfigurationManager" version="6.0.0" exclude="Build,Analyzers" />
+      </group>
+    </dependencies>
+  </metadata>
+</package>

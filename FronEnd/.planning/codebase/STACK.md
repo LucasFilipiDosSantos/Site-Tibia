@@ -2,14 +2,13 @@
 
 ## Technologies
 - **Runtime**: React 18.3.1 + TypeScript 5.8.3
-- **Build**: Vite 5.4.19
+- **Build**: Vite 5.4.x
 - **Routing**: React Router DOM 6.30.1
 - **State/Query**: TanStack Query 5.83.0
 - **UI Components**: Radix UI (shadcn/ui pattern)
 - **Styling**: Tailwind CSS 3.4.17 + tailwind-merge + clsx
 - **Forms**: React Hook Form 7.61.1 + Zod 3.25.76
 - **Icons**: Lucide React 0.462.0
-- **Charts**: Recharts 2.15.4
 
 ## Project Structure
 - `src/pages/` - Route pages (shop, auth, user, admin)
@@ -18,11 +17,11 @@
 - `src/features/` - Feature folders (auth, products, orders, users, cart, settings)
 - `src/contexts/` - React contexts
 - `src/hooks/` - Custom hooks
-- `src/lib/` - Utilities
+- `src/lib/` - Shared utilities and API client
 
 ## Integrations
-- Mock data services (no real API)
-- No backend API integration yet
+- Real backend integration for auth and catalog
+- Remaining admin, order, and payment flows still use local/mock assumptions
 
 ## Testing
 - Vitest for unit tests

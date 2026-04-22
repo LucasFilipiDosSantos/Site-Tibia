@@ -19,6 +19,29 @@ public sealed record CheckoutDeliveryInstructionDto(
 
 public sealed record SubmitCheckoutDto(IReadOnlyList<CheckoutDeliveryInstructionDto> DeliveryInstructions);
 
+public sealed record SupportPendingCheckoutItemDto(
+    string ProductId,
+    int Quantity,
+    string? Name,
+    decimal? Price,
+    string? Server
+);
+
+public sealed record SupportPendingCheckoutDto(
+    string Name,
+    string Email,
+    string? Discord,
+    string PaymentMethod,
+    IReadOnlyList<SupportPendingCheckoutItemDto> Items
+);
+
+public sealed record SupportPendingCheckoutResponseDto(
+    Guid OrderId,
+    string OrderIntentKey,
+    string StatusCode,
+    string StatusLabel
+);
+
 public sealed record CheckoutOrderItemDto(
     Guid ProductId,
     int Quantity,
@@ -75,7 +98,13 @@ public sealed record OrderListItemDto(
     string OrderIntentKey,
     DateTimeOffset CreatedAtUtc,
     string StatusCode,
-    string StatusLabel
+    string StatusLabel,
+    string? CustomerName = null,
+    string? CustomerEmail = null,
+    string? CustomerDiscord = null,
+    string? PaymentMethod = null,
+    decimal TotalAmount = 0,
+    int ItemCount = 0
 );
 
 public sealed record PaginatedOrderListDto(
@@ -93,3 +122,11 @@ public sealed record CreatePaymentPreferenceResponseDto(
 
 // Per D-14: Explicit admin cancel action (not generic set-status)
 public sealed record AdminCancelOrderDto(string Reason);
+
+public sealed record AdminUpdateOrderDto(
+    string CustomerName,
+    string CustomerEmail,
+    string? CustomerDiscord,
+    string? PaymentMethod,
+    string Status
+);

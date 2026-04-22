@@ -24,10 +24,12 @@ public sealed class OrderLifecycleRepository : IOrderLifecycleRepository
     public async Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         // Per D-10: Default sort is newest-first by CreatedAtUtc
+        var offset = Math.Max(page - 1, 0) * pageSize;
+
         return await _context.Orders
             .Where(o => o.CustomerId == customerId)
             .OrderByDescending(o => o.CreatedAtUtc)
-            .Skip(page * pageSize)
+            .Skip(offset)
             .Take(pageSize)
             .Include(o => o.Items)
             .Include(o => o.DeliveryInstructions)

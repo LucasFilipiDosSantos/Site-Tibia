@@ -54,7 +54,7 @@ public sealed class TokenRotationService
         await _refreshSessionRepository.RevokeCurrentAndInsertNextAsync(current, nextSession, now, ipAddress, cancellationToken);
         await _refreshSessionRepository.SaveChangesAsync(cancellationToken);
 
-        var access = _tokenService.IssueAccessToken(new AccessTokenRequest(user.Id, user.Email, user.Role, user.EmailVerified, now));
+        var access = _tokenService.IssueAccessToken(new AccessTokenRequest(user.Id, user.Name, user.Email, user.Role, user.EmailVerified, now));
         _audit?.Record(SecurityAuditService.RefreshRotated, user.Id, user.Email, ipAddress);
 
         return new LoginResult(access.Token, nextRefresh.RawToken, access.ExpiresAtUtc, nextRefresh.ExpiresAtUtc);

@@ -1,21 +1,33 @@
 using Application.Identity.Contracts;
 using Domain.Identity;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 
 namespace Infrastructure.Identity.Services;
 
 public sealed class PasswordHasherService : IPasswordHasherService
 {
-    private readonly PasswordHasher<UserAccount> _hasher = new();
+    private static readonly UserAccount HashContextUser = new("Password Hash Context", "hash@internal.local", "placeholder");
+
+    private readonly PasswordHasher<UserAccount> _hasher = new(
+        new OptionsWrapper<PasswordHasherOptions>(
+            new PasswordHasherOptions
+            {
+                IterationCount = 210_000
+            }));
 
     public string HashPassword(string password)
     {
-        return _hasher.HashPassword(new UserAccount("hash@internal.local", "placeholder"), password);
+        return _hasher.HashPassword(HashContextUser, password);
     }
 
-    public bool VerifyHashedPassword(string hashedPassword, string providedPassword)
+    public PasswordHashVerificationResult VerifyHashedPassword(string hashedPassword, string providedPassword)
     {
-        var result = _hasher.VerifyHashedPassword(new UserAccount("hash@internal.local", "placeholder"), hashedPassword, providedPassword);
-        return result == PasswordVerificationResult.Success || result == PasswordVerificationResult.SuccessRehashNeeded;
+        var result = _hasher.VerifyHashedPassword(HashContextUser, hashedPassword, providedPassword);
+        return new PasswordHashVerificationResult(
+            result is Microsoft.AspNetCore.Identity.PasswordVerificationResult.Success
+                or Microsoft.AspNetCore.Identity.PasswordVerificationResult.SuccessRehashNeeded,
+            result == Microsoft.AspNetCore.Identity.PasswordVerificationResult.SuccessRehashNeeded);
     }
 }
+

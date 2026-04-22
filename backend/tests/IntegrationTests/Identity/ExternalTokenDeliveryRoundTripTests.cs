@@ -360,7 +360,7 @@ public sealed class ExternalTokenDeliveryRoundTripTests
                 return;
             }
 
-            var user = new UserAccount("verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
+            var user = new UserAccount("Test User", "verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
             _users.Users.Add(user);
         }
 
@@ -441,7 +441,7 @@ public sealed class ExternalTokenDeliveryRoundTripTests
                 return;
             }
 
-            var user = new UserAccount("verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
+            var user = new UserAccount("Test User", "verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
             _users.Users.Add(user);
         }
 
@@ -473,3 +473,4 @@ internal static class SmtpOutgoingMessageExtensions
         return message.Body[start..end].Trim();
     }
 }
+

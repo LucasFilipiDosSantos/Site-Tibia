@@ -16,7 +16,8 @@ public sealed class UserRepository : IUserRepository
 
     public Task<UserAccount?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
-        return _dbContext.Users.SingleOrDefaultAsync(x => x.Email == email, cancellationToken);
+        var normalizedEmail = UserAccount.NormalizeEmail(email);
+        return _dbContext.Users.SingleOrDefaultAsync(x => x.Email == normalizedEmail, cancellationToken);
     }
 
     public Task<UserAccount?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)

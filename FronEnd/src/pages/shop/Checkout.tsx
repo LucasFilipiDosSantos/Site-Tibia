@@ -3,8 +3,18 @@ import { useNavigate } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
-import { CreditCard, QrCode, Loader2, CheckCircle2, Lock } from "lucide-react";
+import { CreditCard, QrCode, Loader2, CheckCircle2, MessageCircle, TriangleAlert } from "lucide-react";
+
+const WHATSAPP_SUPPORT_NUMBER = "558299749180";
+
+type PendingCheckoutResponse = {
+  orderId: string;
+  orderIntentKey: string;
+  statusCode: string;
+  statusLabel: string;
+};
 
 const Checkout = () => {
   const { items, total, clearCart } = useCart();
@@ -15,6 +25,33 @@ const Checkout = () => {
   const [success, setSuccess] = useState(false);
 
   const [form, setForm] = useState({ name: "", email: "", discord: "" });
+
+  const buildWhatsAppUrl = (pendingOrder?: PendingCheckoutResponse) => {
+    const orderLines = items
+      .map((item) => {
+        const subtotal = item.price * item.quantity;
+        return `- ${item.name} x${item.quantity} (${item.server}) - R$ ${subtotal.toFixed(2)}`;
+      })
+      .join("\n");
+
+    const message = [
+      "Ola! Estou tentando finalizar uma compra na Lootera e fui encaminhado para o suporte.",
+      "",
+      "Itens selecionados:",
+      orderLines,
+      "",
+      `Total: R$ ${total.toFixed(2)}`,
+      `Metodo escolhido: ${paymentMethod === "pix" ? "PIX" : "Cartao"}`,
+      pendingOrder ? `Pedido pendente: ${pendingOrder.orderId}` : null,
+      pendingOrder ? `Referencia: ${pendingOrder.orderIntentKey}` : null,
+      "",
+      `Nome: ${form.name}`,
+      `E-mail: ${form.email}`,
+      form.discord ? `Discord: ${form.discord}` : null,
+    ].filter(Boolean).join("\n");
+
+    return `https://wa.me/${WHATSAPP_SUPPORT_NUMBER}?text=${encodeURIComponent(message)}`;
+  };
 
   if (items.length === 0 && !success) {
     navigate("/carrinho");
@@ -28,11 +65,32 @@ const Checkout = () => {
       return;
     }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 2000));
-    setLoading(false);
-    setSuccess(true);
-    clearCart();
-    toast.success("Pedido realizado com sucesso!");
+
+    try {
+      const pendingOrder = await apiRequest<PendingCheckoutResponse>("/checkout/support-pending", {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.name,
+          email: form.email,
+          discord: form.discord || null,
+          paymentMethod,
+          items: items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            name: item.name,
+            price: item.price,
+            server: item.server,
+          })),
+        }),
+      });
+
+      toast.info("Compra registrada como pendente. Vamos te encaminhar para o suporte via WhatsApp.");
+      clearCart();
+      window.location.href = buildWhatsAppUrl(pendingOrder);
+    } catch (error) {
+      setLoading(false);
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel registrar a compra pendente.");
+    }
   };
 
   if (success) {
@@ -77,6 +135,12 @@ const Checkout = () => {
             {/* Payment */}
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="mb-4 font-display text-base font-semibold text-foreground">Pagamento</h2>
+              <div className="mb-4 flex gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm text-foreground">
+                <TriangleAlert size={20} className="mt-0.5 shrink-0 text-primary" />
+                <p>
+                  Estamos com problemas no pagamento. Ao confirmar o pedido, vamos te encaminhar para o suporte via WhatsApp.
+                </p>
+              </div>
               <div className="grid grid-cols-2 gap-3">
                 <button type="button" onClick={() => setPaymentMethod("pix")} className={`flex items-center justify-center gap-2 rounded-lg border p-4 text-sm font-medium transition-colors ${paymentMethod === "pix" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted"}`}>
                   <QrCode size={20} /> PIX
@@ -112,9 +176,9 @@ const Checkout = () => {
               <div className="flex justify-between text-lg font-bold"><span className="text-foreground">Total</span><span className="text-primary">R$ {total.toFixed(2)}</span></div>
             </div>
             <button type="submit" disabled={loading} className="mt-6 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50">
-              {loading ? <><Loader2 size={16} className="animate-spin" /> Processando...</> : <><Lock size={16} /> Confirmar pedido</>}
+              {loading ? <><Loader2 size={16} className="animate-spin" /> Redirecionando...</> : <><MessageCircle size={16} /> Falar com suporte</>}
             </button>
-            <p className="mt-3 text-center text-xs text-muted-foreground">Pagamento seguro e criptografado</p>
+            <p className="mt-3 text-center text-xs text-muted-foreground">Atendimento temporario pelo WhatsApp</p>
           </div>
         </form>
       </div>

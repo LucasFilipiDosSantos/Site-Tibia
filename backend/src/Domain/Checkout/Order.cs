@@ -14,6 +14,10 @@ public sealed class Order
     public IReadOnlyList<DeliveryInstruction> DeliveryInstructions => _deliveryInstructions;
     public IReadOnlyList<OrderStatusTransitionEvent> StatusHistory => _statusHistory;
     public DateTimeOffset CreatedAtUtc { get; private set; }
+    public string? CustomerName { get; private set; }
+    public string? CustomerEmail { get; private set; }
+    public string? CustomerDiscord { get; private set; }
+    public string? PaymentMethod { get; private set; }
 
     // Notification metadata snapshot (immutable after order creation)
     public string? NotificationPhone { get; private set; }
@@ -52,6 +56,20 @@ public sealed class Order
         NotificationPhone = available && !string.IsNullOrWhiteSpace(phone) ? phone : null;
         NotificationAvailable = available && NotificationPhone is not null;
         NotificationFailedReason = !NotificationAvailable ? (failedReason ?? "missing-contact") : null;
+    }
+
+    public void SetCustomerContact(string name, string email, string? discord, string? paymentMethod)
+    {
+        CustomerName = RequireText(name, nameof(name));
+        CustomerEmail = RequireText(email, nameof(email));
+        CustomerDiscord = NormalizeOptionalText(discord);
+        PaymentMethod = NormalizeOptionalText(paymentMethod);
+    }
+
+    public void SetAdminEditableData(string name, string email, string? discord, string? paymentMethod, OrderStatus status)
+    {
+        SetCustomerContact(name, email, discord, paymentMethod);
+        Status = status;
     }
 
     /// <summary>
@@ -105,5 +123,20 @@ public sealed class Order
     private Order()
     {
         OrderIntentKey = string.Empty;
+    }
+
+    private static string RequireText(string value, string paramName)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException("Value is required.", paramName);
+        }
+
+        return value.Trim();
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }

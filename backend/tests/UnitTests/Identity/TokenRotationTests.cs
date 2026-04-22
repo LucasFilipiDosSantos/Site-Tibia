@@ -15,7 +15,7 @@ public sealed class TokenRotationTests
         var sessionRepo = new InMemoryRefreshSessionRepository();
         var tokenService = new FakeTokenService();
 
-        var user = new UserAccount("rotate@test.com", "HASH:ValidPass123!");
+        var user = new UserAccount("Test User", "rotate@test.com", "HASH:ValidPass123!");
         await userRepo.AddAsync(user);
         await userRepo.SaveChangesAsync();
 
@@ -39,3 +39,4 @@ public sealed class TokenRotationTests
             rotation.RotateAsync(originalRefresh.RawToken, "127.0.0.3"));
     }
 }
+

@@ -27,7 +27,18 @@ public static class CatalogEndpoints
             var hasNextPage = result.Items.Count == result.PageSize;
 
             return Results.Ok(new ProductListResponse(
-                result.Items.Select(x => new ProductListItemResponse(x.Name, x.Slug, x.Description, x.Price, x.CategorySlug)).ToList(),
+                result.Items.Select(x => new ProductListItemResponse(
+                    x.Id,
+                    x.Name,
+                    x.Slug,
+                    x.Description,
+                    x.Price,
+                    x.CategorySlug,
+                    x.ImageUrl,
+                    x.Server,
+                    x.AvailableStock,
+                    x.Rating,
+                    x.SalesCount)).ToList(),
                 result.Page,
                 result.PageSize,
                 new ProductListAppliedFiltersResponse(category, slug),
@@ -43,7 +54,18 @@ public static class CatalogEndpoints
                 return Results.NotFound();
             }
 
-            return Results.Ok(new ProductResponse(product.Name, product.Slug, product.Description, product.Price, product.CategorySlug));
+            return Results.Ok(new ProductResponse(
+                product.Id,
+                product.Name,
+                product.Slug,
+                product.Description,
+                product.Price,
+                product.CategorySlug,
+                product.ImageUrl,
+                product.Server,
+                product.AvailableStock,
+                product.Rating,
+                product.SalesCount));
         })
         .WithTags("Public Catalog");
 
@@ -72,10 +94,22 @@ public static class CatalogEndpoints
                     request.Slug,
                     request.Description,
                     request.Price,
-                    request.CategorySlug),
+                    request.CategorySlug,
+                    request.ImageUrl),
                 ct);
 
-            return Results.Ok(new ProductResponse(created.Name, created.Slug, created.Description, created.Price, created.CategorySlug));
+            return Results.Ok(new ProductResponse(
+                created.Id,
+                created.Name,
+                created.Slug,
+                created.Description,
+                created.Price,
+                created.CategorySlug,
+                created.ImageUrl,
+                created.Server,
+                created.AvailableStock,
+                created.Rating,
+                created.SalesCount));
         })
         .WithTags("Admin Catalog");
 
@@ -88,10 +122,29 @@ public static class CatalogEndpoints
                     Name: request.Name,
                     Description: request.Description,
                     Price: request.Price,
-                    CategorySlug: request.CategorySlug),
+                    CategorySlug: request.CategorySlug,
+                    ImageUrl: request.ImageUrl),
                 ct);
 
-            return Results.Ok(new ProductResponse(updated.Name, updated.Slug, updated.Description, updated.Price, updated.CategorySlug));
+            return Results.Ok(new ProductResponse(
+                updated.Id,
+                updated.Name,
+                updated.Slug,
+                updated.Description,
+                updated.Price,
+                updated.CategorySlug,
+                updated.ImageUrl,
+                updated.Server,
+                updated.AvailableStock,
+                updated.Rating,
+                updated.SalesCount));
+        })
+        .WithTags("Admin Catalog");
+
+        admin.MapDelete("/products/{slug}", async (string slug, CatalogService catalogService, CancellationToken ct) =>
+        {
+            await catalogService.DeleteProduct(slug, ct);
+            return Results.NoContent();
         })
         .WithTags("Admin Catalog");
 

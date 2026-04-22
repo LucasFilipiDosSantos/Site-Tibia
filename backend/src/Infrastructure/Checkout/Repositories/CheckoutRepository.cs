@@ -48,9 +48,11 @@ public sealed class CheckoutRepository : ICheckoutRepository
         if (createdToUtc.HasValue)
             query = query.Where(o => o.CreatedAtUtc <= createdToUtc.Value);
             
+        var offset = Math.Max(page - 1, 0) * pageSize;
+
         return await query
             .OrderByDescending(o => o.CreatedAtUtc)
-            .Skip(page * pageSize)
+            .Skip(offset)
             .Take(pageSize)
             .Include(o => o.Items)
             .ToListAsync(cancellationToken);

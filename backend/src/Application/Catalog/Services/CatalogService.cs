@@ -21,13 +21,13 @@ public sealed class CatalogService
         var normalizedSlug = NormalizeSlugOrNull(slug)
             ?? throw new ArgumentException("Product slug is required.", nameof(slug));
 
-        var product = await _productRepository.GetBySlugAsync(normalizedSlug, cancellationToken);
-        if (product is null)
+        var projection = await _productRepository.GetCatalogBySlugAsync(normalizedSlug, cancellationToken);
+        if (projection is null)
         {
             return null;
         }
 
-        return new ProductBySlugResponse(product.Name, product.Slug, product.Description, product.Price, product.CategorySlug);
+        return ToProductBySlugResponse(projection);
     }
 
     public async Task<ListProductsResponse> ListProducts(ListProductsRequest request, CancellationToken cancellationToken = default)
@@ -50,9 +50,9 @@ public sealed class CatalogService
             Limit: boundedPageSize
         );
 
-        var products = await _productRepository.ListAsync(query, cancellationToken);
+        var products = await _productRepository.ListCatalogAsync(query, cancellationToken);
         var items = products
-            .Select(product => new ProductSummary(product.Name, product.Slug, product.Description, product.Price, product.CategorySlug))
+            .Select(ToProductSummary)
             .ToList();
 
         return new ListProductsResponse(items, request.Page, boundedPageSize);
@@ -76,11 +76,29 @@ public sealed class CatalogService
             throw new ArgumentException("Product slug already exists.", nameof(request.Slug));
         }
 
-        var product = new Product(request.Name, normalizedSlug, request.Description, request.Price, category.Id, normalizedCategorySlug);
+        var product = new Product(
+            request.Name,
+            normalizedSlug,
+            request.Description,
+            request.Price,
+            category.Id,
+            normalizedCategorySlug,
+            imageUrl: request.ImageUrl);
         await _productRepository.AddAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
 
-        return new ProductBySlugResponse(product.Name, product.Slug, product.Description, product.Price, product.CategorySlug);
+        return new ProductBySlugResponse(
+            product.Id,
+            product.Name,
+            product.Slug,
+            product.Description,
+            product.Price,
+            product.CategorySlug,
+            product.ImageUrl,
+            product.Server,
+            AvailableStock: 0,
+            product.Rating,
+            product.SalesCount);
     }
 
     public async Task<ProductBySlugResponse> UpdateProductPutReplace(UpdateProductPutReplaceRequest request, CancellationToken cancellationToken = default)
@@ -107,11 +125,22 @@ public sealed class CatalogService
         var product = await _productRepository.GetBySlugAsync(routeSlug, cancellationToken)
             ?? throw new ArgumentException("Product slug not found.", nameof(request.RouteSlug));
 
-        product.ReplaceDetails(request.Name, request.Description, request.Price, category.Id, normalizedCategorySlug);
+        product.ReplaceDetails(request.Name, request.Description, request.Price, category.Id, normalizedCategorySlug, request.ImageUrl);
         await _productRepository.UpdateAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
 
-        return new ProductBySlugResponse(product.Name, product.Slug, product.Description, product.Price, product.CategorySlug);
+        return new ProductBySlugResponse(
+            product.Id,
+            product.Name,
+            product.Slug,
+            product.Description,
+            product.Price,
+            product.CategorySlug,
+            product.ImageUrl,
+            product.Server,
+            AvailableStock: 0,
+            product.Rating,
+            product.SalesCount);
     }
 
     public async Task CreateCategory(CreateCategoryRequest request, CancellationToken cancellationToken = default)
@@ -143,6 +172,23 @@ public sealed class CatalogService
         await _categoryRepository.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task DeleteProduct(string slug, CancellationToken cancellationToken = default)
+    {
+        var normalizedSlug = NormalizeSlugOrNull(slug)
+            ?? throw new ArgumentException("Product slug is required.", nameof(slug));
+
+        var product = await _productRepository.GetBySlugAsync(normalizedSlug, cancellationToken)
+            ?? throw new ArgumentException("Product slug not found.", nameof(slug));
+
+        if (await _productRepository.HasProtectedReferencesAsync(product.Id, cancellationToken))
+        {
+            throw new InvalidOperationException("Cannot delete product with linked orders or reservations.");
+        }
+
+        await _productRepository.DeleteAsync(product, cancellationToken);
+        await _productRepository.SaveChangesAsync(cancellationToken);
+    }
+
     private static string? NormalizeSlugOrNull(string? slug)
     {
         if (string.IsNullOrWhiteSpace(slug))
@@ -151,5 +197,39 @@ public sealed class CatalogService
         }
 
         return slug.Trim().ToLowerInvariant();
+    }
+
+    private static ProductSummary ToProductSummary(CatalogProductProjection projection)
+    {
+        var product = projection.Product;
+        return new ProductSummary(
+            product.Id,
+            product.Name,
+            product.Slug,
+            product.Description,
+            product.Price,
+            product.CategorySlug,
+            product.ImageUrl,
+            product.Server,
+            projection.AvailableStock,
+            product.Rating,
+            product.SalesCount);
+    }
+
+    private static ProductBySlugResponse ToProductBySlugResponse(CatalogProductProjection projection)
+    {
+        var product = projection.Product;
+        return new ProductBySlugResponse(
+            product.Id,
+            product.Name,
+            product.Slug,
+            product.Description,
+            product.Price,
+            product.CategorySlug,
+            product.ImageUrl,
+            product.Server,
+            projection.AvailableStock,
+            product.Rating,
+            product.SalesCount);
     }
 }

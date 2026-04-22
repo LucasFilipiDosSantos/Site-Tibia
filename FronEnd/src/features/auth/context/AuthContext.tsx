@@ -1,7 +1,7 @@
-import { createContext, useContext, useState, useEffect, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { toast } from "sonner";
-import type { AuthUser, AuthResult } from "../types/auth.types";
-import { mockAuthService } from "../services/mock-auth.service";
+import { authService } from "../services/auth.service";
+import type { AuthUser } from "../types/auth.types";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -20,51 +20,77 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const session = mockAuthService.initializeAuth();
-    setUser(session?.user ?? null);
-    setIsLoading(false);
+    let mounted = true;
+
+    const restore = async () => {
+      try {
+        const session = await authService.restoreSession();
+        if (mounted) {
+          setUser(session?.user ?? null);
+        }
+      } catch (error) {
+        authService.clearSession();
+        if (mounted) {
+          setUser(null);
+          toast.error(error instanceof Error ? error.message : "Nao foi possivel restaurar sua sessao.");
+        }
+      } finally {
+        if (mounted) {
+          setIsLoading(false);
+        }
+      }
+    };
+
+    void restore();
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
-    const result: AuthResult<AuthUser> = await mockAuthService.login({ email, password });
-    if (result.success) {
-      setUser(result.data);
-      toast.success(`Bem-vindo, ${result.data.name}!`);
+    try {
+      const session = await authService.login({ email, password });
+      setUser(session.user);
+      toast.success(`Bem-vindo, ${session.user.name}!`);
       return true;
-    } else {
-      toast.error(result.error);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel entrar.");
       return false;
     }
   };
 
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
-    const result: AuthResult<AuthUser> = await mockAuthService.register({ name, email, password });
-    if (result.success) {
-      setUser(result.data);
+    try {
+      await authService.register({ name, email, password });
+      const session = await authService.login({ email, password });
+      setUser(session.user);
       toast.success("Conta criada com sucesso!");
       return true;
-    } else {
-      toast.error(result.error);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel criar a conta.");
       return false;
     }
   };
 
   const logout = () => {
-    mockAuthService.logout();
+    authService.clearSession();
     setUser(null);
-    toast.info("Você saiu da conta");
+    toast.info("Voce saiu da conta");
   };
 
   return (
-    <AuthContext.Provider value={{
-      user,
-      isAuthenticated: !!user,
-      isAdmin: user?.role === "admin",
-      isLoading,
-      login,
-      register,
-      logout
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isAdmin: user?.role === "admin",
+        isLoading,
+        login,
+        register,
+        logout,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -72,6 +98,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+
   return ctx;
 };

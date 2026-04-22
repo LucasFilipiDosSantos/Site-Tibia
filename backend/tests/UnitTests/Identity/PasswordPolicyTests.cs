@@ -17,7 +17,7 @@ public sealed class PasswordPolicyTests
         var service = CreateService();
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.RegisterAsync(new RegisterCommand("user@example.com", password)));
+            service.RegisterAsync(new RegisterCommand("Test User", "user@example.com", password)));
     }
 
     [Fact]
@@ -26,11 +26,24 @@ public sealed class PasswordPolicyTests
         var repo = new InMemoryUserRepository();
         var service = CreateService(repo);
 
-        var result = await service.RegisterAsync(new RegisterCommand("user@example.com", "ValidPass123!"));
+        var result = await service.RegisterAsync(new RegisterCommand("Test User", "user@example.com", "ValidPass123!"));
 
         Assert.NotEqual(Guid.Empty, result.UserId);
+        Assert.Equal("Test User", result.Name);
         Assert.Equal("user@example.com", result.Email);
         Assert.Single(repo.Users);
+    }
+
+    [Fact]
+    public async Task RegisterAsync_NormalizesEmailBeforePersisting()
+    {
+        var repo = new InMemoryUserRepository();
+        var service = CreateService(repo);
+
+        var result = await service.RegisterAsync(new RegisterCommand("Test User", "User@Example.COM", "ValidPass123!"));
+
+        Assert.Equal("user@example.com", result.Email);
+        Assert.Equal("user@example.com", Assert.Single(repo.Users).Email);
     }
 
     private static IdentityService CreateService(InMemoryUserRepository? userRepo = null)

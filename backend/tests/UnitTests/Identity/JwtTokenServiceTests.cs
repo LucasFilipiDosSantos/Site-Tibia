@@ -14,6 +14,7 @@ public sealed class JwtTokenServiceTests
 
         var result = service.IssueAccessToken(new Application.Identity.Contracts.AccessTokenRequest(
             Guid.NewGuid(),
+            "Claims User",
             "claims@test.com",
             UserRole.Admin,
             true,
@@ -23,6 +24,7 @@ public sealed class JwtTokenServiceTests
         var token = handler.ReadJwtToken(result.Token);
 
         Assert.Contains(token.Claims, c => c.Type == "role" && c.Value == "Admin");
+        Assert.Contains(token.Claims, c => c.Type == "name" && c.Value == "Claims User");
         Assert.Contains(token.Claims, c => c.Type == "email_verified" && c.Value == "true");
     }
 
@@ -34,6 +36,7 @@ public sealed class JwtTokenServiceTests
 
         var result = service.IssueAccessToken(new Application.Identity.Contracts.AccessTokenRequest(
             Guid.NewGuid(),
+            "Claims User",
             "claims@test.com",
             UserRole.Costumer,
             false,

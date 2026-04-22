@@ -2,17 +2,18 @@
 
 ## What This Is
 
-This project is the customer-facing frontend for the Tibia-focused webstore. It provides the UI for browsing products, managing cart, checkout, and order tracking for virtual goods on Aurera and Eternia servers. It serves customers and connects to the backend API for all operations.
+This project is the customer-facing frontend for the Tibia-focused webstore. It provides the UI for browsing products, authenticating users, managing a local cart, and preparing checkout/order flows against the backend API.
 
 ## Core Value
 
-Customers can easily browse Tibia products, complete purchases, and track deliveries through an intuitive web interface.
+Customers can browse Tibia products and authenticate against the platform through a reliable web interface that is aligned with the real backend contracts.
 
 ## Requirements
 
 ### Validated
 
-(None yet — ship to validate)
+- [x] Frontend can authenticate against backend JWT endpoints
+- [x] Frontend can browse catalog data from the backend public catalog endpoints
 
 ### Active
 
@@ -27,51 +28,39 @@ Customers can easily browse Tibia products, complete purchases, and track delive
 
 ### Out of Scope
 
-- Native mobile app — web-first scope
+- Native mobile app - web-first scope
 - Real-time chat support
 - Advanced analytics dashboard
 
 ## Context
 
 - Domain: MMORPG virtual goods e-commerce (Tibia gold, items, characters, services)
-- Integrates with backend API at `/api` endpoints
+- Backend endpoints currently used: `/auth/*` and `/products*`
 - Uses React + TypeScript + Vite + Tailwind
 - Design system: shadcn/ui (Radix UI components)
-- State: TanStack Query for API, React Context for local state
+- State: TanStack Query for remote catalog data, React Context for auth and cart
 
 ## Constraints
 
-- **Tech stack**: React 18 + TypeScript + Vite — required
-- **Styling**: Tailwind CSS — required
-- **UI**: shadcn/ui + Radix primitives — required
-- **API**: Backend REST API — required for real operations
-- **Auth**: JWT via backend — required
-- **Payment**: Mercado Pago integration — required
+- **Tech stack**: React 18 + TypeScript + Vite - required
+- **Styling**: Tailwind CSS - required
+- **UI**: shadcn/ui + Radix primitives - required
+- **API**: Backend REST API - required for real operations
+- **Auth**: JWT via backend - required
+- **Payment**: Mercado Pago integration - required
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Frontend-only initialization | Backend already planned in backend/.planning | In progress |
-| Connect to existing backend | Backend has Phase 5+ ready | — Pending |
-| Use shadcn/ui pattern | Already in codebase | — Pending |
+| Switch frontend auth from mock to backend JWT flow | Backend auth endpoints are already available and unblock Phase 1 | Done |
+| Switch public catalog from mock data to backend `/products` endpoints | Makes homepage, listing, and details reflect real API contracts | Done |
+| Keep cart local for now | Backend public catalog does not expose product IDs required by checkout/cart endpoints | Temporary |
+| Treat missing `server`, `stock`, `rating`, and `productId` fields as a backend contract gap | Frontend cannot reliably implement server filtering or real checkout wiring without them | Open |
 
 ## Evolution
 
 This document evolves at phase transitions and milestone boundaries.
 
-**After each phase transition** (via `/gsd-transition`):
-1. Requirements invalidated? → Move to Out of Scope with reason
-2. Requirements validated? → Move to Validated with phase reference
-3. New requirements emerged? → Add to Active
-4. Decisions to log? → Add to Key Decisions
-5. "What This Is" still accurate? → Update if drifted
-
-**After each milestone** (via `/gsd-complete-milestone`):
-1. Full review of all sections
-2. Core Value check — still the right priority?
-3. Audit Out of Scope — reasons still valid?
-4. Update Context with current state
-
 ---
-*Last updated: 2026-04-19 after codebase mapping*
+*Last updated: 2026-04-19 after frontend API/auth integration pass*

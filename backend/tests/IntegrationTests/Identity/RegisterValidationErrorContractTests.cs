@@ -24,7 +24,7 @@ public sealed class RegisterValidationErrorContractTests
 
         var response = await client.PostAsJsonAsync(
             "/auth/register",
-            new { email = "weak@test.com", password = "weak" }
+            new { name = "Weak User", email = "weak@test.com", password = "weak" }
         );
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -45,7 +45,7 @@ public sealed class RegisterValidationErrorContractTests
 
         var response = await client.PostAsJsonAsync(
             "/auth/register",
-            new { email = "invalid-email", password = "ValidPass123!" }
+            new { name = "Invalid User", email = "invalid-email", password = "ValidPass123!" }
         );
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -66,7 +66,7 @@ public sealed class RegisterValidationErrorContractTests
 
         var response = await client.PostAsJsonAsync(
             "/auth/register",
-            new { email = "strong@test.com", password = "ValidPass123!" }
+            new { name = "Strong User", email = "strong@test.com", password = "ValidPass123!" }
         );
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -84,7 +84,7 @@ public sealed class RegisterValidationErrorContractTests
 
         var response = await client.PostAsJsonAsync(
             "/auth/register",
-            new { email = "nostack@test.com", password = "weak" }
+            new { name = "No Stack", email = "nostack@test.com", password = "weak" }
         );
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);

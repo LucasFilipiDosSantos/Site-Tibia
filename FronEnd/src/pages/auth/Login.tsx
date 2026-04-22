@@ -5,18 +5,18 @@ import { useAuth } from "@/features/auth/context/AuthContext";
 import logoImg from "@/assets/lootera-logo.png";
 
 const Login = () => {
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  if (isAuthenticated) {
+  if (!isLoading && isAuthenticated) {
     navigate("/");
     return null;
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     const success = await login(email, password);
     if (success) {
       navigate("/");
@@ -30,27 +30,43 @@ const Login = () => {
           <div className="mb-8 text-center">
             <img src={logoImg} alt="Lootera" className="mx-auto mb-4 h-16 w-auto" />
             <h1 className="font-display text-xl font-bold text-foreground">Entrar</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta Lootera</p>
+            <p className="mt-1 text-sm text-muted-foreground">Acesse sua conta usando o backend real.</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="mb-1 block text-sm text-muted-foreground">E-mail</label>
-              <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" required className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="seu@email.com" />
+              <input
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                type="email"
+                required
+                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="seu@email.com"
+              />
             </div>
             <div>
               <label className="mb-1 block text-sm text-muted-foreground">Senha</label>
-              <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="••••••••" />
+              <input
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                type="password"
+                required
+                className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                placeholder="Digite sua senha"
+              />
             </div>
-            <button type="submit" className="w-full rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">Entrar</button>
+            <button type="submit" className="w-full rounded-lg bg-primary py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90">
+              Entrar
+            </button>
           </form>
 
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Demo: use <span className="text-primary">admin@lootera.com</span> para acesso admin
+          <p className="mt-4 rounded-lg border border-border bg-card p-3 text-center text-sm text-muted-foreground">
+            Se o login falhar, confirme se a API esta ativa em <code>VITE_API_BASE_URL</code>.
           </p>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Não tem conta? <Link to="/cadastro" className="text-primary hover:underline">Cadastre-se</Link>
+            Nao tem conta? <Link to="/cadastro" className="text-primary hover:underline">Cadastre-se</Link>
           </p>
         </div>
       </div>

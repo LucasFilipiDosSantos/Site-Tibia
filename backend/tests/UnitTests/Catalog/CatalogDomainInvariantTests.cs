@@ -46,13 +46,14 @@ public sealed class CatalogDomainInvariantTests
     }
 
     [Fact]
-    public void Product_HasNoServerScopeFieldInModel()
+    public void Product_CatalogMetadataIsValidated()
     {
-        var properties = typeof(Product).GetProperties().Select(p => p.Name).ToHashSet(StringComparer.OrdinalIgnoreCase);
+        var product = new Product("Coin Package", "coin-package", "Starter package", 10m, Guid.NewGuid(), "coin", "Aurera", 4.8m, 10);
 
-        Assert.DoesNotContain("Server", properties);
-        Assert.DoesNotContain("World", properties);
-        Assert.DoesNotContain("Aurera", properties);
-        Assert.DoesNotContain("Eternia", properties);
+        Assert.Equal("Aurera", product.Server);
+        Assert.Equal(4.8m, product.Rating);
+        Assert.Equal(10, product.SalesCount);
+        Assert.Throws<ArgumentOutOfRangeException>(() => product.UpdateCatalogMetadata("Aurera", 5.1m, 10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => product.UpdateCatalogMetadata("Aurera", 4.8m, -1));
     }
 }

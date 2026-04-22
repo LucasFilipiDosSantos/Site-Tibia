@@ -28,6 +28,14 @@ public partial class Program
     private static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        if (builder.Environment.IsEnvironment("Testing"))
+        {
+            builder.Logging.ClearProviders();
+            builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
+            {
+                ["Hangfire:Enabled"] = "false"
+            });
+        }
 
         // Add services to the container.
         // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
@@ -36,18 +44,30 @@ public partial class Program
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        var frontendOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+            ?? [];
+        var defaultFrontendOrigins = new[]
+        {
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+            "http://localhost:4173",
+            "http://127.0.0.1:4173",
+            "http://localhost",
+            "http://127.0.0.1"
+        };
+        var allowedFrontendOrigins = defaultFrontendOrigins
+            .Concat(frontendOrigins)
+            .Where(origin => !string.IsNullOrWhiteSpace(origin))
+            .Select(origin => origin.Trim().TrimEnd('/'))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+
         builder.Services.AddCors(options =>
         {
-            options.AddPolicy("FrontendDev", policy =>
+            options.AddPolicy("Frontend", policy =>
             {
                 policy
-                    .WithOrigins(
-                        "http://localhost:5173",
-                        "http://127.0.0.1:5173",
-                        "http://localhost:4173",
-                        "http://127.0.0.1:4173",
-                        "http://localhost",
-                        "http://127.0.0.1")
+                    .WithOrigins(allowedFrontendOrigins)
                     .AllowAnyHeader()
                     .AllowAnyMethod();
             });
@@ -79,6 +99,15 @@ public partial class Program
         {
             throw new InvalidOperationException(
                 "Jwt signing key must be at least 32 characters for HS256."
+            );
+        }
+
+        if (!builder.Environment.IsDevelopment()
+            && !builder.Environment.IsEnvironment("Testing")
+            && string.Equals(jwtOptions.SigningKey, "01234567890123456789012345678901", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Jwt signing key is still using the development placeholder. Set Jwt:SigningKey from a production secret."
             );
         }
 
@@ -119,7 +148,11 @@ public partial class Program
         using (var scope = app.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            if (app.Environment.IsDevelopment())
+            if (app.Environment.IsEnvironment("Testing"))
+            {
+                // Test hosts replace repositories/services and should not touch the real database.
+            }
+            else if (app.Environment.IsDevelopment())
             {
                 try
                 {
@@ -154,7 +187,7 @@ public partial class Program
         }
 
         app.UseHttpsSecurity();
-        app.UseCors("FrontendDev");
+        app.UseCors("Frontend");
         app.UseAuthentication();
         app.UseAuthorization();
         app.UseMiddleware<RequestLoggingMiddleware>();
@@ -164,13 +197,22 @@ public partial class Program
         app.MapCatalogEndpoints();
         app.MapInventoryEndpoints();
         app.MapCheckoutEndpoints();
-        app.MapPaymentWebhookEndpoints();
+        app.MapAdminOrderEndpoints();
+        var hangfireEnabled = app.Configuration.GetValue("Hangfire:Enabled", true);
+        if (hangfireEnabled)
+        {
+            app.MapPaymentWebhookEndpoints();
+        }
+
         app.MapCustomOrderEndpoints();
         app.MapAdminEndpoints();
         app.MapAdminAuditEndpoints();
         app.MapAdminWebhookLogEndpoints();
-        app.MapHangfireDashboard();
-        app.MapNotificationJobEndpoints();
+        if (hangfireEnabled)
+        {
+            app.MapHangfireDashboard();
+            app.MapNotificationJobEndpoints();
+        }
 
         app.Run();
     }

@@ -3,6 +3,7 @@ export interface Product {
   name: string;
   slug?: string;
   category: string;
+  categorySlug?: string;
   categoryId?: string;
   server: string;
   serverId?: string;

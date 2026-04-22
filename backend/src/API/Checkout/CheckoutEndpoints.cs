@@ -1,4 +1,5 @@
 using API.Auth;
+using Application.Catalog.Contracts;
 using Application.Checkout.Contracts;
 using Application.Checkout.Services;
 using Application.Payments.Contracts;
@@ -12,6 +13,65 @@ public static class CheckoutEndpoints
 {
     public static IEndpointRouteBuilder MapCheckoutEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapPost("/checkout/support-pending", async (
+            SupportPendingCheckoutDto request,
+            IProductRepository productRepository,
+            ICheckoutRepository checkoutRepository,
+            CancellationToken ct) =>
+        {
+            if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Email))
+            {
+                return Results.BadRequest(new { message = "Nome e e-mail sao obrigatorios." });
+            }
+
+            if (request.Items.Count == 0)
+            {
+                return Results.BadRequest(new { message = "O carrinho esta vazio." });
+            }
+
+            var order = new Order(Guid.NewGuid(), Guid.NewGuid(), $"support-{Guid.NewGuid():N}");
+            order.SetCustomerContact(request.Name, request.Email, request.Discord, request.PaymentMethod);
+            order.SetNotificationMetadata(null, available: false, failedReason: "support-checkout");
+
+            foreach (var item in request.Items)
+            {
+                if (item.Quantity <= 0)
+                {
+                    return Results.BadRequest(new { message = "Quantidade invalida no carrinho." });
+                }
+
+                var slug = item.ProductId.Trim().ToLowerInvariant();
+                var product = await productRepository.GetBySlugAsync(slug, ct);
+                if (product is null)
+                {
+                    return Results.BadRequest(new { message = $"Produto '{item.ProductId}' nao foi encontrado." });
+                }
+
+                order.AddItemSnapshot(new OrderItemSnapshot(
+                    product.Id,
+                    item.Quantity,
+                    product.Price,
+                    "BRL",
+                    product.Name,
+                    product.Slug,
+                    product.CategorySlug));
+
+                order.AddDeliveryInstruction(DeliveryInstruction.CreateManual(
+                    product.Id,
+                    $"Pedido pendente via WhatsApp. Servidor: {item.Server ?? "nao informado"}",
+                    request.Discord ?? request.Email));
+            }
+
+            await checkoutRepository.SaveOrderAsync(order, ct);
+
+            return Results.Ok(new SupportPendingCheckoutResponseDto(
+                order.Id,
+                order.OrderIntentKey,
+                order.Status.ToString(),
+                GetStatusLabel(order.Status)));
+        })
+        .WithTags("Public Checkout");
+
         var group = app.MapGroup("/checkout")
             .RequireAuthorization(AuthPolicies.VerifiedForSensitiveActions);
 
@@ -132,7 +192,13 @@ public static class CheckoutEndpoints
                 o.OrderIntentKey,
                 o.CreatedAtUtc,
                 o.Status.ToString(),
-                GetStatusLabel(o.Status))).ToList();
+                GetStatusLabel(o.Status),
+                o.CustomerName,
+                o.CustomerEmail,
+                o.CustomerDiscord,
+                o.PaymentMethod,
+                o.Items.Sum(item => item.UnitPrice * item.Quantity),
+                o.Items.Sum(item => item.Quantity))).ToList();
                 
             return Results.Ok(new PaginatedOrderListDto(items, page, pageSize, items.Count));
         });

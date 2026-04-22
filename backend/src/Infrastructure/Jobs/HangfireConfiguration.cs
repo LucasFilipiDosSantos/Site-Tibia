@@ -11,6 +11,11 @@ public static class HangfireConfiguration
 {
     public static IServiceCollection AddHangfireServices(this IServiceCollection services, IConfiguration configuration)
     {
+        if (!configuration.GetValue("Hangfire:Enabled", true))
+        {
+            return services;
+        }
+
         var connectionString = configuration.GetConnectionString("DefaultConnection")
             ?? "Host=localhost;Port=5432;Database=tibia_webstore;Username=postgres;Password=postgres";
 

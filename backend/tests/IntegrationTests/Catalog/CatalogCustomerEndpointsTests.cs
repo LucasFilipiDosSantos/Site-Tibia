@@ -149,6 +149,15 @@ public sealed class CatalogCustomerEndpointsTests
         public Task<bool> ExistsByCategorySlugAsync(string categorySlug, CancellationToken cancellationToken = default)
             => Task.FromResult(_items.Any(x => x.CategorySlug == categorySlug));
 
+        public Task<bool> HasProtectedReferencesAsync(Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+
+        public Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default)
+        {
+            var product = _items.SingleOrDefault(x => x.Slug == slug);
+            return Task.FromResult(product is null ? null : new CatalogProductProjection(product, AvailableStock: 10));
+        }
+
         public Task<IReadOnlyList<Domain.Catalog.Product>> ListAsync(ProductListQuery query, CancellationToken cancellationToken = default)
         {
             var source = _items.AsEnumerable();
@@ -172,6 +181,18 @@ public sealed class CatalogCustomerEndpointsTests
         }
 
         public Task UpdateAsync(Domain.Catalog.Product product, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task DeleteAsync(Domain.Catalog.Product product, CancellationToken cancellationToken = default)
+        {
+            _items.Remove(product);
+            return Task.CompletedTask;
+        }
+
+        public async Task<IReadOnlyList<CatalogProductProjection>> ListCatalogAsync(ProductListQuery query, CancellationToken cancellationToken = default)
+        {
+            var products = await ListAsync(query, cancellationToken);
+            return products.Select(product => new CatalogProductProjection(product, AvailableStock: 10)).ToList();
+        }
+
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 

@@ -12,7 +12,7 @@ public sealed class LockoutPolicyTests
         var now = new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
         var clock = new FixedClock(now);
         var userRepo = new InMemoryUserRepository();
-        var user = new UserAccount("lock@test.com", "HASH:ValidPass123!");
+        var user = new UserAccount("Test User", "lock@test.com", "HASH:ValidPass123!");
         await userRepo.AddAsync(user);
         await userRepo.SaveChangesAsync();
 
@@ -36,3 +36,4 @@ public sealed class LockoutPolicyTests
             service.LoginAsync(new LoginCommand("lock@test.com", "ValidPass123!", "127.0.0.1")));
     }
 }
+

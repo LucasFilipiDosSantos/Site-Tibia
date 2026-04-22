@@ -182,9 +182,11 @@ public sealed class InventoryRepository : IInventoryRepository
     {
         var stock = await _dbContext.InventoryStocks
             .AsNoTracking()
-            .SingleAsync(x => x.ProductId == productId, cancellationToken);
+            .SingleOrDefaultAsync(x => x.ProductId == productId, cancellationToken);
 
-        return new InventoryAvailabilityResponse(stock.AvailableQuantity, stock.ReservedQuantity, stock.TotalQuantity);
+        return stock is null
+            ? new InventoryAvailabilityResponse(0, 0, 0)
+            : new InventoryAvailabilityResponse(stock.AvailableQuantity, stock.ReservedQuantity, stock.TotalQuantity);
     }
 
     public async Task<AdjustStockResponse> AdjustStockAsync(
@@ -196,7 +198,14 @@ public sealed class InventoryRepository : IInventoryRepository
         {
             try
             {
-                var stock = await _dbContext.InventoryStocks.SingleAsync(x => x.ProductId == command.ProductId, cancellationToken);
+                var stock = await _dbContext.InventoryStocks.SingleOrDefaultAsync(x => x.ProductId == command.ProductId, cancellationToken);
+                var isNewStock = stock is null;
+                if (stock is null)
+                {
+                    stock = new InventoryStock(command.ProductId, totalQuantity: 0, reservedQuantity: 0, command.AdjustedAtUtc);
+                    await _dbContext.InventoryStocks.AddAsync(stock, cancellationToken);
+                }
+
                 stock.ApplyDelta(command.Delta, command.AdjustedAtUtc);
 
                 var audit = new StockAdjustmentAudit(
@@ -208,7 +217,11 @@ public sealed class InventoryRepository : IInventoryRepository
                     command.Reason,
                     command.AdjustedAtUtc);
 
-                _dbContext.InventoryStocks.Update(stock);
+                if (!isNewStock)
+                {
+                    _dbContext.InventoryStocks.Update(stock);
+                }
+
                 _dbContext.StockAdjustmentAudits.Add(audit);
                 await _dbContext.SaveChangesAsync(cancellationToken);
 

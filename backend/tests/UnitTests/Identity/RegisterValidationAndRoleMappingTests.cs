@@ -23,7 +23,7 @@ public sealed class RegisterValidationAndRoleMappingTests
         );
 
         await Assert.ThrowsAsync<ArgumentException>(() =>
-            service.RegisterAsync(new RegisterCommand("not-an-email", "ValidPass123!"))
+            service.RegisterAsync(new RegisterCommand("Test User", "not-an-email", "ValidPass123!"))
         );
 
         Assert.Equal(0, users.GetByEmailCallCount);
@@ -84,3 +84,4 @@ public sealed class RegisterValidationAndRoleMappingTests
         }
     }
 }
+

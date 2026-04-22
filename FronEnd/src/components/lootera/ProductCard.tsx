@@ -1,4 +1,5 @@
-import { Star, ShoppingCart, Sword } from "lucide-react";
+import { Star, ShoppingCart } from "lucide-react";
+import { ProductImage } from "@/components/lootera/ProductImage";
 
 interface ProductCardProps {
   title: string;
@@ -11,7 +12,7 @@ interface ProductCardProps {
   variant?: "commercial" | "fantasy";
 }
 
-const ProductCard = ({ title, server, price, originalPrice, rating, tag, variant = "commercial" }: ProductCardProps) => {
+const ProductCard = ({ title, server, price, originalPrice, rating, image, tag, variant = "commercial" }: ProductCardProps) => {
   const isFantasy = variant === "fantasy";
 
   return (
@@ -22,9 +23,7 @@ const ProductCard = ({ title, server, price, originalPrice, rating, tag, variant
       }`}
     >
       <div className={`relative h-36 lg:h-44 ${isFantasy ? "bg-brand-purple/30" : "bg-secondary"}`}>
-        <div className="flex h-full items-center justify-center text-muted-foreground">
-          <Sword size={40} className="opacity-20" />
-        </div>
+        <ProductImage src={image} alt={title} fallbackLabel="Produto" className="h-full rounded-none" />
         {tag && (
           <span className={`absolute left-3 top-3 rounded-md px-2 py-0.5 text-xs font-semibold
             ${isFantasy ? "bg-brand-gold/90 text-background" : "bg-primary text-primary-foreground"}`}>

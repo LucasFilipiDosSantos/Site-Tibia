@@ -97,9 +97,9 @@ internal sealed class FakePasswordHasherService : IPasswordHasherService
 {
     public string HashPassword(string password) => $"HASH:{password}";
 
-    public bool VerifyHashedPassword(string hashedPassword, string providedPassword)
+    public PasswordHashVerificationResult VerifyHashedPassword(string hashedPassword, string providedPassword)
     {
-        return hashedPassword == HashPassword(providedPassword);
+        return new PasswordHashVerificationResult(hashedPassword == HashPassword(providedPassword), false);
     }
 }
 

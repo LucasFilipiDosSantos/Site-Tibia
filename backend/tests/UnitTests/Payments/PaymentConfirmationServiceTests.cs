@@ -289,7 +289,7 @@ public sealed class PaymentConfirmationServiceTests
     /// </summary>
     private sealed class MockFulfillmentService : IFulfillmentService
     {
-        public Task RouteFulfillmentAsync(Guid orderId, CancellationToken ct = default)
+        public Task RouteFulfillmentAsync(Guid orderId, string? correlationId = null, CancellationToken ct = default)
         {
             return Task.CompletedTask;
         }
@@ -300,17 +300,17 @@ public sealed class PaymentConfirmationServiceTests
     /// </summary>
     private sealed class MockNotificationPublisher : INotificationPublisher
     {
-        public Task PublishOrderPaidAsync(Order order, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+        public Task PublishOrderPaidAsync(Order order, DateTimeOffset statusAtUtc, string? correlationId = null, CancellationToken ct = default)
         {
             return Task.CompletedTask;
         }
 
-        public Task PublishDeliveryCompletedAsync(Order order, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+        public Task PublishDeliveryCompletedAsync(Order order, DateTimeOffset statusAtUtc, string? correlationId = null, CancellationToken ct = default)
         {
             return Task.CompletedTask;
         }
 
-        public Task PublishDeliveryFailedAsync(Order order, string failureReason, DateTimeOffset statusAtUtc, CancellationToken ct = default)
+        public Task PublishDeliveryFailedAsync(Order order, string failureReason, DateTimeOffset statusAtUtc, string? correlationId = null, CancellationToken ct = default)
         {
             return Task.CompletedTask;
         }

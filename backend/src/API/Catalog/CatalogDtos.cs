@@ -40,21 +40,33 @@ public sealed record CategorySlugRouteRequest(string Slug);
 /// Item contract in customer list responses.
 /// </summary>
 public sealed record ProductListItemResponse(
+    Guid Id,
     string Name,
     string Slug,
     string Description,
     decimal Price,
-    string CategorySlug);
+    string CategorySlug,
+    string? ImageUrl,
+    string Server,
+    int AvailableStock,
+    decimal Rating,
+    int SalesCount);
 
 /// <summary>
 /// Customer/admin product response contract.
 /// </summary>
 public sealed record ProductResponse(
+    Guid Id,
     string Name,
     string Slug,
     string Description,
     decimal Price,
-    string CategorySlug);
+    string CategorySlug,
+    string? ImageUrl,
+    string Server,
+    int AvailableStock,
+    decimal Rating,
+    int SalesCount);
 
 /// <summary>
 /// Echo of effective list filters used to produce response items.
@@ -95,7 +107,8 @@ public sealed record CreateProductRequest(
     string Slug,
     string Description,
     decimal Price,
-    string CategorySlug);
+    string CategorySlug,
+    string? ImageUrl = null);
 
 /// <summary>
 /// Admin product full-replace payload.
@@ -105,4 +118,5 @@ public sealed record UpdateProductPutReplaceRequest(
     string Name,
     string Description,
     decimal Price,
-    string CategorySlug);
+    string CategorySlug,
+    string? ImageUrl = null);

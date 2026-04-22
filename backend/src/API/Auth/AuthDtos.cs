@@ -1,6 +1,6 @@
 namespace API.Auth;
 
-public sealed record RegisterRequest(string Email, string Password);
+public sealed record RegisterRequest(string Name, string Email, string Password);
 public sealed record LoginRequest(string Email, string Password);
 public sealed record RefreshRequest(string RefreshToken);
 public sealed record VerificationRequest(string Email);

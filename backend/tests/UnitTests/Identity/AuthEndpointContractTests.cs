@@ -7,7 +7,7 @@ public sealed class AuthEndpointContractTests
     [Fact]
     public void AuthDtos_ContainAllRequiredContracts()
     {
-        _ = new RegisterRequest("u@test.com", "ValidPass123!");
+        _ = new RegisterRequest("Test User", "u@test.com", "ValidPass123!");
         _ = new LoginRequest("u@test.com", "ValidPass123!");
         _ = new RefreshRequest("refresh-token");
         _ = new VerificationRequest("u@test.com");

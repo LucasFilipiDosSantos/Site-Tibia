@@ -154,14 +154,25 @@ public sealed class AdminJwtAuthorizationTests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseEnvironment("Development");
+            builder.UseEnvironment("Testing");
             builder.ConfigureAppConfiguration((_, cfg) =>
             {
                 cfg.AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["Jwt:Issuer"] = Issuer,
                     ["Jwt:Audience"] = Audience,
-                    ["Jwt:SigningKey"] = SigningKey
+                    ["Jwt:SigningKey"] = SigningKey,
+                    ["IdentityTokenDelivery:Provider"] = "inmemory",
+                    ["MercadoPago:AccessToken"] = "TEST-access-token",
+                    ["MercadoPago:PublicKey"] = "TEST-public-key",
+                    ["MercadoPago:NotificationUrl"] = "https://test.local/api/payments/webhook",
+                    ["MercadoPago:SuccessUrl"] = "https://test.local/checkout/success",
+                    ["MercadoPago:FailureUrl"] = "https://test.local/checkout/failure",
+                    ["MercadoPago:PendingUrl"] = "https://test.local/checkout/pending",
+                    ["WhatsApp:AccessToken"] = "test-token",
+                    ["WhatsApp:PhoneNumberId"] = "test-phone",
+                    ["WhatsApp:WhatsAppBusinessId"] = "test-business",
+                    ["Hangfire:Enabled"] = "false"
                 });
             });
         }

@@ -141,6 +141,12 @@ public sealed class CatalogServiceFilterAndPaginationTests
             return Task.FromResult(_products.SingleOrDefault(p => p.Slug == slug));
         }
 
+        public Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default)
+        {
+            var product = _products.SingleOrDefault(p => p.Slug == slug);
+            return Task.FromResult(product is null ? null : new CatalogProductProjection(product, AvailableStock: 10));
+        }
+
         public Task<bool> ExistsBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_products.Any(p => p.Slug == slug));
@@ -149,6 +155,11 @@ public sealed class CatalogServiceFilterAndPaginationTests
         public Task<bool> ExistsByCategorySlugAsync(string categorySlug, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_products.Any(p => p.CategorySlug == categorySlug));
+        }
+
+        public Task<bool> HasProtectedReferencesAsync(Guid productId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(false);
         }
 
         public Task<IReadOnlyList<Product>> ListAsync(ProductListQuery query, CancellationToken cancellationToken = default)
@@ -171,6 +182,12 @@ public sealed class CatalogServiceFilterAndPaginationTests
             return Task.FromResult<IReadOnlyList<Product>>(filtered.ToList());
         }
 
+        public async Task<IReadOnlyList<CatalogProductProjection>> ListCatalogAsync(ProductListQuery query, CancellationToken cancellationToken = default)
+        {
+            var products = await ListAsync(query, cancellationToken);
+            return products.Select(product => new CatalogProductProjection(product, AvailableStock: 10)).ToList();
+        }
+
         public Task AddAsync(Product product, CancellationToken cancellationToken = default)
         {
             _products.Add(product);
@@ -179,6 +196,12 @@ public sealed class CatalogServiceFilterAndPaginationTests
 
         public Task UpdateAsync(Product product, CancellationToken cancellationToken = default)
         {
+            return Task.CompletedTask;
+        }
+
+        public Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
+        {
+            _products.Remove(product);
             return Task.CompletedTask;
         }
 

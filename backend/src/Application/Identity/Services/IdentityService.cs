@@ -1,4 +1,5 @@
 using System.Net.Mail;
+using System.Security.Cryptography;
 using Application.Identity.Contracts;
 using Application.Identity.Exceptions;
 using Domain.Identity;
@@ -47,7 +48,13 @@ public sealed class IdentityService : IIdentityService
             throw new ArgumentException("Email format is invalid.", nameof(command.Email));
         }
 
-        var existing = await _userRepository.GetByEmailAsync(command.Email, cancellationToken);
+        if (string.IsNullOrWhiteSpace(command.Name))
+        {
+            throw new ArgumentException("Name is required.", nameof(command.Name));
+        }
+
+        var normalizedEmail = UserAccount.NormalizeEmail(command.Email);
+        var existing = await _userRepository.GetByEmailAsync(normalizedEmail, cancellationToken);
         if (existing is not null)
         {
             throw new InvalidOperationException("User already exists.");
@@ -62,10 +69,10 @@ public sealed class IdentityService : IIdentityService
         }
 
         var hash = _passwordHasher.HashPassword(command.Password);
-        var user = new UserAccount(command.Email, hash);
+        var user = new UserAccount(command.Name, normalizedEmail, hash);
         await _userRepository.AddAsync(user, cancellationToken);
         await _userRepository.SaveChangesAsync(cancellationToken);
-        return new RegisterResult(user.Id, user.Email);
+        return new RegisterResult(user.Id, user.Name, user.Email);
     }
 
     private static bool IsValidEmail(string? email)
@@ -106,8 +113,8 @@ public sealed class IdentityService : IIdentityService
             throw new InvalidOperationException("User is locked out.");
         }
 
-        var valid = _passwordHasher.VerifyHashedPassword(user.PasswordHash, command.Password);
-        if (!valid)
+        var passwordVerification = _passwordHasher.VerifyHashedPassword(user.PasswordHash, command.Password);
+        if (!passwordVerification.Succeeded)
         {
             user.RecordFailedLogin(now);
             await _userRepository.UpdateAsync(user, cancellationToken);
@@ -142,10 +149,15 @@ public sealed class IdentityService : IIdentityService
         }
 
         user.ResetFailedLogin(now);
+        if (passwordVerification.NeedsRehash)
+        {
+            user.SetPasswordHash(_passwordHasher.HashPassword(command.Password));
+        }
+
         await _userRepository.UpdateAsync(user, cancellationToken);
 
         var access = _tokenService.IssueAccessToken(
-            new AccessTokenRequest(user.Id, user.Email, user.Role, user.EmailVerified, now)
+            new AccessTokenRequest(user.Id, user.Name, user.Email, user.Role, user.EmailVerified, now)
         );
         var familyId = Guid.NewGuid();
         var refresh = _tokenService.IssueRefreshToken(
@@ -190,7 +202,7 @@ public sealed class IdentityService : IIdentityService
             return;
         }
 
-        var rawToken = Guid.NewGuid().ToString("N");
+        var rawToken = GenerateOpaqueSecurityToken();
         var tokenHash = _tokenService.HashToken(rawToken);
         var expiresAtUtc = now.AddMinutes(SecurityPolicy.PasswordResetTokenLifetimeMinutes);
         var token = new SecurityToken(
@@ -289,7 +301,7 @@ public sealed class IdentityService : IIdentityService
             return;
         }
 
-        var rawToken = Guid.NewGuid().ToString("N");
+        var rawToken = GenerateOpaqueSecurityToken();
         var tokenHash = _tokenService.HashToken(rawToken);
         var expiresAtUtc = now.AddMinutes(SecurityPolicy.PasswordResetTokenLifetimeMinutes);
         var token = new SecurityToken(
@@ -376,6 +388,14 @@ public sealed class IdentityService : IIdentityService
 
         _audit?.Record(SecurityAuditService.PasswordResetCompleted, user.Id, user.Email, null);
         return true;
+    }
+
+    private static string GenerateOpaqueSecurityToken()
+    {
+        return Convert.ToBase64String(RandomNumberGenerator.GetBytes(32))
+            .TrimEnd('=')
+            .Replace('+', '-')
+            .Replace('/', '_');
     }
 }
 

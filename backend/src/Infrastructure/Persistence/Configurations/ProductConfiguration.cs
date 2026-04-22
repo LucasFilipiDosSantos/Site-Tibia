@@ -35,6 +35,20 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .IsRequired()
             .HasMaxLength(128);
 
+        builder.Property(x => x.Server)
+            .IsRequired()
+            .HasMaxLength(64);
+
+        builder.Property(x => x.ImageUrl)
+            .HasMaxLength(2048);
+
+        builder.Property(x => x.Rating)
+            .HasColumnType("numeric(3,2)")
+            .IsRequired();
+
+        builder.Property(x => x.SalesCount)
+            .IsRequired();
+
         builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 

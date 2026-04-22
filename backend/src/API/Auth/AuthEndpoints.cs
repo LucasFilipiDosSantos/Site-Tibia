@@ -11,7 +11,7 @@ public static class AuthEndpoints
 
         group.MapPost("/register", async (RegisterRequest request, IIdentityService identityService, CancellationToken ct) =>
         {
-            await identityService.RegisterAsync(new RegisterCommand(request.Email, request.Password), ct);
+            await identityService.RegisterAsync(new RegisterCommand(request.Name, request.Email, request.Password), ct);
             return Results.Ok(new { message = "Registration successful." });
         }).WithTags("Auth");
 

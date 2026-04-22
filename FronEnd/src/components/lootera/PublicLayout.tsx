@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import logoImg from "@/assets/lootera-logo.png";
@@ -10,8 +10,38 @@ import FloatingSupport from "./FloatingSupport";
 
 const ShopHeader = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const navigate = useNavigate();
+  const location = useLocation();
   const { itemCount } = useCart();
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(params.get("q") ?? "");
+  }, [location.search]);
+
+  const submitSearch = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const term = searchTerm.trim();
+    navigate(term ? `/produtos?q=${encodeURIComponent(term)}` : "/produtos");
+    setMenuOpen(false);
+  };
+
+  const searchInput = (size: number) => (
+    <form onSubmit={submitSearch} className="relative flex w-full">
+      <button type="submit" className="flex items-center justify-center rounded-l-lg bg-brand-gold px-3 text-background" aria-label="Buscar produtos">
+        <Search size={size} />
+      </button>
+      <input
+        type="search"
+        value={searchTerm}
+        onChange={(event) => setSearchTerm(event.target.value)}
+        placeholder="Pesquise seu Jogo"
+        className="w-full rounded-r-lg bg-input py-2.5 pl-4 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+      />
+    </form>
+  );
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-header backdrop-blur-md">
@@ -21,16 +51,7 @@ const ShopHeader = () => {
         </Link>
 
         <div className="hidden flex-1 max-w-xl mx-6 md:flex">
-          <div className="relative w-full flex">
-            <button className="flex items-center justify-center rounded-l-lg bg-brand-gold px-3 text-background">
-              <Search size={18} />
-            </button>
-            <input
-              type="text"
-              placeholder="Pesquise seu Jogo"
-              className="w-full rounded-r-lg bg-input py-2.5 pl-4 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+          {searchInput(18)}
         </div>
 
         <div className="hidden md:flex items-center gap-3">
@@ -72,12 +93,7 @@ const ShopHeader = () => {
       </div>
 
       <div className="border-t border-border px-4 py-2 md:hidden">
-        <div className="relative flex">
-          <button className="flex items-center justify-center rounded-l-lg bg-brand-gold px-3 text-background">
-            <Search size={16} />
-          </button>
-          <input type="text" placeholder="Pesquise seu Jogo" className="w-full rounded-r-lg bg-input py-2 pl-4 pr-4 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
-        </div>
+        {searchInput(16)}
       </div>
 
       {menuOpen && (

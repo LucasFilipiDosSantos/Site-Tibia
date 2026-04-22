@@ -9,10 +9,24 @@ public sealed class Product
     public string Description { get; private set; }
     public decimal Price { get; private set; }
     public string CategorySlug { get; private set; }
+    public string Server { get; private set; }
+    public string? ImageUrl { get; private set; }
+    public decimal Rating { get; private set; }
+    public int SalesCount { get; private set; }
     public DateTimeOffset CreatedAtUtc { get; private set; }
     public DateTimeOffset UpdatedAtUtc { get; private set; }
 
-    public Product(string name, string slug, string description, decimal price, Guid categoryId, string categorySlug)
+    public Product(
+        string name,
+        string slug,
+        string description,
+        decimal price,
+        Guid categoryId,
+        string categorySlug,
+        string server = "Aurera",
+        decimal rating = 0m,
+        int salesCount = 0,
+        string? imageUrl = null)
     {
         Name = RequireText(name, nameof(name));
         Slug = NormalizeSlug(slug, nameof(slug));
@@ -20,6 +34,10 @@ public sealed class Product
         Price = ValidatePrice(price, nameof(price));
         CategoryId = ValidateCategoryId(categoryId, nameof(categoryId));
         CategorySlug = NormalizeSlug(categorySlug, nameof(categorySlug));
+        ImageUrl = NormalizeOptionalText(imageUrl);
+        Server = RequireText(server, nameof(server));
+        Rating = ValidateRating(rating, nameof(rating));
+        SalesCount = ValidateSalesCount(salesCount, nameof(salesCount));
         CreatedAtUtc = DateTimeOffset.UtcNow;
         UpdatedAtUtc = CreatedAtUtc;
     }
@@ -30,15 +48,25 @@ public sealed class Product
         Slug = string.Empty;
         Description = string.Empty;
         CategorySlug = string.Empty;
+        Server = string.Empty;
     }
 
-    public void ReplaceDetails(string name, string description, decimal price, Guid categoryId, string categorySlug)
+    public void ReplaceDetails(string name, string description, decimal price, Guid categoryId, string categorySlug, string? imageUrl = null)
     {
         Name = RequireText(name, nameof(name));
         Description = RequireText(description, nameof(description));
         Price = ValidatePrice(price, nameof(price));
         CategoryId = ValidateCategoryId(categoryId, nameof(categoryId));
         CategorySlug = NormalizeSlug(categorySlug, nameof(categorySlug));
+        ImageUrl = NormalizeOptionalText(imageUrl);
+        Touch();
+    }
+
+    public void UpdateCatalogMetadata(string server, decimal rating, int salesCount)
+    {
+        Server = RequireText(server, nameof(server));
+        Rating = ValidateRating(rating, nameof(rating));
+        SalesCount = ValidateSalesCount(salesCount, nameof(salesCount));
         Touch();
     }
 
@@ -50,6 +78,11 @@ public sealed class Product
         }
 
         return value.Trim();
+    }
+
+    private static string? NormalizeOptionalText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 
     private static string NormalizeSlug(string value, string paramName)
@@ -70,6 +103,26 @@ public sealed class Product
         }
 
         return price;
+    }
+
+    private static decimal ValidateRating(decimal rating, string paramName)
+    {
+        if (rating < 0m || rating > 5m)
+        {
+            throw new ArgumentOutOfRangeException(paramName, "Rating must be between 0 and 5.");
+        }
+
+        return rating;
+    }
+
+    private static int ValidateSalesCount(int salesCount, string paramName)
+    {
+        if (salesCount < 0)
+        {
+            throw new ArgumentOutOfRangeException(paramName, "Sales count cannot be negative.");
+        }
+
+        return salesCount;
     }
 
     private static Guid ValidateCategoryId(Guid categoryId, string paramName)

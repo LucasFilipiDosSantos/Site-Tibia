@@ -6,7 +6,8 @@ import { Save } from "lucide-react";
 const AdminSettings = () => {
   const [settings, setSettings] = useState({
     storeName: "Lootera",
-    storeEmail: "contato@lootera.com",
+    storeEmail: "looteratibia@gmail.com",
+    supportPhone: "82 9974-9180",
     currency: "BRL",
     deliveryTime: "5",
     maintenanceMode: false,
@@ -33,6 +34,10 @@ const AdminSettings = () => {
             <div>
               <label className="text-xs text-muted-foreground">E-mail</label>
               <input value={settings.storeEmail} onChange={(e) => setSettings({ ...settings, storeEmail: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">WhatsApp de suporte</label>
+              <input value={settings.supportPhone} onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

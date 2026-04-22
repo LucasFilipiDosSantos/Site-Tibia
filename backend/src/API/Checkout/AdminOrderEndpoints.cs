@@ -2,6 +2,8 @@ using API.Auth;
 using Application.Checkout.Contracts;
 using Application.Checkout.Services;
 using Domain.Checkout;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace API.Checkout;
@@ -38,7 +40,13 @@ public static class AdminOrderEndpoints
                 o.OrderIntentKey,
                 o.CreatedAtUtc,
                 o.Status.ToString(),
-                GetStatusLabel(o.Status))).ToList();
+                GetStatusLabel(o.Status),
+                o.CustomerName,
+                o.CustomerEmail,
+                o.CustomerDiscord,
+                o.PaymentMethod,
+                o.Items.Sum(item => item.UnitPrice * item.Quantity),
+                o.Items.Sum(item => item.Quantity))).ToList();
                 
             return Results.Ok(new PaginatedOrderListDto(items, page, pageSize, items.Count));
         });
@@ -83,6 +91,77 @@ public static class AdminOrderEndpoints
                     allowedTransitions = ex.AllowedTransitions.Select(t => t.ToString()).ToList()
                 });
             }
+        });
+
+        group.MapPut("/{orderId:guid}", async (
+            Guid orderId,
+            AdminUpdateOrderDto request,
+            AppDbContext dbContext,
+            CancellationToken ct) =>
+        {
+            var order = await dbContext.Orders
+                .Include(x => x.Items)
+                .SingleOrDefaultAsync(x => x.Id == orderId, ct);
+
+            if (order is null)
+            {
+                return Results.NotFound();
+            }
+
+            if (!Enum.TryParse<OrderStatus>(request.Status, ignoreCase: true, out var status))
+            {
+                return Results.BadRequest(new { message = "Status invalido." });
+            }
+
+            order.SetAdminEditableData(
+                request.CustomerName,
+                request.CustomerEmail,
+                request.CustomerDiscord,
+                request.PaymentMethod,
+                status);
+
+            await dbContext.SaveChangesAsync(ct);
+
+            return Results.Ok(new OrderListItemDto(
+                order.Id,
+                order.OrderIntentKey,
+                order.CreatedAtUtc,
+                order.Status.ToString(),
+                GetStatusLabel(order.Status),
+                order.CustomerName,
+                order.CustomerEmail,
+                order.CustomerDiscord,
+                order.PaymentMethod,
+                order.Items.Sum(item => item.UnitPrice * item.Quantity),
+                order.Items.Sum(item => item.Quantity)));
+        });
+
+        group.MapDelete("/{orderId:guid}", async (
+            Guid orderId,
+            AppDbContext dbContext,
+            CancellationToken ct) =>
+        {
+            var deletedEvents = await dbContext.OrderStatusTransitionEvents
+                .Where(x => x.OrderId == orderId)
+                .ExecuteDeleteAsync(ct);
+
+            await dbContext.InventoryReservations
+                .Where(x => x.OrderId == orderId)
+                .ExecuteDeleteAsync(ct);
+
+            await dbContext.PaymentStatusEvents
+                .Where(x => x.OrderId == orderId)
+                .ExecuteDeleteAsync(ct);
+
+            await dbContext.CustomRequests
+                .Where(x => x.OrderId == orderId)
+                .ExecuteDeleteAsync(ct);
+
+            var deletedOrders = await dbContext.Orders
+                .Where(x => x.Id == orderId)
+                .ExecuteDeleteAsync(ct);
+
+            return deletedOrders == 0 ? Results.NotFound() : Results.NoContent();
         });
 
         return app;

@@ -1,6 +1,9 @@
 # State: Frontend
 
-- Current phase: 0 (not started)
-- Last transition: none
+- Current phase: 1-2 overlap
+- Last transition: 2026-04-19 manual integration update
 - Milestone: v1
-- Notes: Project initialized after codebase mapping, ready for Phase 1
+- Notes:
+  - Auth now uses backend JWT endpoints instead of mock storage
+  - Public catalog now uses backend endpoints instead of mock data
+  - Cart remains local until catalog exposes product IDs compatible with checkout endpoints

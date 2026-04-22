@@ -6,13 +6,14 @@ export type AuthUser = {
   createdAt: string;
   totalSpent: number;
   ordersCount: number;
-};
-
-export type StoredUserMock = AuthUser & {
-  password: string; // MOCK ONLY - Never use in production
+  emailVerified: boolean;
 };
 
 export type AuthSession = {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAtUtc: string;
+  refreshTokenExpiresAtUtc: string;
   user: AuthUser;
 };
 
@@ -27,8 +28,11 @@ export type RegisterInput = {
   password: string;
 };
 
-export type AuthResult<T = void> =
-  | { success: true; data: T }
-  | { success: false; error: string };
+export type AuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+  accessTokenExpiresAtUtc: string;
+  refreshTokenExpiresAtUtc: string;
+};
 
-export const AUTH_MODE = "mock" as const;
+export type AuthApiResponse = AuthTokens;

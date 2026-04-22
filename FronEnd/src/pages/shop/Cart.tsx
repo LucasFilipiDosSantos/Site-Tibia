@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
+import { ProductImage } from "@/components/lootera/ProductImage";
 import { useCart } from "@/contexts/CartContext";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 
@@ -28,9 +29,7 @@ const Cart = () => {
           <div className="lg:col-span-2 space-y-4">
             {items.map((item) => (
               <div key={item.productId} className="flex items-center gap-4 rounded-xl border border-border bg-card p-4">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg bg-muted">
-                  <span className="text-xl">🎮</span>
-                </div>
+                <ProductImage src={item.image} alt={item.name} fallbackLabel="Produto" className="h-16 w-16 shrink-0" />
                 <div className="flex-1 min-w-0">
                   <h3 className="text-sm font-medium text-foreground truncate">{item.name}</h3>
                   <p className="text-xs text-muted-foreground">{item.server}</p>

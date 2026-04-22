@@ -19,6 +19,26 @@ public sealed class ProductRepository : IProductRepository
         return _dbContext.Products.SingleOrDefaultAsync(x => x.Slug == slug, cancellationToken);
     }
 
+    public async Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default)
+    {
+        var result = await (
+            from product in _dbContext.Products.AsNoTracking()
+            join stock in _dbContext.InventoryStocks.AsNoTracking()
+                on product.Id equals stock.ProductId into stockJoin
+            from stock in stockJoin.DefaultIfEmpty()
+            where product.Slug == slug
+            select new
+            {
+                Product = product,
+                AvailableStock = stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity
+            })
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return result is null
+            ? null
+            : new CatalogProductProjection(result.Product, result.AvailableStock);
+    }
+
     public Task<bool> ExistsBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
         return _dbContext.Products.AnyAsync(x => x.Slug == slug, cancellationToken);
@@ -27,6 +47,13 @@ public sealed class ProductRepository : IProductRepository
     public Task<bool> ExistsByCategorySlugAsync(string categorySlug, CancellationToken cancellationToken = default)
     {
         return _dbContext.Products.AnyAsync(x => x.CategorySlug == categorySlug, cancellationToken);
+    }
+
+    public async Task<bool> HasProtectedReferencesAsync(Guid productId, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.OrderItemSnapshots.AnyAsync(x => x.ProductId == productId, cancellationToken)
+            || await _dbContext.DeliveryInstructions.AnyAsync(x => x.ProductId == productId, cancellationToken)
+            || await _dbContext.InventoryReservations.AnyAsync(x => x.ProductId == productId, cancellationToken);
     }
 
     public async Task<IReadOnlyList<Product>> ListAsync(ProductListQuery query, CancellationToken cancellationToken = default)
@@ -52,6 +79,36 @@ public sealed class ProductRepository : IProductRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<CatalogProductProjection>> ListCatalogAsync(ProductListQuery query, CancellationToken cancellationToken = default)
+    {
+        var source = _dbContext.Products
+            .AsNoTracking()
+            .AsQueryable();
+
+        if (!string.IsNullOrWhiteSpace(query.CategorySlug))
+        {
+            source = source.Where(x => x.CategorySlug == query.CategorySlug);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.Slug))
+        {
+            source = source.Where(x => x.Slug == query.Slug);
+        }
+
+        return await (
+            from product in source
+            join stock in _dbContext.InventoryStocks.AsNoTracking()
+                on product.Id equals stock.ProductId into stockJoin
+            from stock in stockJoin.DefaultIfEmpty()
+            orderby product.Id
+            select new CatalogProductProjection(
+                product,
+                stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity))
+            .Skip(query.Offset)
+            .Take(query.Limit)
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
     {
         await _dbContext.Products.AddAsync(product, cancellationToken);
@@ -61,6 +118,23 @@ public sealed class ProductRepository : IProductRepository
     {
         _dbContext.Products.Update(product);
         return Task.CompletedTask;
+    }
+
+    public async Task DeleteAsync(Product product, CancellationToken cancellationToken = default)
+    {
+        await _dbContext.CartLines
+            .Where(x => x.ProductId == product.Id)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await _dbContext.StockAdjustmentAudits
+            .Where(x => x.ProductId == product.Id)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        await _dbContext.InventoryStocks
+            .Where(x => x.ProductId == product.Id)
+            .ExecuteDeleteAsync(cancellationToken);
+
+        _dbContext.Products.Remove(product);
     }
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default)

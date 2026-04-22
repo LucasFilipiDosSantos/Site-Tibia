@@ -22,6 +22,18 @@ public sealed class OrderConfiguration : IEntityTypeConfiguration<Order>
         builder.Property(x => x.CreatedAtUtc)
             .IsRequired();
 
+        builder.Property(x => x.CustomerName)
+            .HasMaxLength(256);
+
+        builder.Property(x => x.CustomerEmail)
+            .HasMaxLength(256);
+
+        builder.Property(x => x.CustomerDiscord)
+            .HasMaxLength(128);
+
+        builder.Property(x => x.PaymentMethod)
+            .HasMaxLength(32);
+
         // Per ORD-02: Order status for lifecycle tracking
         builder.Property(x => x.Status)
             .IsRequired()

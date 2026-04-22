@@ -22,7 +22,7 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         var tokenRepo = new InMemorySecurityTokenRepository();
         var delivery = new InMemoryIdentityTokenDelivery();
 
-        var user = new UserAccount("verify@test.com", "HASH:ValidPass123!");
+        var user = new UserAccount("Test User", "verify@test.com", "HASH:ValidPass123!");
         await userRepo.AddAsync(user);
         await userRepo.SaveChangesAsync();
 
@@ -41,6 +41,7 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         var delivered = Assert.Single(delivery.EmailVerificationDeliveries);
         Assert.Equal(user.Email, delivered.Email);
         Assert.False(string.IsNullOrWhiteSpace(delivered.RawToken));
+        Assert.True(delivered.RawToken.Length >= 43);
         Assert.Equal(clock.UtcNow.AddMinutes(SecurityPolicy.PasswordResetTokenLifetimeMinutes), delivered.ExpiresAtUtc);
     }
 
@@ -52,7 +53,7 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         var tokenRepo = new InMemorySecurityTokenRepository();
         var delivery = new InMemoryIdentityTokenDelivery();
 
-        var user = new UserAccount("reset@test.com", "HASH:ValidPass123!");
+        var user = new UserAccount("Test User", "reset@test.com", "HASH:ValidPass123!");
         await userRepo.AddAsync(user);
         await userRepo.SaveChangesAsync();
 
@@ -71,6 +72,7 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         var delivered = Assert.Single(delivery.PasswordResetDeliveries);
         Assert.Equal(user.Email, delivered.Email);
         Assert.False(string.IsNullOrWhiteSpace(delivered.RawToken));
+        Assert.True(delivered.RawToken.Length >= 43);
         Assert.Equal(clock.UtcNow.AddMinutes(SecurityPolicy.PasswordResetTokenLifetimeMinutes), delivered.ExpiresAtUtc);
     }
 
@@ -178,7 +180,7 @@ public sealed class VerificationAndPasswordResetRoundTripTests
 
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
-            builder.UseEnvironment("Development");
+            builder.UseEnvironment("Testing");
             SeedDefaultUser();
             builder.ConfigureAppConfiguration((_, cfg) =>
             {
@@ -192,6 +194,16 @@ public sealed class VerificationAndPasswordResetRoundTripTests
                         ["IdentityTokenDelivery:Smtp:Password"] = "smtp-password",
                         ["IdentityTokenDelivery:Smtp:FromEmail"] = "noreply@test.local",
                         ["IdentityTokenDelivery:Smtp:UseTls"] = "false",
+                        ["MercadoPago:AccessToken"] = "TEST-access-token",
+                        ["MercadoPago:PublicKey"] = "TEST-public-key",
+                        ["MercadoPago:NotificationUrl"] = "https://test.local/api/payments/webhook",
+                        ["MercadoPago:SuccessUrl"] = "https://test.local/checkout/success",
+                        ["MercadoPago:FailureUrl"] = "https://test.local/checkout/failure",
+                        ["MercadoPago:PendingUrl"] = "https://test.local/checkout/pending",
+                        ["WhatsApp:AccessToken"] = "test-token",
+                        ["WhatsApp:PhoneNumberId"] = "test-phone",
+                        ["WhatsApp:WhatsAppBusinessId"] = "test-business",
+                        ["Hangfire:Enabled"] = "false",
                     });
             });
 
@@ -222,7 +234,7 @@ public sealed class VerificationAndPasswordResetRoundTripTests
                 return;
             }
 
-            var user = new UserAccount("verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
+            var user = new UserAccount("Test User", "verify@test.com", _passwordHasher.HashPassword("ValidPass123!"));
             _users.Users.Add(user);
         }
 
@@ -237,3 +249,4 @@ public sealed class VerificationAndPasswordResetRoundTripTests
         }
     }
 }
+

@@ -21,6 +21,10 @@ export const validateRegisterInput = (input: RegisterInput): string | null => {
   if (!input.email.trim()) return "E-mail é obrigatório";
   if (!isValidEmail(input.email)) return "E-mail inválido";
   if (!input.password.trim()) return "Senha é obrigatória";
-  if (input.password.length < 6) return "Senha deve ter pelo menos 6 caracteres";
+  if (input.password.length < 10) return "Senha deve ter pelo menos 10 caracteres";
+  if (!/[A-Z]/.test(input.password)) return "Senha deve ter pelo menos uma letra maiuscula";
+  if (!/[a-z]/.test(input.password)) return "Senha deve ter pelo menos uma letra minuscula";
+  if (!/[0-9]/.test(input.password)) return "Senha deve ter pelo menos um numero";
+  if (!/[^A-Za-z0-9]/.test(input.password)) return "Senha deve ter pelo menos um caractere especial";
   return null;
 };
