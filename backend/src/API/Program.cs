@@ -92,7 +92,7 @@ public partial class Program
         });
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
-        var frontendOrigins = GetFrontendOrigins(builder.Configuration);
+        var frontendOrigins = GetFrontendOrigins(builder.Configuration, builder.Environment);
         var defaultFrontendOrigins = new[]
         {
             "http://localhost:5173",
@@ -116,7 +116,8 @@ public partial class Program
                 policy
                     .WithOrigins(allowedFrontendOrigins)
                     .AllowAnyHeader()
-                    .AllowAnyMethod();
+                    .AllowAnyMethod()
+                    .AllowCredentials();
             });
         });
         var healthChecks = builder.Services.AddHealthChecks();
@@ -288,14 +289,19 @@ public partial class Program
         app.Run();
     }
 
-    private static string[] GetFrontendOrigins(IConfiguration configuration)
+    private static string[] GetFrontendOrigins(IConfiguration configuration, IWebHostEnvironment environment)
     {
         var configuredOrigins = configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
             ?? [];
-        var frontendUrl = configuration["Frontend:BaseUrl"];
+        var frontendUrl = configuration["FRONTEND_URL"] ?? "https://lootera.com.br";
+        var frontendBaseUrl = configuration["Frontend:BaseUrl"];
         var corsOrigins = configuration["CORS_ALLOWED_ORIGINS"];
 
-        return configuredOrigins
+        var appsettingsOrigins = environment.IsDevelopment()
+            ? configuredOrigins.Concat(SplitOrigins(frontendBaseUrl))
+            : [];
+
+        return appsettingsOrigins
             .Concat(SplitOrigins(frontendUrl))
             .Concat(SplitOrigins(corsOrigins))
             .ToArray();
