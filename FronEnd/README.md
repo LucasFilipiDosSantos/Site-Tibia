@@ -4,8 +4,8 @@ React + Vite frontend for the Tibia marketplace.
 
 ## Current status
 
-- Auth is wired to the backend `/auth/*` endpoints
-- Public catalog is wired to `/products` and `/products/{slug}`
+- Auth is wired to the backend `/api/auth/*` endpoints through `NEXT_PUBLIC_API_URL`
+- Public catalog is wired to `/api/products` and `/api/products/{slug}` through `NEXT_PUBLIC_API_URL`
 - Cart, orders, and admin flows still need additional backend contract work
 
 ## Environment
@@ -13,13 +13,13 @@ React + Vite frontend for the Tibia marketplace.
 Create a local `.env` with:
 
 ```bash
-VITE_API_BASE_URL=http://localhost:8080
+NEXT_PUBLIC_API_URL=http://localhost:8080/api
 ```
 
 For Hostinger/static production deploy, edit `.env.production` before building:
 
 ```bash
-VITE_API_BASE_URL=https://api.seudominio.com.br
+NEXT_PUBLIC_API_URL=https://api.lootera.com.br/api
 VITE_APP_BASE_PATH=/
 ```
 

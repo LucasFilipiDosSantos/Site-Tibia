@@ -1,5 +1,6 @@
 import { authService } from "@/features/auth/services/auth.service";
 import { getStoredAuthSession } from "@/features/auth/utils/auth.session";
+import { API_BASE_URL } from "@/lib/api-base-url";
 
 type ApiRequestOptions = RequestInit & {
   auth?: boolean;
@@ -15,12 +16,6 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
-
-const API_BASE_URL = (
-  import.meta.env.NEXT_PUBLIC_API_URL
-  ?? import.meta.env.VITE_API_BASE_URL
-  ?? (import.meta.env.PROD ? "/api" : "http://localhost:8080/api")
-).replace(/\/$/, "");
 
 const buildHeaders = (headers?: HeadersInit, auth = false): Headers => {
   const nextHeaders = new Headers(headers);
