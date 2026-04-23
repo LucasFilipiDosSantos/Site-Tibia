@@ -230,12 +230,15 @@ public partial class Program
         app.UseResponseCompression();
         if (app.Environment.IsDevelopment())
         {
-            app.MapOpenApi();
-            app.UseSwagger();
+            app.MapOpenApi("/api/openapi/{documentName}.json");
+            app.UseSwagger(options =>
+            {
+                options.RouteTemplate = "api/swagger/{documentName}/swagger.json";
+            });
             app.UseSwaggerUI(options =>
             {
-                options.RoutePrefix = "swagger";
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "Tibia Webstore API v1");
+                options.RoutePrefix = "api/swagger";
+                options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "Tibia Webstore API v1");
             });
         }
 
@@ -273,18 +276,6 @@ public partial class Program
         .WithName("Healthz")
         .WithTags("Health");
         api.MapHealthChecks("/health", new HealthCheckOptions
-        {
-            ResultStatusCodes =
-            {
-                [HealthStatus.Healthy] = StatusCodes.Status200OK,
-                [HealthStatus.Degraded] = StatusCodes.Status200OK,
-                [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable
-            }
-        }).AllowAnonymous();
-        app.MapGet("/healthz", () => Results.Redirect("/api/healthz"))
-            .AllowAnonymous()
-            .ExcludeFromDescription();
-        app.MapHealthChecks("/health", new HealthCheckOptions
         {
             ResultStatusCodes =
             {
