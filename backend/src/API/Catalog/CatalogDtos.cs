@@ -95,6 +95,15 @@ public sealed record ProductListResponse(
     ProductListPaginationResponse Pagination);
 
 /// <summary>
+/// Customer category response contract.
+/// </summary>
+public sealed record CategoryResponse(
+    Guid Id,
+    string Name,
+    string Slug,
+    string Description);
+
+/// <summary>
 /// Admin category create payload.
 /// </summary>
 public sealed record CreateCategoryRequest(string Name, string Slug, string Description);

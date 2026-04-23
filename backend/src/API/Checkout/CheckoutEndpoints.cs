@@ -13,7 +13,7 @@ public static class CheckoutEndpoints
 {
     public static IEndpointRouteBuilder MapCheckoutEndpoints(this IEndpointRouteBuilder app)
     {
-        app.MapPost("/checkout/support-pending", async (
+        app.MapPost("/orders/support-pending", async (
             SupportPendingCheckoutDto request,
             IProductRepository productRepository,
             ICheckoutRepository checkoutRepository,
@@ -72,38 +72,41 @@ public static class CheckoutEndpoints
         })
         .WithTags("Public Checkout");
 
-        var group = app.MapGroup("/checkout")
+        var cartGroup = app.MapGroup("/cart")
             .RequireAuthorization(AuthPolicies.VerifiedForSensitiveActions);
 
-        group.MapGet("/cart", async (ClaimsPrincipal user, CartService cartService, CancellationToken ct) =>
+        cartGroup.MapGet("", async (ClaimsPrincipal user, CartService cartService, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
             var cart = await cartService.GetCartAsync(new GetCartRequest(customerId), ct);
             return Results.Ok(ToCartDto(cart));
         });
 
-        group.MapPost("/cart/items", async (ClaimsPrincipal user, AddCartItemDto request, CartService cartService, CancellationToken ct) =>
+        cartGroup.MapPost("/items", async (ClaimsPrincipal user, AddCartItemDto request, CartService cartService, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
             var cart = await cartService.AddItemAsync(new AddCartItemRequest(customerId, request.ProductId, request.Quantity), ct);
             return Results.Ok(ToCartDto(cart));
         });
 
-        group.MapPut("/cart/items/{productId:guid}", async (ClaimsPrincipal user, Guid productId, SetCartItemQuantityDto request, CartService cartService, CancellationToken ct) =>
+        cartGroup.MapPut("/items/{productId:guid}", async (ClaimsPrincipal user, Guid productId, SetCartItemQuantityDto request, CartService cartService, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
             var cart = await cartService.SetItemQuantityAsync(new SetCartItemQuantityRequest(customerId, productId, request.Quantity), ct);
             return Results.Ok(ToCartDto(cart));
         });
 
-        group.MapDelete("/cart/items/{productId:guid}", async (ClaimsPrincipal user, Guid productId, CartService cartService, CancellationToken ct) =>
+        cartGroup.MapDelete("/items/{productId:guid}", async (ClaimsPrincipal user, Guid productId, CartService cartService, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
             var cart = await cartService.RemoveItemAsync(new RemoveCartItemRequest(customerId, productId), ct);
             return Results.Ok(ToCartDto(cart));
         });
 
-        group.MapPost("/submit", async (ClaimsPrincipal user, SubmitCheckoutDto request, CheckoutService checkoutService, CancellationToken ct) =>
+        var ordersGroup = app.MapGroup("/orders")
+            .RequireAuthorization(AuthPolicies.VerifiedForSensitiveActions);
+
+        ordersGroup.MapPost("/submit", async (ClaimsPrincipal user, SubmitCheckoutDto request, CheckoutService checkoutService, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
             var response = await checkoutService.SubmitCheckoutAsync(
@@ -121,7 +124,7 @@ public static class CheckoutEndpoints
             return Results.Ok(ToSubmitResponseDto(response));
         });
 
-        group.MapGet("/orders/{orderId:guid}", async (ClaimsPrincipal user, Guid orderId, ICheckoutRepository checkoutRepository, CancellationToken ct) =>
+        ordersGroup.MapGet("/{orderId:guid}", async (ClaimsPrincipal user, Guid orderId, ICheckoutRepository checkoutRepository, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
             var order = await checkoutRepository.GetOrderByIdAsync(orderId, ct);
@@ -158,7 +161,7 @@ public static class CheckoutEndpoints
                     x.ContactHandle)).ToList()));
         });
 
-        group.MapPost("/orders/{orderId:guid}/payments/preference", async (
+        ordersGroup.MapPost("/{orderId:guid}/payments/preference", async (
             ClaimsPrincipal user,
             Guid orderId,
             PaymentPreferenceService paymentPreferenceService,
@@ -180,7 +183,7 @@ public static class CheckoutEndpoints
         });
 
         // Per D-09, D-12: Customer order history list with pagination
-        group.MapGet("/orders", async (ClaimsPrincipal user, int page, int pageSize, IOrderLifecycleRepository repository, CancellationToken ct) =>
+        ordersGroup.MapGet("", async (ClaimsPrincipal user, int page, int pageSize, IOrderLifecycleRepository repository, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
             pageSize = Math.Clamp(pageSize, 1, 50);

@@ -67,7 +67,7 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      const pendingOrder = await apiRequest<PendingCheckoutResponse>("/checkout/support-pending", {
+      const pendingOrder = await apiRequest<PendingCheckoutResponse>("/orders/support-pending", {
         method: "POST",
         body: JSON.stringify({
           name: form.name,

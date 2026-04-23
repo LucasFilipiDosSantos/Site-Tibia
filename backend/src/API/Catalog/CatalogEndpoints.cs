@@ -1,5 +1,7 @@
 using API.Auth;
 using Application.Catalog.Services;
+using Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace API.Catalog;
@@ -8,6 +10,22 @@ public static class CatalogEndpoints
 {
     public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder app)
     {
+        app.MapGet("/categories", async (AppDbContext dbContext, CancellationToken ct) =>
+        {
+            var categories = await dbContext.Categories
+                .AsNoTracking()
+                .OrderBy(category => category.Name)
+                .Select(category => new CategoryResponse(
+                    category.Id,
+                    category.Name,
+                    category.Slug,
+                    category.Description))
+                .ToListAsync(ct);
+
+            return Results.Ok(categories);
+        })
+        .WithTags("Public Catalog");
+
         app.MapGet("/products", async (
             string? category,
             string? slug,
