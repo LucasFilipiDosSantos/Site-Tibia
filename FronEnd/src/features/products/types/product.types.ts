@@ -13,6 +13,7 @@ export interface Product {
   image: string;
   stock: number;
   rating: number;
+  reviewCount: number;
   sales: number;
   isActive?: boolean;
   createdAt?: string;

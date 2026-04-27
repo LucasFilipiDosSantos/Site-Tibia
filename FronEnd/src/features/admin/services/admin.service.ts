@@ -54,6 +54,7 @@ type ProductResponse = {
   server?: string;
   availableStock?: number;
   rating?: number;
+  reviewCount?: number;
   salesCount?: number;
 };
 
@@ -114,6 +115,7 @@ const toProduct = (product: ProductResponse): Product => ({
   image: product.imageUrl || "/placeholder.svg",
   stock: product.availableStock ?? 0,
   rating: product.rating ?? 0,
+  reviewCount: product.reviewCount ?? 0,
   sales: product.salesCount ?? 0,
 });
 

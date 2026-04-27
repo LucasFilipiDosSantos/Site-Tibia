@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { ApiError, apiRequest } from "@/lib/api";
 import type { Product } from "../types/product.types";
 import { getCategoryLabel, removeAureraFromText } from "../utils/catalog";
 
@@ -13,7 +13,16 @@ type ProductListItemResponse = {
   server?: string;
   availableStock?: number;
   rating?: number;
+  reviewCount?: number;
   salesCount?: number;
+};
+
+export type ProductReview = {
+  userId: string;
+  productId: string;
+  rating: number;
+  comment?: string | null;
+  createdAtUtc: string;
 };
 
 type ProductResponse = ProductListItemResponse;
@@ -59,6 +68,7 @@ const toProduct = (product: ProductListItemResponse | ProductResponse): Product 
   image: product.imageUrl || "/placeholder.svg",
   stock: product.availableStock ?? 0,
   rating: product.rating ?? 0,
+  reviewCount: product.reviewCount ?? 0,
   sales: product.salesCount ?? 0,
   server: product.server ?? "",
 });
@@ -90,5 +100,29 @@ export const productService = {
   async getProductBySlug(slug: string): Promise<Product> {
     const response = await apiRequest<ProductResponse>(`/products/${slug}`);
     return toProduct(response);
+  },
+
+  async getMyReview(slug: string): Promise<ProductReview | null> {
+    try {
+      return await apiRequest<ProductReview>(`/products/${slug}/reviews/me`, { auth: true });
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        return null;
+      }
+
+      throw error;
+    }
+  },
+
+  async getReviews(slug: string): Promise<ProductReview[]> {
+    return apiRequest<ProductReview[]>(`/products/${slug}/reviews`);
+  },
+
+  async createReview(slug: string, input: { rating: number; comment?: string | null }): Promise<ProductReview> {
+    return apiRequest<ProductReview>(`/products/${slug}/reviews`, {
+      auth: true,
+      method: "POST",
+      body: JSON.stringify(input),
+    });
   },
 };

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Domain.Identity;
 
 namespace API.Auth;
 
@@ -11,10 +12,10 @@ public static class AuthPolicies
     {
         services.AddAuthorization(options =>
         {
-            options.AddPolicy(AdminOnly, policy => policy.RequireClaim("role", "Admin"));
+            options.AddPolicy(AdminOnly, policy => policy.RequireRole(UserRoleExtensions.AdminRoleName));
             options.AddPolicy(
                 VerifiedForSensitiveActions,
-                policy => policy.RequireClaim("email_verified", "true")
+                policy => policy.RequireAuthenticatedUser().RequireClaim("email_verified", "true")
             );
         });
 

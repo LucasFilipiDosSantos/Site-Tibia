@@ -5,6 +5,7 @@ using Application.Checkout.Services;
 using Application.Payments.Contracts;
 using Application.Payments.Services;
 using Domain.Checkout;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace API.Checkout;
@@ -14,11 +15,15 @@ public static class CheckoutEndpoints
     public static IEndpointRouteBuilder MapCheckoutEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapPost("/orders/support-pending", async (
+            HttpContext httpContext,
             SupportPendingCheckoutDto request,
             IProductRepository productRepository,
             ICheckoutRepository checkoutRepository,
+            ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
+            var logger = loggerFactory.CreateLogger("SupportPendingCheckout");
+
             if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Email))
             {
                 return Results.BadRequest(new { message = "Nome e e-mail sao obrigatorios." });
@@ -29,7 +34,14 @@ public static class CheckoutEndpoints
                 return Results.BadRequest(new { message = "O carrinho esta vazio." });
             }
 
-            var order = new Order(Guid.NewGuid(), Guid.NewGuid(), $"support-{Guid.NewGuid():N}");
+            var customerId = ResolveOptionalCustomerId(httpContext.User) ?? Guid.NewGuid();
+            logger.LogInformation(
+                "Creating support-pending order for customer {CustomerId}. Authenticated={IsAuthenticated}, Email={Email}",
+                customerId,
+                httpContext.User.Identity?.IsAuthenticated ?? false,
+                request.Email);
+
+            var order = new Order(Guid.NewGuid(), customerId, $"support-{Guid.NewGuid():N}");
             order.SetCustomerContact(request.Name, request.Email, request.Discord, request.PaymentMethod);
             order.SetNotificationMetadata(null, available: false, failedReason: "support-checkout");
 
@@ -211,13 +223,24 @@ public static class CheckoutEndpoints
 
     private static Guid ResolveCustomerId(ClaimsPrincipal user)
     {
-        var subject = user.FindFirstValue("sub");
+        var subject = user.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? user.FindFirstValue("sub");
         if (!Guid.TryParse(subject, out var customerId) || customerId == Guid.Empty)
         {
             throw new ArgumentException("Authenticated subject claim is missing or invalid.", "sub");
         }
 
         return customerId;
+    }
+
+    private static Guid? ResolveOptionalCustomerId(ClaimsPrincipal user)
+    {
+        var subject = user.FindFirstValue(ClaimTypes.NameIdentifier)
+            ?? user.FindFirstValue("sub");
+
+        return Guid.TryParse(subject, out var customerId) && customerId != Guid.Empty
+            ? customerId
+            : null;
     }
 
     // Per D-11: Get display label for status

@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, ShoppingCart, Star } from "lucide-react";
+import { ArrowRight, ShoppingCart } from "lucide-react";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import CategoryGrid from "@/components/lootera/CategoryGrid";
 import { ProductImage } from "@/components/lootera/ProductImage";
+import { StarRating } from "@/components/lootera/StarRating";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import { useCart } from "@/contexts/CartContext";
 import heroBanner from "@/assets/hero-banner-v3.png";
@@ -69,13 +70,7 @@ const Home = () => {
                     <span className="mx-1.5 text-muted-foreground">|</span>
                     {product.stock} disponiveis
                   </p>
-                  {product.rating > 0 && (
-                    <div className="mt-2 flex items-center gap-0.5 text-brand-gold" aria-label={`${product.rating.toFixed(1)} estrelas`}>
-                      {Array.from({ length: Math.round(product.rating) }).map((_, index) => (
-                        <Star key={index} size={12} className="fill-current" />
-                      ))}
-                    </div>
-                  )}
+                  <StarRating rating={product.reviewCount > 0 ? product.rating : null} className="mt-2" />
                   {product.sales > 0 && <p className="mt-1 text-xs text-muted-foreground">{product.sales} vendidos</p>}
                   <div className="mt-auto flex w-full items-end justify-between pt-3">
                     <div>

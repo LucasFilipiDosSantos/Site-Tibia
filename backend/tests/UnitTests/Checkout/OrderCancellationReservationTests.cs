@@ -92,6 +92,12 @@ public sealed class OrderCancellationReservationTests
 
         public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Order>>([]);
+
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult(false);
+
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>([]);
     }
 
     private sealed class SpyCheckoutInventoryGateway : ICheckoutInventoryGateway

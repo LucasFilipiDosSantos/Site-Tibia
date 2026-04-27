@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace API.Catalog;
 
 /// <summary>
@@ -50,6 +52,7 @@ public sealed record ProductListItemResponse(
     string? Server,
     int AvailableStock,
     decimal Rating,
+    int ReviewCount,
     int SalesCount);
 
 /// <summary>
@@ -66,6 +69,7 @@ public sealed record ProductResponse(
     string? Server,
     int AvailableStock,
     decimal Rating,
+    int ReviewCount,
     int SalesCount);
 
 /// <summary>
@@ -131,3 +135,19 @@ public sealed record UpdateProductPutReplaceRequest(
     string CategorySlug,
     string? Server,
     string? ImageUrl = null);
+
+/// <summary>
+/// Authenticated customer review create payload.
+/// </summary>
+public sealed class CreateProductReviewRequest
+{
+    [Range(typeof(decimal), "0", "5")]
+    public decimal Rating { get; set; }
+
+    public string? Comment { get; set; }
+}
+
+/// <summary>
+/// Authenticated customer review response contract.
+/// </summary>
+public sealed record ProductReviewResponse(Guid UserId, Guid ProductId, decimal Rating, string? Comment, DateTimeOffset CreatedAtUtc);

@@ -27,6 +27,7 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
+using System.Security.Claims;
 using System.Threading.RateLimiting;
 
 public partial class Program
@@ -91,6 +92,7 @@ public partial class Program
             });
         });
         builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddControllers();
         builder.Services.AddSwaggerGen();
         var frontendOrigins = GetFrontendOrigins(builder.Configuration, builder.Environment);
         var defaultFrontendOrigins = new[]
@@ -180,7 +182,8 @@ public partial class Program
                             Encoding.UTF8.GetBytes(jwtOptions.SigningKey)
                         ),
                         ValidateLifetime = true,
-                        RoleClaimType = "role",
+                        NameClaimType = ClaimTypes.Name,
+                        RoleClaimType = ClaimTypes.Role,
                         ClockSkew = TimeSpan.Zero,
                     };
                 }
@@ -189,6 +192,7 @@ public partial class Program
         builder.Services.AddScoped<TokenRotationService>();
         builder.Services.AddSingleton<SecurityAuditService>();
         builder.Services.AddScoped<CatalogService>();
+        builder.Services.AddScoped<ProductReviewService>();
         builder.Services.AddScoped<InventoryService>();
         builder.Services.AddScoped<CartService>();
         builder.Services.AddScoped<CheckoutService>();
@@ -266,6 +270,7 @@ public partial class Program
         api.MapAdminEndpoints();
         api.MapAdminAuditEndpoints();
         api.MapAdminWebhookLogEndpoints();
+        app.MapControllers();
         api.MapGet("/healthz", () => Results.Ok(new
         {
             status = "ok",
@@ -290,7 +295,38 @@ public partial class Program
             api.MapNotificationJobEndpoints();
         }
 
+        LogMappedRoutes(app);
+
         app.Run();
+    }
+
+    private static void LogMappedRoutes(WebApplication app)
+    {
+        if (!app.Environment.IsDevelopment() && !app.Environment.IsEnvironment("Testing"))
+        {
+            return;
+        }
+
+        var routeEndpoints = app.Services
+            .GetServices<EndpointDataSource>()
+            .SelectMany(source => source.Endpoints)
+            .OfType<RouteEndpoint>()
+            .OrderBy(endpoint => endpoint.RoutePattern.RawText, StringComparer.Ordinal);
+
+        foreach (var endpoint in routeEndpoints)
+        {
+            var methods = endpoint.Metadata
+                .OfType<HttpMethodMetadata>()
+                .SelectMany(metadata => metadata.HttpMethods)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .OrderBy(method => method, StringComparer.OrdinalIgnoreCase)
+                .ToArray();
+
+            app.Logger.LogInformation(
+                "Mapped route: {Methods} {Route}",
+                methods.Length == 0 ? "*" : string.Join(",", methods),
+                endpoint.RoutePattern.RawText);
+        }
     }
 
     private static string[] GetFrontendOrigins(IConfiguration configuration, IWebHostEnvironment environment)

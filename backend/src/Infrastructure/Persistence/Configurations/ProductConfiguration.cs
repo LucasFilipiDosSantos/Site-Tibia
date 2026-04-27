@@ -42,7 +42,7 @@ public sealed class ProductConfiguration : IEntityTypeConfiguration<Product>
             .HasMaxLength(2048);
 
         builder.Property(x => x.Rating)
-            .HasColumnType("numeric(3,2)")
+            .HasColumnType("numeric(5,3)")
             .IsRequired();
 
         builder.Property(x => x.SalesCount)

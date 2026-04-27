@@ -26,7 +26,7 @@ public sealed class LoginCheckoutPurchaseFlowTests
         var productId = factory.SeedProduct("gold-pack", 15.50m, FulfillmentType.Automated, available: 10);
         using var client = factory.CreateClient();
 
-        var register = await client.PostAsJsonAsync("/auth/register", new
+        var register = await client.PostAsJsonAsync("/api/auth/register", new
         {
             name = "Buyer Test",
             email = "Buyer@Test.com",
@@ -36,7 +36,7 @@ public sealed class LoginCheckoutPurchaseFlowTests
 
         factory.MarkEmailVerified("buyer@test.com");
 
-        var login = await client.PostAsJsonAsync("/auth/login", new
+        var login = await client.PostAsJsonAsync("/api/auth/login", new
         {
             email = "buyer@test.com",
             password = "ValidPass123!"
@@ -50,19 +50,19 @@ public sealed class LoginCheckoutPurchaseFlowTests
 
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
 
-        var addToCart = await client.PostAsJsonAsync("/checkout/cart/items", new AddCartItemDto(productId, 2));
+        var addToCart = await client.PostAsJsonAsync("/api/cart/items", new AddCartItemDto(productId, 2));
         Assert.Equal(HttpStatusCode.OK, addToCart.StatusCode);
 
-        var checkout = await client.PostAsJsonAsync("/checkout/submit", new SubmitCheckoutDto(
+        var checkout = await client.PostAsJsonAsync("/api/orders/submit", new SubmitCheckoutDto(
             [new CheckoutDeliveryInstructionDto(productId, "Knight Buyer", "Antica", "whatsapp:+5511999999999", null, null)]));
         Assert.Equal(HttpStatusCode.OK, checkout.StatusCode);
 
         var checkoutPayload = await checkout.Content.ReadFromJsonAsync<SubmitCheckoutResponseDto>();
         Assert.NotNull(checkoutPayload);
         Assert.Equal(31.00m, checkoutPayload!.Items.Sum(item => item.UnitPrice * item.Quantity));
-        Assert.Empty((await client.GetFromJsonAsync<CartResponseDto>("/checkout/cart"))!.Lines);
+        Assert.Empty((await client.GetFromJsonAsync<CartResponseDto>("/api/cart"))!.Lines);
 
-        var payment = await client.PostAsync($"/checkout/orders/{checkoutPayload.OrderId}/payments/preference", null);
+        var payment = await client.PostAsync($"/api/orders/{checkoutPayload.OrderId}/payments/preference", null);
         Assert.Equal(HttpStatusCode.OK, payment.StatusCode);
 
         var paymentPayload = await payment.Content.ReadFromJsonAsync<CreatePaymentPreferenceResponseDto>();
@@ -250,6 +250,24 @@ public sealed class LoginCheckoutPurchaseFlowTests
 
         public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Order>>(StoredOrders.Where(order => order.CustomerId == customerId).ToList());
+
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult(StoredOrders.Any(order =>
+                order.CustomerId == customerId &&
+                order.Status.IsReviewEligible() &&
+                order.Items.Any(item => item.ProductId == productId)));
+
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>(StoredOrders
+                .Where(order => order.CustomerId == customerId && order.Items.Any(item => item.ProductId == productId))
+                .Select(order => new ReviewOrderDiagnostic(
+                    order.Id,
+                    order.OrderIntentKey,
+                    order.Status,
+                    false,
+                    order.Items.Count,
+                    order.Items.Select(item => new ReviewOrderItemDiagnostic(item.ProductId, item.ProductSlug)).ToList()))
+                .ToList());
 
         public Task<IReadOnlyList<Order>> SearchOrdersAsync(OrderStatus? status, Guid? customerId, DateTimeOffset? createdFromUtc, DateTimeOffset? createdToUtc, int page, int pageSize, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Order>>(StoredOrders);

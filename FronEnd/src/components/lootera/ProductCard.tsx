@@ -1,5 +1,6 @@
-import { Star, ShoppingCart } from "lucide-react";
+import { ShoppingCart } from "lucide-react";
 import { ProductImage } from "@/components/lootera/ProductImage";
+import { StarRating } from "@/components/lootera/StarRating";
 
 interface ProductCardProps {
   title: string;
@@ -7,14 +8,14 @@ interface ProductCardProps {
   price: string;
   originalPrice?: string;
   rating: number;
+  reviewCount?: number;
   image?: string;
   tag?: string;
   variant?: "commercial" | "fantasy";
 }
 
-const ProductCard = ({ title, server, price, originalPrice, rating, image, tag, variant = "commercial" }: ProductCardProps) => {
+const ProductCard = ({ title, server, price, originalPrice, rating, reviewCount = 0, image, tag, variant = "commercial" }: ProductCardProps) => {
   const isFantasy = variant === "fantasy";
-  const visibleRating = Math.max(0, Math.min(5, Math.round(rating)));
 
   return (
     <div className={`font-body group flex flex-col items-start overflow-hidden rounded-xl text-left transition-all
@@ -40,14 +41,8 @@ const ProductCard = ({ title, server, price, originalPrice, rating, image, tag, 
           </span>
         )}
         <h3 className="font-body mb-2 line-clamp-2 text-sm text-foreground">{title}</h3>
-        {visibleRating > 0 && (
-          <div className="mb-3 flex items-center gap-0.5 text-brand-gold" aria-label={`${rating.toFixed(1)} estrelas`}>
-            {Array.from({ length: visibleRating }).map((_, index) => (
-              <Star key={index} size={12} className="fill-current" />
-            ))}
-          </div>
-        )}
-        <div className="mt-auto flex w-full items-end justify-between">
+        <StarRating rating={reviewCount > 0 ? rating : null} className="mb-3" />
+      <div className="mt-auto flex w-full items-end justify-between">
           <div>
             {originalPrice && <span className="text-xs text-muted-foreground line-through">{originalPrice}</span>}
             <p className={`text-lg font-semibold ${isFantasy ? "text-brand-gold" : "text-primary"}`}>{price}</p>

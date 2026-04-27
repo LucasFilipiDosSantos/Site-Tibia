@@ -12,6 +12,7 @@ using Infrastructure.Checkout.Repositories;
 using Infrastructure.Inventory.Repositories;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace IntegrationTests.Checkout;
 
@@ -46,7 +47,8 @@ public sealed class CheckoutPersistenceContractTests
             cartRepository,
             checkoutRepository,
             new CheckoutInventoryGateway(inventoryService),
-            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)));
+            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)),
+            NullLogger<CheckoutService>.Instance);
 
         var cart = new Cart(customerId);
         cart.AddOrMerge(productA, 2);
@@ -99,7 +101,8 @@ public sealed class CheckoutPersistenceContractTests
             cartRepository,
             checkoutRepository,
             new CheckoutInventoryGateway(inventoryService),
-            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)));
+            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)),
+            NullLogger<CheckoutService>.Instance);
 
         var cart = new Cart(customerId);
         cart.AddOrMerge(productA, 1);
@@ -212,7 +215,8 @@ public sealed class CheckoutPersistenceContractTests
             cartRepository,
             checkoutRepository,
             new CheckoutInventoryGateway(inventoryService),
-            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)));
+            new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)),
+            NullLogger<CheckoutService>.Instance);
 
         var cart = new Cart(customerId);
         cart.AddOrMerge(productA, 1);

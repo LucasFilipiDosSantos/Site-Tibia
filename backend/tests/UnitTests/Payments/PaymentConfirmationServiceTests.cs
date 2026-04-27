@@ -48,6 +48,16 @@ public sealed class PaymentConfirmationServiceTests
         {
             return Task.FromResult<IReadOnlyList<Order>>([]);
         }
+
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(false);
+        }
+
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>([]);
+        }
     }
 
     /// <summary>

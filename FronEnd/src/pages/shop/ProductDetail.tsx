@@ -1,11 +1,16 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
-import { ArrowLeft, Minus, Plus, Shield, ShoppingCart, Star } from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowLeft, Minus, Plus, Shield, ShoppingCart } from "lucide-react";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { ProductImage } from "@/components/lootera/ProductImage";
+import { StarRating } from "@/components/lootera/StarRating";
 import { useCart } from "@/contexts/CartContext";
+import { useAuth } from "@/features/auth/context/AuthContext";
 import { useProduct, useProducts } from "@/features/products/hooks/useProducts";
+import { productService } from "@/features/products/services/product.service";
 import type { Product } from "@/features/products/types/product.types";
+import { toast } from "sonner";
 
 const ProductRecommendations = ({ products, title }: { products: Product[]; title: string }) => {
   if (products.length === 0) {
@@ -25,13 +30,7 @@ const ProductRecommendations = ({ products, title }: { products: Product[]; titl
               <span className="mx-1.5 text-muted-foreground">|</span>
               {relatedProduct.stock} disponiveis
             </p>
-            {relatedProduct.rating > 0 && (
-              <div className="mt-2 flex items-center gap-0.5 text-brand-gold" aria-label={`${relatedProduct.rating.toFixed(1)} estrelas`}>
-                {Array.from({ length: Math.round(relatedProduct.rating) }).map((_, index) => (
-                  <Star key={index} size={12} className="fill-current" />
-                ))}
-              </div>
-            )}
+            <StarRating rating={relatedProduct.reviewCount > 0 ? relatedProduct.rating : null} className="mt-2" />
             {relatedProduct.sales > 0 && <p className="mt-1 text-xs text-muted-foreground">{relatedProduct.sales} vendidos</p>}
             <p className="mt-auto pt-3 text-base font-semibold text-primary">R$ {relatedProduct.price.toFixed(2)}</p>
           </Link>
@@ -43,9 +42,19 @@ const ProductRecommendations = ({ products, title }: { products: Product[]; titl
 
 const ProductDetail = () => {
   const { slug = "" } = useParams();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { isAuthenticated } = useAuth();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
+  const [reviewRating, setReviewRating] = useState("5");
+  const [reviewComment, setReviewComment] = useState("");
   const { data: product, isLoading, isError } = useProduct(slug);
+  const { data: myReview } = useQuery({
+    queryKey: ["product-review", slug, "me"],
+    queryFn: () => productService.getMyReview(slug),
+    enabled: Boolean(slug) && isAuthenticated,
+  });
   const { data: relatedProducts = [], isLoading: isLoadingRecommendations } = useProducts({
     category: product?.categorySlug,
     page: 1,
@@ -66,6 +75,32 @@ const ProductDetail = () => {
   );
   const recommendations = related.length > 0 ? related : fallbackRecommendations;
   const productServer = product?.server?.trim() ? product.server : "Nao informado";
+  const hasReviews = (product?.reviewCount ?? 0) > 0;
+
+  const submitReview = useMutation({
+    mutationFn: async () => {
+      if (!isAuthenticated) {
+        throw new Error("Faça login para avaliar este produto.");
+      }
+
+      return productService.createReview(slug, {
+        rating: Number(reviewRating),
+        comment: reviewComment.trim() || null,
+      });
+    },
+    onSuccess: async () => {
+      toast.success("Avaliacao enviada com sucesso.");
+      setReviewComment("");
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["product", slug] }),
+        queryClient.invalidateQueries({ queryKey: ["products"] }),
+        queryClient.invalidateQueries({ queryKey: ["product-review", slug, "me"] }),
+      ]);
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel enviar sua avaliacao.");
+    },
+  });
 
   if (isLoading) {
     return (
@@ -115,7 +150,8 @@ const ProductDetail = () => {
             <h1 className="font-display text-xl font-bold text-foreground lg:text-2xl">{product.name}</h1>
             <p className="mt-1 text-sm text-muted-foreground">Servidor: {productServer}</p>
             <p className="mt-1 text-sm text-muted-foreground">{product.stock} disponiveis</p>
-            {product.rating > 0 && <p className="mt-1 text-sm text-muted-foreground">{product.rating.toFixed(1)} estrelas</p>}
+            <StarRating rating={hasReviews ? product.rating : null} className="mt-2" showValue showFallbackText />
+            {hasReviews && <p className="mt-1 text-sm text-muted-foreground">{product.reviewCount} avaliacao(oes)</p>}
             {product.sales > 0 && <p className="mt-1 text-sm text-muted-foreground">{product.sales} vendidos</p>}
 
             <div className="mt-6">
@@ -157,6 +193,70 @@ const ProductDetail = () => {
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Shield size={14} className="text-primary" /> Compra protegida com validacao de estoque antes da finalizacao
               </div>
+            </div>
+
+            <div className="mt-8 rounded-xl border border-border bg-card p-4">
+              <h2 className="text-sm font-semibold text-foreground">Avaliar produto</h2>
+
+              {!isAuthenticated && (
+                <div className="mt-3 space-y-3">
+                  <p className="text-sm text-muted-foreground">Faça login para avaliar este produto.</p>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/login", { state: { from: { pathname: `/produto/${slug}` } } })}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+                  >
+                    Fazer login
+                  </button>
+                </div>
+              )}
+
+              {isAuthenticated && myReview && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm text-muted-foreground">Você já avaliou este produto.</p>
+                  <StarRating rating={myReview.rating} showValue />
+                  {myReview.comment && <p className="text-sm text-muted-foreground">{myReview.comment}</p>}
+                </div>
+              )}
+
+              {isAuthenticated && !myReview && (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    submitReview.mutate();
+                  }}
+                  className="mt-3 space-y-3"
+                >
+                  <div>
+                    <label className="text-xs text-muted-foreground">Nota</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="5"
+                      step="0.001"
+                      value={reviewRating}
+                      onChange={(event) => setReviewRating(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-muted-foreground">Comentario opcional</label>
+                    <textarea
+                      value={reviewComment}
+                      onChange={(event) => setReviewComment(event.target.value)}
+                      rows={3}
+                      className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitReview.isPending}
+                    className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+                  >
+                    {submitReview.isPending ? "Enviando..." : "Enviar avaliacao"}
+                  </button>
+                </form>
+              )}
             </div>
           </div>
         </div>

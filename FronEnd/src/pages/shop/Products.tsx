@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { ShoppingCart, SlidersHorizontal, Star, X } from "lucide-react";
+import { ShoppingCart, SlidersHorizontal, X } from "lucide-react";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { ProductImage } from "@/components/lootera/ProductImage";
+import { StarRating } from "@/components/lootera/StarRating";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import { CATEGORY_OPTIONS } from "@/features/products/utils/catalog";
 import { useCart } from "@/contexts/CartContext";
@@ -171,13 +172,7 @@ const Products = () => {
                         <span className="mx-1.5 text-muted-foreground">|</span>
                         {product.stock} disponiveis
                       </p>
-                      {product.rating > 0 && (
-                        <div className="mt-2 flex items-center gap-0.5 text-brand-gold" aria-label={`${product.rating.toFixed(1)} estrelas`}>
-                          {Array.from({ length: Math.round(product.rating) }).map((_, index) => (
-                            <Star key={index} size={12} className="fill-current" />
-                          ))}
-                        </div>
-                      )}
+                      <StarRating rating={product.reviewCount > 0 ? product.rating : null} className="mt-2" />
                       {product.sales > 0 && <p className="mt-1 text-xs text-muted-foreground">{product.sales} vendidos</p>}
                       <div className="mt-auto flex w-full items-end justify-between pt-3">
                         <p className="text-base font-semibold text-primary">R$ {product.price.toFixed(2)}</p>

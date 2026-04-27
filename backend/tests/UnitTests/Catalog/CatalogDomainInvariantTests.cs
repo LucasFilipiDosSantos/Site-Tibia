@@ -56,4 +56,16 @@ public sealed class CatalogDomainInvariantTests
         Assert.Throws<ArgumentOutOfRangeException>(() => product.UpdateCatalogMetadata("Aurera", 5.1m, 10));
         Assert.Throws<ArgumentOutOfRangeException>(() => product.UpdateCatalogMetadata("Aurera", 4.8m, -1));
     }
+
+    [Fact]
+    public void Product_RatingAcceptsDecimalFractionsWithinRange()
+    {
+        var product = new Product("Coin Fraction", "coin-fraction", "Fractional rating", 10m, Guid.NewGuid(), "coin", "Aurera", 0.125m, 10);
+
+        Assert.Equal(0.125m, product.Rating);
+
+        product.UpdateCatalogMetadata("Aurera", 4.25m, 10);
+
+        Assert.Equal(4.25m, product.Rating);
+    }
 }

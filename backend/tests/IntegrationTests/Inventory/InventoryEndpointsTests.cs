@@ -408,7 +408,7 @@ public sealed class InventoryEndpointsTests
         public Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default)
         {
             var product = _products.SingleOrDefault(x => x.Slug == slug && !x.IsHidden);
-            return Task.FromResult(product is null ? null : new CatalogProductProjection(product, AvailableStock: 10));
+            return Task.FromResult(product is null ? null : new CatalogProductProjection(product, AvailableStock: 10, AverageRating: 0m, ReviewCount: 0));
         }
 
         public Task<IReadOnlyList<Product>> ListAsync(ProductListQuery query, CancellationToken cancellationToken = default)
@@ -443,7 +443,7 @@ public sealed class InventoryEndpointsTests
         public async Task<IReadOnlyList<CatalogProductProjection>> ListCatalogAsync(ProductListQuery query, CancellationToken cancellationToken = default)
         {
             var products = await ListAsync(query, cancellationToken);
-            return products.Select(product => new CatalogProductProjection(product, AvailableStock: 10)).ToList();
+            return products.Select(product => new CatalogProductProjection(product, AvailableStock: 10, AverageRating: 0m, ReviewCount: 0)).ToList();
         }
 
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

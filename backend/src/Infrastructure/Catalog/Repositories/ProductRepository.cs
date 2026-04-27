@@ -2,6 +2,7 @@ using Application.Catalog.Contracts;
 using Domain.Catalog;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace Infrastructure.Catalog.Repositories;
 
@@ -26,22 +27,46 @@ public sealed class ProductRepository : IProductRepository
 
     public async Task<CatalogProductProjection?> GetCatalogBySlugAsync(string slug, CancellationToken cancellationToken = default)
     {
-        var result = await (
-            from product in _dbContext.Products.AsNoTracking()
-            join stock in _dbContext.InventoryStocks.AsNoTracking()
-                on product.Id equals stock.ProductId into stockJoin
-            from stock in stockJoin.DefaultIfEmpty()
-            where product.Slug == slug && !product.IsHidden
-            select new
-            {
-                Product = product,
-                AvailableStock = stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity
-            })
-            .SingleOrDefaultAsync(cancellationToken);
+        try
+        {
+            var result = await (
+                from product in _dbContext.Products.AsNoTracking()
+                join stock in _dbContext.InventoryStocks.AsNoTracking()
+                    on product.Id equals stock.ProductId into stockJoin
+                from stock in stockJoin.DefaultIfEmpty()
+                join review in _dbContext.ProductReviews.AsNoTracking()
+                    on product.Id equals review.ProductId into reviewJoin
+                where product.Slug == slug && !product.IsHidden
+                select new
+                {
+                    Product = product,
+                    AvailableStock = stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity,
+                    AverageRating = reviewJoin.Select(x => (decimal?)x.Rating).Average() ?? 0m,
+                    ReviewCount = reviewJoin.Count()
+                })
+                .SingleOrDefaultAsync(cancellationToken);
 
-        return result is null
-            ? null
-            : new CatalogProductProjection(result.Product, result.AvailableStock);
+            return result is null
+                ? null
+                : new CatalogProductProjection(result.Product, result.AvailableStock, result.AverageRating, result.ReviewCount);
+        }
+        catch (PostgresException ex) when (IsMissingProductReviewsTable(ex))
+        {
+            var result = await (
+                from product in _dbContext.Products.AsNoTracking()
+                join stock in _dbContext.InventoryStocks.AsNoTracking()
+                    on product.Id equals stock.ProductId into stockJoin
+                from stock in stockJoin.DefaultIfEmpty()
+                where product.Slug == slug && !product.IsHidden
+                select new CatalogProductProjection(
+                    product,
+                    stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity,
+                    0m,
+                    0))
+                .SingleOrDefaultAsync(cancellationToken);
+
+            return result;
+        }
     }
 
     public Task<bool> ExistsBySlugAsync(string slug, CancellationToken cancellationToken = default)
@@ -102,19 +127,48 @@ public sealed class ProductRepository : IProductRepository
             source = source.Where(x => x.Slug == query.Slug);
         }
 
-        return await (
-            from product in source
-            join stock in _dbContext.InventoryStocks.AsNoTracking()
-                on product.Id equals stock.ProductId into stockJoin
-            from stock in stockJoin.DefaultIfEmpty()
-            orderby product.Id
-            select new CatalogProductProjection(
-                product,
-                stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity))
-            .Skip(query.Offset)
-            .Take(query.Limit)
-            .ToListAsync(cancellationToken);
+        try
+        {
+            return await (
+                from product in source
+                join stock in _dbContext.InventoryStocks.AsNoTracking()
+                    on product.Id equals stock.ProductId into stockJoin
+                from stock in stockJoin.DefaultIfEmpty()
+                join review in _dbContext.ProductReviews.AsNoTracking()
+                    on product.Id equals review.ProductId into reviewJoin
+                orderby product.Id
+                select new CatalogProductProjection(
+                    product,
+                    stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity,
+                    reviewJoin.Select(x => (decimal?)x.Rating).Average() ?? 0m,
+                    reviewJoin.Count()))
+                .Skip(query.Offset)
+                .Take(query.Limit)
+                .ToListAsync(cancellationToken);
+        }
+        catch (PostgresException ex) when (IsMissingProductReviewsTable(ex))
+        {
+            return await (
+                from product in source
+                join stock in _dbContext.InventoryStocks.AsNoTracking()
+                    on product.Id equals stock.ProductId into stockJoin
+                from stock in stockJoin.DefaultIfEmpty()
+                orderby product.Id
+                select new CatalogProductProjection(
+                    product,
+                    stock == null ? 0 : stock.TotalQuantity - stock.ReservedQuantity,
+                    0m,
+                    0))
+                .Skip(query.Offset)
+                .Take(query.Limit)
+                .ToListAsync(cancellationToken);
+        }
     }
+
+    private static bool IsMissingProductReviewsTable(PostgresException ex)
+        => ex.SqlState == PostgresErrorCodes.UndefinedTable
+           && (string.Equals(ex.TableName, "product_reviews", StringComparison.Ordinal)
+               || ex.MessageText.Contains("product_reviews", StringComparison.OrdinalIgnoreCase));
 
     public async Task AddAsync(Product product, CancellationToken cancellationToken = default)
     {

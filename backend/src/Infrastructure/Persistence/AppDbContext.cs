@@ -21,6 +21,7 @@ public sealed class AppDbContext : DbContext
     public DbSet<SecurityToken> SecurityTokens => Set<SecurityToken>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Product> Products => Set<Product>();
+    public DbSet<ProductReview> ProductReviews => Set<ProductReview>();
     public DbSet<InventoryStock> InventoryStocks => Set<InventoryStock>();
     public DbSet<InventoryReservation> InventoryReservations => Set<InventoryReservation>();
     public DbSet<StockAdjustmentAudit> StockAdjustmentAudits => Set<StockAdjustmentAudit>();

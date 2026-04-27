@@ -98,7 +98,8 @@ public sealed class CatalogService
             product.ImageUrl,
             product.Server,
             AvailableStock: 0,
-            product.Rating,
+            0m,
+            0,
             product.SalesCount);
     }
 
@@ -140,7 +141,8 @@ public sealed class CatalogService
             product.ImageUrl,
             product.Server,
             AvailableStock: 0,
-            product.Rating,
+            0m,
+            0,
             product.SalesCount);
     }
 
@@ -216,7 +218,8 @@ public sealed class CatalogService
             product.ImageUrl,
             product.Server,
             projection.AvailableStock,
-            product.Rating,
+            projection.AverageRating,
+            projection.ReviewCount,
             product.SalesCount);
     }
 
@@ -233,7 +236,8 @@ public sealed class CatalogService
             product.ImageUrl,
             product.Server,
             projection.AvailableStock,
-            product.Rating,
+            projection.AverageRating,
+            projection.ReviewCount,
             product.SalesCount);
     }
 }

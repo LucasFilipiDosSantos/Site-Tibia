@@ -21,6 +21,7 @@ const createEmptyProduct = (): Product => ({
   image: "",
   stock: 0,
   rating: 0,
+  reviewCount: 0,
   sales: 0,
 });
 

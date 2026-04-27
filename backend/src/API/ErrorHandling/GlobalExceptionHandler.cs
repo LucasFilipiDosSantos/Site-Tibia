@@ -1,4 +1,5 @@
 using Application.Identity.Exceptions;
+using Application.Catalog.Contracts;
 using Application.Checkout.Contracts;
 using Application.Inventory.Contracts;
 using Application.Payments.Contracts;
@@ -143,6 +144,11 @@ public sealed class GlobalExceptionHandler(
                 "Conflict.",
                 inventoryConflictException.Message
             ),
+            DuplicateProductReviewException duplicateProductReviewException => (
+                StatusCodes.Status409Conflict,
+                "Conflict.",
+                duplicateProductReviewException.Message
+            ),
             CartStockConflictException cartStockConflictException => (
                 StatusCodes.Status409Conflict,
                 "Conflict.",
@@ -163,6 +169,11 @@ public sealed class GlobalExceptionHandler(
                 StatusCodes.Status409Conflict,
                 "Status Transition Conflict.",
                 "The requested status transition is not allowed from the current order status."
+            ),
+            ProductReviewPurchaseRequiredException productReviewPurchaseRequiredException => (
+                StatusCodes.Status403Forbidden,
+                "Forbidden.",
+                productReviewPurchaseRequiredException.Message
             ),
             InvalidOperationException invalidOperationException => (
                 StatusCodes.Status400BadRequest,

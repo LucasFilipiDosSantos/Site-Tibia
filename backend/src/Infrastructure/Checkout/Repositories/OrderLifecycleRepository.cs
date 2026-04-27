@@ -37,6 +37,35 @@ public sealed class OrderLifecycleRepository : IOrderLifecycleRepository
             .ToListAsync(cancellationToken);
     }
 
+    public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+    {
+        var eligibleStatuses = OrderStatusExtensions.GetReviewEligibleStatuses();
+
+        return _context.Orders
+            .AsNoTracking()
+            .Where(o => o.CustomerId == customerId && !o.IsHidden && eligibleStatuses.Contains(o.Status))
+            .AnyAsync(o => o.Items.Any(i => i.ProductId == productId), cancellationToken);
+    }
+
+    public async Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+    {
+        return await _context.Orders
+            .AsNoTracking()
+            .Where(o => o.CustomerId == customerId && o.Items.Any(i => i.ProductId == productId))
+            .OrderByDescending(o => o.CreatedAtUtc)
+            .Select(o => new ReviewOrderDiagnostic(
+                o.Id,
+                o.OrderIntentKey,
+                o.Status,
+                o.IsHidden,
+                o.Items.Count,
+                o.Items
+                    .OrderBy(i => i.ProductSlug)
+                    .Select(i => new ReviewOrderItemDiagnostic(i.ProductId, i.ProductSlug))
+                    .ToList()))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task SaveAsync(Order order, CancellationToken cancellationToken = default)
     {
         // Check if order exists

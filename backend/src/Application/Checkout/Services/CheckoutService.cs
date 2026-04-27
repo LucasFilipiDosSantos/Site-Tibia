@@ -1,5 +1,6 @@
 using Application.Checkout.Contracts;
 using Domain.Checkout;
+using Microsoft.Extensions.Logging;
 
 namespace Application.Checkout.Services;
 
@@ -10,19 +11,22 @@ public sealed class CheckoutService
     private readonly ICustomerRepository _customerRepository;
     private readonly ICheckoutInventoryGateway _inventoryGateway;
     private readonly ICheckoutProductCatalogGateway _catalogGateway;
+    private readonly ILogger<CheckoutService> _logger;
 
     public CheckoutService(
         ICartRepository cartRepository,
         ICheckoutRepository checkoutRepository,
         ICustomerRepository customerRepository,
         ICheckoutInventoryGateway inventoryGateway,
-        ICheckoutProductCatalogGateway catalogGateway)
+        ICheckoutProductCatalogGateway catalogGateway,
+        ILogger<CheckoutService> logger)
     {
         _cartRepository = cartRepository ?? throw new ArgumentNullException(nameof(cartRepository));
         _checkoutRepository = checkoutRepository ?? throw new ArgumentNullException(nameof(checkoutRepository));
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
         _inventoryGateway = inventoryGateway ?? throw new ArgumentNullException(nameof(inventoryGateway));
         _catalogGateway = catalogGateway ?? throw new ArgumentNullException(nameof(catalogGateway));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
     public async Task<SubmitCheckoutResponse> SubmitCheckoutAsync(
@@ -81,6 +85,12 @@ public sealed class CheckoutService
 
         var order = new Order(orderId, request.CustomerId, orderIntentKey);
 
+        _logger.LogInformation(
+            "Creating checkout order {OrderId} for customer {CustomerId} with intent {OrderIntentKey}",
+            orderId,
+            request.CustomerId,
+            orderIntentKey);
+
         // D-08: Snapshot notification phone at order creation time (D-07, D-09, D-10)
         await SetNotificationMetadataAsync(order, request.CustomerId, cancellationToken);
 
@@ -101,11 +111,23 @@ public sealed class CheckoutService
                 snapshot.ProductSlug,
                 snapshot.CategorySlug));
 
+            _logger.LogInformation(
+                "Order {OrderId} captured item snapshot for product {ProductId} x {Quantity}",
+                orderId,
+                snapshot.ProductId,
+                line.Quantity);
+
             order.AddDeliveryInstruction(instruction);
         }
 
         await _checkoutRepository.SaveOrderAsync(order, cancellationToken);
         await _cartRepository.ClearAsync(request.CustomerId, cancellationToken);
+
+        _logger.LogInformation(
+            "Checkout order {OrderId} persisted for customer {CustomerId} with {ItemCount} item(s)",
+            order.Id,
+            order.CustomerId,
+            order.Items.Count);
 
         return new SubmitCheckoutResponse(
             order.Id,

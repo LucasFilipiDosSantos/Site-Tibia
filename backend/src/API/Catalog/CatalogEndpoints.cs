@@ -60,11 +60,12 @@ public static class CatalogEndpoints
                         x.Description,
                         x.Price,
                         x.CategorySlug,
-                        x.ImageUrl,
-                        x.Server,
-                        x.AvailableStock,
-                        x.Rating,
-                        x.SalesCount)).ToList(),
+                    x.ImageUrl,
+                    x.Server,
+                    x.AvailableStock,
+                    x.Rating,
+                    x.ReviewCount,
+                    x.SalesCount)).ToList(),
                     result.Page,
                     result.PageSize,
                     new ProductListAppliedFiltersResponse(category, slug),
@@ -100,6 +101,7 @@ public static class CatalogEndpoints
                 product.Server,
                 product.AvailableStock,
                 product.Rating,
+                product.ReviewCount,
                 product.SalesCount));
         })
         .WithTags("Public Catalog");
@@ -145,6 +147,7 @@ public static class CatalogEndpoints
                 created.Server,
                 created.AvailableStock,
                 created.Rating,
+                created.ReviewCount,
                 created.SalesCount));
         })
         .WithTags("Admin Catalog");
@@ -174,6 +177,7 @@ public static class CatalogEndpoints
                 updated.Server,
                 updated.AvailableStock,
                 updated.Rating,
+                updated.ReviewCount,
                 updated.SalesCount));
         })
         .WithTags("Admin Catalog");

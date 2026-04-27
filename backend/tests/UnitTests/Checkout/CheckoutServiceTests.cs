@@ -1,6 +1,7 @@
 using Application.Checkout.Contracts;
 using Application.Inventory.Contracts;
 using Domain.Checkout;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace UnitTests.Checkout;
 
@@ -195,7 +196,13 @@ public sealed class CheckoutServiceTests
         ICheckoutInventoryGateway inventoryGateway,
         ICheckoutProductCatalogGateway catalogGateway)
     {
-        return new Application.Checkout.Services.CheckoutService(cartRepository, checkoutRepository, customerRepository, inventoryGateway, catalogGateway);
+        return new Application.Checkout.Services.CheckoutService(
+            cartRepository,
+            checkoutRepository,
+            customerRepository,
+            inventoryGateway,
+            catalogGateway,
+            NullLogger<Application.Checkout.Services.CheckoutService>.Instance);
     }
 
     private sealed class InMemoryCartRepository : ICartRepository

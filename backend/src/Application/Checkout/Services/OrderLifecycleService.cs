@@ -40,6 +40,12 @@ public sealed class OrderLifecycleService
             ?? throw new InvalidOperationException($"Order {orderId} not found.");
 
         var now = DateTimeOffset.UtcNow;
+        _logger.LogInformation(
+            "Applying Paid transition to order {OrderId} for customer {CustomerId} with {ItemCount} item(s), correlation {CorrelationId}",
+            order.Id,
+            order.CustomerId,
+            order.Items.Count,
+            correlationId);
         order.ApplyTransition(OrderStatus.Paid, TransitionSourceType.System, now);
         await _repository.SaveAsync(order, cancellationToken);
 
