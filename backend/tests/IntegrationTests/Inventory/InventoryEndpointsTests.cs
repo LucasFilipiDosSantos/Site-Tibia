@@ -254,7 +254,7 @@ public sealed class InventoryEndpointsTests
                 services.RemoveAll<ICategoryRepository>();
 
                 _categories.Seed(new Category("Gold", "gold", "Gold offers"));
-                _products.Seed(new Product("Gold Starter", "gold-starter", "Starter", 5m, Guid.NewGuid(), "gold"));
+                _products.Seed(new Product("Gold Starter", "gold-starter", "Starter", 5m, Guid.NewGuid(), "gold", "Antica"));
 
                 services.AddSingleton<IInventoryRepository>(Inventory);
                 services.AddSingleton<IProductRepository>(_products);

@@ -407,7 +407,7 @@ public sealed class CheckoutPersistenceContractTests
                 await db.SaveChangesAsync();
             }
 
-            var product = new Product($"{slug} name", slug, $"{slug} description", price, category.Id, category.Slug);
+            var product = new Product($"{slug} name", slug, $"{slug} description", price, category.Id, category.Slug, "Antica");
             db.Products.Add(product);
             await db.SaveChangesAsync();
             return product.Id;

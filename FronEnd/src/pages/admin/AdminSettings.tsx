@@ -7,7 +7,7 @@ const AdminSettings = () => {
   const [settings, setSettings] = useState({
     storeName: "Lootera",
     storeEmail: "looteratibia@gmail.com",
-    supportPhone: "82 9974-9180",
+    supportPhone: "82 99974-9180",
     currency: "BRL",
     deliveryTime: "5",
     maintenanceMode: false,

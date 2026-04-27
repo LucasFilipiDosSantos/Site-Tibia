@@ -1,6 +1,6 @@
 export const CATEGORY_LABELS: Record<string, string> = {
-  coin: "Coin Aurera",
-  items: "Itens Aurera",
+  coin: "Coin",
+  items: "Itens",
   characters: "Personagens",
   scripts: "Scripts",
   macros: "Macros",
@@ -13,3 +13,10 @@ export const CATEGORY_OPTIONS = Object.entries(CATEGORY_LABELS).map(([slug, labe
 }));
 
 export const getCategoryLabel = (slug: string): string => CATEGORY_LABELS[slug] ?? slug;
+
+export const removeAureraFromText = (value: string): string =>
+  value
+    .replace(/\bAurera\b/g, "")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\s+([,.-])/g, "$1")
+    .trim();

@@ -15,8 +15,8 @@ const Footer = () => {
           <div>
             <h4 className="mb-3 font-display text-sm font-semibold text-foreground">Categorias</h4>
             <ul className="space-y-2 text-xs text-muted-foreground">
-              <li><Link to="/produtos?category=coin" className="transition-colors hover:text-primary">Coin Aurera</Link></li>
-              <li><Link to="/produtos?category=items" className="transition-colors hover:text-primary">Itens Aurera</Link></li>
+              <li><Link to="/produtos?category=coin" className="transition-colors hover:text-primary">Coin</Link></li>
+              <li><Link to="/produtos?category=items" className="transition-colors hover:text-primary">Itens</Link></li>
               <li><Link to="/produtos?category=scripts" className="transition-colors hover:text-primary">Scripts 100% AFK OTC</Link></li>
               <li><Link to="/produtos?category=macros" className="transition-colors hover:text-primary">Macros</Link></li>
               <li><Link to="/produtos?category=characters" className="transition-colors hover:text-primary">Personagens</Link></li>
@@ -42,8 +42,8 @@ const Footer = () => {
               </li>
               <li>Discord: lootera.gg</li>
               <li>
-                <a href="tel:+558299749180" className="transition-colors hover:text-primary">
-                  WhatsApp: 82 9974-9180
+                <a href="tel:+5582999749180" className="transition-colors hover:text-primary">
+                  WhatsApp: 82 99974-9180
                 </a>
               </li>
             </ul>

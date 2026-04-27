@@ -130,6 +130,7 @@ public static class CatalogEndpoints
                     request.Description,
                     request.Price,
                     request.CategorySlug,
+                    request.Server,
                     request.ImageUrl),
                 ct);
 
@@ -158,6 +159,7 @@ public static class CatalogEndpoints
                     Description: request.Description,
                     Price: request.Price,
                     CategorySlug: request.CategorySlug,
+                    Server: request.Server,
                     ImageUrl: request.ImageUrl),
                 ct);
 

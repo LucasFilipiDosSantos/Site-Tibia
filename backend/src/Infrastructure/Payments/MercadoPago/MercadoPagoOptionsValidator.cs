@@ -11,6 +11,11 @@ public sealed class MercadoPagoOptionsValidator : IValidateOptions<MercadoPagoOp
             return ValidateOptionsResult.Fail("MercadoPago options are required.");
         }
 
+        if (!options.Enabled)
+        {
+            return ValidateOptionsResult.Success;
+        }
+
         if (string.IsNullOrWhiteSpace(options.AccessToken))
         {
             return ValidateOptionsResult.Fail("MercadoPago:AccessToken is required.");

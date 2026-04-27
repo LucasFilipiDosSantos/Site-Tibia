@@ -47,7 +47,7 @@ public sealed record ProductListItemResponse(
     decimal Price,
     string CategorySlug,
     string? ImageUrl,
-    string Server,
+    string? Server,
     int AvailableStock,
     decimal Rating,
     int SalesCount);
@@ -63,7 +63,7 @@ public sealed record ProductResponse(
     decimal Price,
     string CategorySlug,
     string? ImageUrl,
-    string Server,
+    string? Server,
     int AvailableStock,
     decimal Rating,
     int SalesCount);
@@ -117,6 +117,7 @@ public sealed record CreateProductRequest(
     string Description,
     decimal Price,
     string CategorySlug,
+    string? Server,
     string? ImageUrl = null);
 
 /// <summary>
@@ -128,4 +129,5 @@ public sealed record UpdateProductPutReplaceRequest(
     string Description,
     decimal Price,
     string CategorySlug,
+    string? Server,
     string? ImageUrl = null);

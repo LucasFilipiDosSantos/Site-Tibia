@@ -7,7 +7,7 @@ public sealed class CatalogDomainInvariantTests
     [Fact]
     public void Product_SlugIsNormalizedAndImmutableAfterConstruction()
     {
-        var product = new Product("Gold Package", "  Gold-Pack-01  ", "Starter package", 10m, Guid.NewGuid(), "gold");
+        var product = new Product("Gold Package", "  Gold-Pack-01  ", "Starter package", 10m, Guid.NewGuid(), "gold", "Antica");
 
         Assert.Equal("gold-pack-01", product.Slug);
         Assert.Equal("gold-pack-01", product.Slug);
@@ -27,9 +27,9 @@ public sealed class CatalogDomainInvariantTests
     [Fact]
     public void Product_AllowsZeroPriceOnCreateAndUpdate()
     {
-        var product = new Product("Gold Package", "gold-package", "Starter package", 0m, Guid.NewGuid(), "gold");
+        var product = new Product("Gold Package", "gold-package", "Starter package", 0m, Guid.NewGuid(), "gold", "Antica");
 
-        product.ReplaceDetails("Gold Package Updated", "Updated package", 0m, Guid.NewGuid(), "gold");
+        product.ReplaceDetails("Gold Package Updated", "Updated package", 0m, Guid.NewGuid(), "gold", "Lobera");
 
         Assert.Equal(0m, product.Price);
     }
@@ -37,12 +37,12 @@ public sealed class CatalogDomainInvariantTests
     [Fact]
     public void Product_RejectsNegativePriceOnCreateAndUpdate()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => new Product("Gold Package", "gold-package", "Starter package", -0.01m, Guid.NewGuid(), "gold"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Product("Gold Package", "gold-package", "Starter package", -0.01m, Guid.NewGuid(), "gold", "Antica"));
 
-        var product = new Product("Gold Package", "gold-package", "Starter package", 10m, Guid.NewGuid(), "gold");
+        var product = new Product("Gold Package", "gold-package", "Starter package", 10m, Guid.NewGuid(), "gold", "Antica");
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
-            product.ReplaceDetails("Gold Package", "Starter package", -1m, Guid.NewGuid(), "gold"));
+            product.ReplaceDetails("Gold Package", "Starter package", -1m, Guid.NewGuid(), "gold", "Lobera"));
     }
 
     [Fact]

@@ -30,16 +30,16 @@ public static class DevelopmentDataSeeder
 
         var products = new[]
         {
-            new Product("Coin Aurera 100kk", "coin-aurera-100kk", "Entrega rapida de 100kk de coin no servidor Aurera.", 89.90m, coin.Id, coin.Slug, rating: 4.9m, salesCount: 1240),
-            new Product("Coin Aurera 50kk", "coin-aurera-50kk", "Entrega rapida de 50kk de coin no servidor Aurera.", 49.90m, coin.Id, coin.Slug, rating: 4.8m, salesCount: 890),
-            new Product("Itens Aurera - Magic Sword", "itens-aurera-magic-sword", "Magic Sword no servidor Aurera para hunts e colecao.", 49.90m, items.Id, items.Slug, rating: 4.7m, salesCount: 320),
-            new Product("Personagem Aurera - Elite Knight 500", "personagem-aurera-elite-knight-500", "Personagem no mundo Aurera pronto para endgame.", 1599.90m, characters.Id, characters.Slug, rating: 5.0m, salesCount: 45),
-            new Product("Personagem Aurera - Master Sorcerer 350", "personagem-aurera-master-sorcerer-350", "Personagem no servidor Aurera pronto para hunts e war.", 899.90m, characters.Id, characters.Slug, rating: 4.7m, salesCount: 120),
-            new Product("Servico Aurera - Annihilator", "servico-aurera-annihilator", "Servico assistido para Annihilator no servidor Aurera.", 59.90m, services.Id, services.Slug, rating: 4.8m, salesCount: 530),
-            new Product("Servico Aurera - Acessos", "servico-aurera-acessos", "Servico de quests e acessos no servidor Aurera.", 79.90m, services.Id, services.Slug, rating: 4.8m, salesCount: 530),
-            new Product("Macro Free", "macro-free", "Macro gratuito para gameplay assistida.", 0m, macros.Id, macros.Slug, rating: 4.4m, salesCount: 1400),
-            new Product("Encomenda de Macro", "encomenda-de-macro", "Encomenda personalizada de macro.", 19.90m, macros.Id, macros.Slug, rating: 4.5m, salesCount: 1800),
-            new Product("Encomenda de Script 100% AFK OTC", "encomenda-script-100-afk-otc", "Script sob encomenda para OTC com fluxo 100% AFK.", 79.90m, scripts.Id, scripts.Slug, rating: 4.8m, salesCount: 950),
+            new Product("Coin Aurera 100kk", "coin-aurera-100kk", "Entrega rapida de 100kk de coin no servidor Aurera.", 89.90m, coin.Id, coin.Slug, "Aurera", rating: 4.9m, salesCount: 1240),
+            new Product("Coin Aurera 50kk", "coin-aurera-50kk", "Entrega rapida de 50kk de coin no servidor Aurera.", 49.90m, coin.Id, coin.Slug, "Aurera", rating: 4.8m, salesCount: 890),
+            new Product("Itens Aurera - Magic Sword", "itens-aurera-magic-sword", "Magic Sword no servidor Aurera para hunts e colecao.", 49.90m, items.Id, items.Slug, "Aurera", rating: 4.7m, salesCount: 320),
+            new Product("Personagem Aurera - Elite Knight 500", "personagem-aurera-elite-knight-500", "Personagem no mundo Aurera pronto para endgame.", 1599.90m, characters.Id, characters.Slug, "Aurera", rating: 5.0m, salesCount: 45),
+            new Product("Personagem Aurera - Master Sorcerer 350", "personagem-aurera-master-sorcerer-350", "Personagem no servidor Aurera pronto para hunts e war.", 899.90m, characters.Id, characters.Slug, "Aurera", rating: 4.7m, salesCount: 120),
+            new Product("Servico Aurera - Annihilator", "servico-aurera-annihilator", "Servico assistido para Annihilator no servidor Aurera.", 59.90m, services.Id, services.Slug, "Aurera", rating: 4.8m, salesCount: 530),
+            new Product("Servico Aurera - Acessos", "servico-aurera-acessos", "Servico de quests e acessos no servidor Aurera.", 79.90m, services.Id, services.Slug, "Aurera", rating: 4.8m, salesCount: 530),
+            new Product("Macro Free", "macro-free", "Macro gratuito para gameplay assistida.", 0m, macros.Id, macros.Slug, "Nao informado", rating: 4.4m, salesCount: 1400),
+            new Product("Encomenda de Macro", "encomenda-de-macro", "Encomenda personalizada de macro.", 19.90m, macros.Id, macros.Slug, "Nao informado", rating: 4.5m, salesCount: 1800),
+            new Product("Encomenda de Script 100% AFK OTC", "encomenda-script-100-afk-otc", "Script sob encomenda para OTC com fluxo 100% AFK.", 79.90m, scripts.Id, scripts.Slug, "Nao informado", rating: 4.8m, salesCount: 950),
         };
 
         await dbContext.Products.AddRangeAsync(products, cancellationToken);
@@ -82,7 +82,7 @@ public static class DevelopmentDataSeeder
 
         foreach (var product in legacyGoldProducts)
         {
-            product.ReplaceDetails(product.Name, product.Description, product.Price, coin.Id, coin.Slug);
+            product.ReplaceDetails(product.Name, product.Description, product.Price, coin.Id, coin.Slug, product.Server);
         }
 
         var now = DateTimeOffset.UtcNow;

@@ -4,6 +4,8 @@ public sealed class MercadoPagoOptions
 {
     public const string SectionName = "MercadoPago";
 
+    public bool Enabled { get; set; }
+
     public string AccessToken { get; set; } = string.Empty;
 
     public string PublicKey { get; set; } = string.Empty;

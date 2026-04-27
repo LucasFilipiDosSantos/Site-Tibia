@@ -65,6 +65,7 @@ const ProductDetail = () => {
     [product?.slug, fallbackProducts],
   );
   const recommendations = related.length > 0 ? related : fallbackRecommendations;
+  const productServer = product?.server?.trim() ? product.server : "Nao informado";
 
   if (isLoading) {
     return (
@@ -112,8 +113,8 @@ const ProductDetail = () => {
           <div>
             <span className="mb-2 inline-block rounded-md bg-primary/15 px-2 py-1 text-xs font-medium text-primary">{product.category}</span>
             <h1 className="font-display text-xl font-bold text-foreground lg:text-2xl">{product.name}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Codigo do produto: {product.slug}</p>
-            <p className="mt-1 text-sm text-muted-foreground">{product.server} | {product.stock} disponiveis</p>
+            <p className="mt-1 text-sm text-muted-foreground">Servidor: {productServer}</p>
+            <p className="mt-1 text-sm text-muted-foreground">{product.stock} disponiveis</p>
             {product.rating > 0 && <p className="mt-1 text-sm text-muted-foreground">{product.rating.toFixed(1)} estrelas</p>}
             {product.sales > 0 && <p className="mt-1 text-sm text-muted-foreground">{product.sales} vendidos</p>}
 

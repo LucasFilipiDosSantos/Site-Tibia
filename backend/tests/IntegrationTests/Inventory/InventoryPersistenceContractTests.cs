@@ -119,7 +119,7 @@ public sealed class InventoryPersistenceContractTests
         {
             await using var db = CreateDbContext();
             var category = new Category("Gold", "gold", "Gold offers");
-            var product = new Product("Gold Starter", "gold-starter", "Starter", 5m, category.Id, category.Slug);
+            var product = new Product("Gold Starter", "gold-starter", "Starter", 5m, category.Id, category.Slug, "Antica");
             db.Categories.Add(category);
             db.Products.Add(product);
             await db.SaveChangesAsync();

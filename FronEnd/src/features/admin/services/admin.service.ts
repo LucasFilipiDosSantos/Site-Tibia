@@ -1,6 +1,6 @@
 import { apiRequest } from "@/lib/api";
 import type { Product } from "@/features/products/types/product.types";
-import { getCategoryLabel } from "@/features/products/utils/catalog";
+import { getCategoryLabel, removeAureraFromText } from "@/features/products/utils/catalog";
 
 export type AdminOrder = {
   id: string;
@@ -94,18 +94,23 @@ export type AdminProductInput = {
   description: string;
   price: number;
   categorySlug: string;
+  server: string;
   imageUrl?: string | null;
+};
+
+export type AdminProductUpdateInput = AdminProductInput & {
+  routeSlug: string;
 };
 
 const toProduct = (product: ProductResponse): Product => ({
   id: product.id ?? product.slug,
   slug: product.slug,
-  name: product.name,
-  category: getCategoryLabel(product.categorySlug),
+  name: removeAureraFromText(product.name),
+  category: removeAureraFromText(getCategoryLabel(product.categorySlug)),
   categorySlug: product.categorySlug,
-  server: product.server ?? "Aurera",
+  server: product.server ?? "",
   price: product.price,
-  description: product.description,
+  description: removeAureraFromText(product.description),
   image: product.imageUrl || "/placeholder.svg",
   stock: product.availableStock ?? 0,
   rating: product.rating ?? 0,
@@ -136,11 +141,12 @@ export const adminService = {
     return toProduct(response);
   },
 
-  async updateProduct(input: AdminProductInput): Promise<Product> {
-    const response = await apiRequest<ProductResponse>(`/admin/catalog/products/${encodeURIComponent(input.slug)}`, {
+  async updateProduct(input: AdminProductUpdateInput): Promise<Product> {
+    const { routeSlug, ...payload } = input;
+    const response = await apiRequest<ProductResponse>(`/admin/catalog/products/${encodeURIComponent(routeSlug)}`, {
       auth: true,
       method: "PUT",
-      body: JSON.stringify(input),
+      body: JSON.stringify(payload),
     });
     return toProduct(response);
   },

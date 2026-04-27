@@ -13,9 +13,9 @@ const createEmptyProduct = (): Product => ({
   id: "",
   slug: "",
   name: "",
-  category: "Coin Aurera",
+  category: "Coin",
   categorySlug: "coin",
-  server: "Aurera",
+  server: "",
   price: 0,
   description: "",
   image: "",
@@ -75,17 +75,19 @@ const AdminProducts = () => {
   const saveProduct = useMutation({
     mutationFn: async (product: Product) => {
       const slug = product.slug || adminService.buildSlug(product.name);
+      const categorySlug = product.categorySlug ?? "coin";
       const payload = {
         slug,
         name: product.name,
         description: product.description,
         price: product.price,
-        categorySlug: product.categorySlug ?? "coin",
+        categorySlug,
+        server: product.server,
         imageUrl: product.image && product.image !== "/placeholder.svg" ? product.image : null,
       };
 
       const saved = product.id
-        ? await adminService.updateProduct(payload)
+        ? await adminService.updateProduct({ ...payload, routeSlug: slug })
         : await adminService.createProduct(payload);
       const stockDelta = product.stock - (product.id ? initialStock : saved.stock);
 
@@ -151,7 +153,7 @@ const AdminProducts = () => {
               <div><label className="text-xs text-muted-foreground">Slug</label><input value={editing.slug ?? ""} onChange={(event) => setEditing({ ...editing, slug: event.target.value })} required disabled={Boolean(editing.id)} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-xs text-muted-foreground">Categoria</label><select value={editing.categorySlug ?? "coin"} onChange={(event) => setEditing({ ...editing, categorySlug: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">{CATEGORY_OPTIONS.map((category) => <option key={category.slug} value={category.slug}>{category.label}</option>)}</select></div>
-                <div><label className="text-xs text-muted-foreground">Servidor</label><input value={editing.server} disabled className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground opacity-60" /></div>
+                <div><label className="text-xs text-muted-foreground">Servidor</label><input value={editing.server} onChange={(event) => setEditing({ ...editing, server: event.target.value })} required className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" /></div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-xs text-muted-foreground">Preco (R$)</label><input type="number" step="0.01" value={editing.price} onChange={(event) => setEditing({ ...editing, price: Number(event.target.value) })} required className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" /></div>

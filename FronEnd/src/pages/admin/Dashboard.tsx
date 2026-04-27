@@ -40,7 +40,11 @@ const Dashboard = () => {
 
   const deleteProduct = useMutation({
     mutationFn: async (product: Product) => {
-      await adminService.deleteProduct(product.slug ?? product.id);
+      if (!product.slug) {
+        throw new Error("Produto sem slug para exclusao.");
+      }
+
+      await adminService.deleteProduct(product.slug);
       return product;
     },
     onSuccess: async () => {

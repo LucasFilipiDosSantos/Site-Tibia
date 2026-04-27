@@ -10,7 +10,7 @@ public sealed record ProductSummary(
     decimal Price,
     string CategorySlug,
     string? ImageUrl,
-    string Server,
+    string? Server,
     int AvailableStock,
     decimal Rating,
     int SalesCount);
@@ -25,12 +25,12 @@ public sealed record ProductBySlugResponse(
     decimal Price,
     string CategorySlug,
     string? ImageUrl,
-    string Server,
+    string? Server,
     int AvailableStock,
     decimal Rating,
     int SalesCount);
 
-public sealed record CreateProductRequest(string Name, string Slug, string Description, decimal Price, string CategorySlug, string? ImageUrl = null);
+public sealed record CreateProductRequest(string Name, string Slug, string Description, decimal Price, string CategorySlug, string? Server, string? ImageUrl = null);
 
 public sealed record UpdateProductPutReplaceRequest(
     string RouteSlug,
@@ -39,6 +39,7 @@ public sealed record UpdateProductPutReplaceRequest(
     string Description,
     decimal Price,
     string CategorySlug,
+    string? Server,
     string? ImageUrl = null
 );
 

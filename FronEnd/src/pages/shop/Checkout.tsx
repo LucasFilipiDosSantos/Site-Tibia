@@ -7,7 +7,7 @@ import { apiRequest } from "@/lib/api";
 import { toast } from "sonner";
 import { CreditCard, QrCode, Loader2, CheckCircle2, MessageCircle, TriangleAlert } from "lucide-react";
 
-const WHATSAPP_SUPPORT_NUMBER = "558299749180";
+const WHATSAPP_SUPPORT_NUMBER = "5582999749180";
 
 type PendingCheckoutResponse = {
   orderId: string;
@@ -126,8 +126,8 @@ const Checkout = () => {
                   <input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} type="email" className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="seu@email.com" required />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm text-muted-foreground">Discord (opcional)</label>
-                  <input value={form.discord} onChange={(e) => setForm({ ...form, discord: e.target.value })} className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="usuario#0000" />
+                  <label className="mb-1 block text-sm text-muted-foreground">Nick do Tibia</label>
+                  <input value={form.discord} onChange={(e) => setForm({ ...form, discord: e.target.value })} className="w-full rounded-lg border border-border bg-input px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary" placeholder="Ex: Knight Level 100" />
                 </div>
               </div>
             </div>

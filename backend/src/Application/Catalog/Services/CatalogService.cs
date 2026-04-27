@@ -83,6 +83,7 @@ public sealed class CatalogService
             request.Price,
             category.Id,
             normalizedCategorySlug,
+            request.Server,
             imageUrl: request.ImageUrl);
         await _productRepository.AddAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
@@ -125,7 +126,7 @@ public sealed class CatalogService
         var product = await _productRepository.GetBySlugAsync(routeSlug, cancellationToken)
             ?? throw new ArgumentException("Product slug not found.", nameof(request.RouteSlug));
 
-        product.ReplaceDetails(request.Name, request.Description, request.Price, category.Id, normalizedCategorySlug, request.ImageUrl);
+        product.ReplaceDetails(request.Name, request.Description, request.Price, category.Id, normalizedCategorySlug, request.Server, request.ImageUrl);
         await _productRepository.UpdateAsync(product, cancellationToken);
         await _productRepository.SaveChangesAsync(cancellationToken);
 

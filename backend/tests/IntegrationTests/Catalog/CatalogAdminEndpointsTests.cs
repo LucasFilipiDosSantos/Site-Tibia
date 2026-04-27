@@ -75,13 +75,47 @@ public sealed class CatalogAdminEndpointsTests
 
         var createProduct = await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new ApiCatalog.CreateProductRequest("Boost", "boost", "Boost service", 0m, "services"));
+            new ApiCatalog.CreateProductRequest("Boost", "boost", "Boost service", 0m, "services", "Lobera"));
         Assert.True((int)createProduct.StatusCode >= 200 && (int)createProduct.StatusCode < 300);
 
         var payload = await createProduct.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
         Assert.NotNull(payload);
         Assert.Equal("boost", payload!.Slug);
         Assert.Equal("services", payload.CategorySlug);
+    }
+
+    [Fact]
+    public async Task PostProduct_AllowsMultipleProductsWithSameCategorySlug()
+    {
+        await using var factory = new CatalogAdminApiFactory();
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", BuildJwt(ApiFactorySettings.Issuer, ApiFactorySettings.Audience, ApiFactorySettings.SigningKey, "Admin"));
+
+        var createCategory = await client.PostAsJsonAsync(
+            "/admin/catalog/categories",
+            new ApiCatalog.CreateCategoryRequest("Coin", "coin", "Coin offers"));
+        Assert.True((int)createCategory.StatusCode >= 200 && (int)createCategory.StatusCode < 300);
+
+        var firstProduct = await client.PostAsJsonAsync(
+            "/admin/catalog/products",
+            new ApiCatalog.CreateProductRequest("100kk Aurera", "100kk-aurera", "100kk package", 100m, "coin", "Lobera"));
+        Assert.True((int)firstProduct.StatusCode >= 200 && (int)firstProduct.StatusCode < 300);
+
+        var secondProduct = await client.PostAsJsonAsync(
+            "/admin/catalog/products",
+            new ApiCatalog.CreateProductRequest("250kk Aurera", "250kk-aurera", "250kk package", 250m, "coin", "Lobera"));
+        Assert.True((int)secondProduct.StatusCode >= 200 && (int)secondProduct.StatusCode < 300);
+
+        var firstPayload = await firstProduct.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
+        var secondPayload = await secondProduct.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
+
+        Assert.NotNull(firstPayload);
+        Assert.NotNull(secondPayload);
+        Assert.Equal("100kk-aurera", firstPayload!.Slug);
+        Assert.Equal("250kk-aurera", secondPayload!.Slug);
+        Assert.Equal("coin", firstPayload.CategorySlug);
+        Assert.Equal("coin", secondPayload.CategorySlug);
     }
 
     [Fact]
@@ -99,18 +133,79 @@ public sealed class CatalogAdminEndpointsTests
 
         var createProduct = await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 10m, "gold"));
+            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 10m, "gold", "Lobera"));
         Assert.True((int)createProduct.StatusCode >= 200 && (int)createProduct.StatusCode < 300);
 
         var slugMutation = await client.PutAsJsonAsync(
             "/admin/catalog/products/gold-starter",
-            new ApiCatalog.UpdateProductPutReplaceRequest("gold-changed", "Gold Starter", "Starter", 10m, "gold"));
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-changed", "Gold Starter", "Starter", 10m, "gold", "Lobera"));
         Assert.Equal(HttpStatusCode.BadRequest, slugMutation.StatusCode);
 
         var zeroPriceUpdate = await client.PutAsJsonAsync(
             "/admin/catalog/products/gold-starter",
-            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 0m, "gold"));
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 0m, "gold", "Lobera"));
         Assert.True((int)zeroPriceUpdate.StatusCode >= 200 && (int)zeroPriceUpdate.StatusCode < 300);
+    }
+
+    [Fact]
+    public async Task ProductMutations_AllowSameImageUrlAcrossDifferentProducts()
+    {
+        await using var factory = new CatalogAdminApiFactory();
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", BuildJwt(ApiFactorySettings.Issuer, ApiFactorySettings.Audience, ApiFactorySettings.SigningKey, "Admin"));
+
+        const string imageUrl = "https://cf.shopee.com.br/file/1f9d46cd71e704ba6bcb1f7058360177";
+
+        await client.PostAsJsonAsync(
+            "/admin/catalog/categories",
+            new ApiCatalog.CreateCategoryRequest("Coin", "coin", "Coin offers"));
+
+        var firstProduct = await client.PostAsJsonAsync(
+            "/admin/catalog/products",
+            new ApiCatalog.CreateProductRequest("100kk Aurera", "100kk-aurera", "100kk package", 100m, "coin", "Lobera", imageUrl));
+        var secondProduct = await client.PostAsJsonAsync(
+            "/admin/catalog/products",
+            new ApiCatalog.CreateProductRequest("250kk Aurera", "250kk-aurera", "250kk package", 250m, "coin", "Lobera", imageUrl));
+
+        Assert.True((int)firstProduct.StatusCode >= 200 && (int)firstProduct.StatusCode < 300);
+        Assert.True((int)secondProduct.StatusCode >= 200 && (int)secondProduct.StatusCode < 300);
+
+        var firstPayload = await firstProduct.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
+        var secondPayload = await secondProduct.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
+
+        Assert.NotNull(firstPayload);
+        Assert.NotNull(secondPayload);
+        Assert.Equal(imageUrl, firstPayload!.ImageUrl);
+        Assert.Equal(imageUrl, secondPayload!.ImageUrl);
+        Assert.NotEqual(firstPayload.Id, secondPayload.Id);
+    }
+
+    [Fact]
+    public async Task ProductMutations_InvalidImageUrl_Returns400()
+    {
+        await using var factory = new CatalogAdminApiFactory();
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", BuildJwt(ApiFactorySettings.Issuer, ApiFactorySettings.Audience, ApiFactorySettings.SigningKey, "Admin"));
+
+        await client.PostAsJsonAsync(
+            "/admin/catalog/categories",
+            new ApiCatalog.CreateCategoryRequest("Gold", "gold", "Gold offers"));
+
+        var create = await client.PostAsJsonAsync(
+            "/admin/catalog/products",
+            new ApiCatalog.CreateProductRequest("Gold Plus", "gold-plus", "Gold plus", 10m, "gold", "Lobera", "not-a-url"));
+        Assert.Equal(HttpStatusCode.BadRequest, create.StatusCode);
+
+        await client.PostAsJsonAsync(
+            "/admin/catalog/products",
+            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 2m, "gold", "Lobera", "https://cdn.example.com/products/starter.png"));
+
+        var update = await client.PutAsJsonAsync(
+            "/admin/catalog/products/gold-starter",
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 2m, "gold", "Lobera", "ftp://cdn.example.com/products/starter.png"));
+        Assert.Equal(HttpStatusCode.BadRequest, update.StatusCode);
     }
 
     [Fact]
@@ -123,7 +218,7 @@ public sealed class CatalogAdminEndpointsTests
 
         var create = await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new ApiCatalog.CreateProductRequest("Ghost", "ghost", "Ghost", 1m, "missing"));
+            new ApiCatalog.CreateProductRequest("Ghost", "ghost", "Ghost", 1m, "missing", "Lobera"));
         Assert.Equal(HttpStatusCode.BadRequest, create.StatusCode);
 
         await client.PostAsJsonAsync(
@@ -131,11 +226,11 @@ public sealed class CatalogAdminEndpointsTests
             new ApiCatalog.CreateCategoryRequest("Gold", "gold", "Gold offers"));
         await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 2m, "gold"));
+            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 2m, "gold", "Lobera"));
 
         var update = await client.PutAsJsonAsync(
             "/admin/catalog/products/gold-starter",
-            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 2m, "missing"));
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 2m, "missing", "Lobera"));
         Assert.Equal(HttpStatusCode.BadRequest, update.StatusCode);
     }
 
@@ -152,10 +247,41 @@ public sealed class CatalogAdminEndpointsTests
             new ApiCatalog.CreateCategoryRequest("Items", "items", "Item offers"));
         await client.PostAsJsonAsync(
             "/admin/catalog/products",
-            new ApiCatalog.CreateProductRequest("Sword", "sword", "Sword", 3m, "items"));
+            new ApiCatalog.CreateProductRequest("Sword", "sword", "Sword", 3m, "items", "Lobera"));
 
         var delete = await client.DeleteAsync("/admin/catalog/categories/items");
         Assert.Equal(HttpStatusCode.BadRequest, delete.StatusCode);
+    }
+
+    [Fact]
+    public async Task ProductMutations_AdminCanPersistServer()
+    {
+        await using var factory = new CatalogAdminApiFactory();
+        using var client = factory.CreateClient();
+        client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", BuildJwt(ApiFactorySettings.Issuer, ApiFactorySettings.Audience, ApiFactorySettings.SigningKey, "Admin"));
+
+        await client.PostAsJsonAsync(
+            "/admin/catalog/categories",
+            new ApiCatalog.CreateCategoryRequest("Gold", "gold", "Gold offers"));
+
+        var create = await client.PostAsJsonAsync(
+            "/admin/catalog/products",
+            new ApiCatalog.CreateProductRequest("Gold Starter", "gold-starter", "Starter", 10m, "gold", "Lobera"));
+        Assert.True((int)create.StatusCode >= 200 && (int)create.StatusCode < 300);
+
+        var createdPayload = await create.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
+        Assert.NotNull(createdPayload);
+        Assert.Equal("Lobera", createdPayload!.Server);
+
+        var update = await client.PutAsJsonAsync(
+            "/admin/catalog/products/gold-starter",
+            new ApiCatalog.UpdateProductPutReplaceRequest("gold-starter", "Gold Starter", "Starter", 10m, "gold", "Yovera"));
+        Assert.True((int)update.StatusCode >= 200 && (int)update.StatusCode < 300);
+
+        var updatedPayload = await update.Content.ReadFromJsonAsync<ApiCatalog.ProductResponse>();
+        Assert.NotNull(updatedPayload);
+        Assert.Equal("Yovera", updatedPayload!.Server);
     }
 
     private static string BuildJwt(string issuer, string audience, string signingKey, string role)

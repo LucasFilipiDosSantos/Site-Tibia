@@ -16,8 +16,8 @@ const iconByCategory: Record<string, LucideIcon> = {
 };
 
 const commercialCards = [
-  { slug: "coin", label: "Coin Aurera", icon: Coins },
-  { slug: "items", label: "Itens Aurera", icon: Crown },
+  { slug: "coin", label: "Coin", icon: Coins },
+  { slug: "items", label: "Itens", icon: Crown },
   { slug: "characters", label: "Personagem", icon: Crown },
   { slug: "services", label: "Servicos", icon: Settings },
   { slug: "scripts", label: "Scripts 100% AFK OTC", icon: Code },
