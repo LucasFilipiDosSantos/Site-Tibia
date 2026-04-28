@@ -43,24 +43,19 @@ export function StarRating({
 }: StarRatingProps) {
   const hasRating = typeof rating === "number" && Number.isFinite(rating);
   const safeRating = hasRating ? clampRating(rating) : 0;
-  const percent = (safeRating / STAR_COUNT) * 100;
+  const filledStars = Math.round(safeRating);
   const label = hasRating ? `${formatRating(safeRating)} de 5 estrelas` : "Sem avaliacao";
 
   return (
     <div className={`flex items-center gap-2 ${className}`.trim()} aria-label={label}>
-      <div className="relative inline-flex">
-        <div className="flex items-center gap-0.5 text-brand-gold/25">
-          {Array.from({ length: STAR_COUNT }).map((_, index) => (
-            <Star key={`empty-${index}`} size={iconSize} className="fill-current" />
-          ))}
-        </div>
-        <div className="absolute inset-y-0 left-0 overflow-hidden" style={{ width: `${percent}%` }}>
-          <div className="flex items-center gap-0.5 text-brand-gold">
-            {Array.from({ length: STAR_COUNT }).map((_, index) => (
-              <Star key={`filled-${index}`} size={iconSize} className="fill-current" />
-            ))}
-          </div>
-        </div>
+      <div className="inline-flex items-center gap-0.5">
+        {Array.from({ length: STAR_COUNT }).map((_, index) => (
+          <Star
+            key={`star-${index}`}
+            size={iconSize}
+            className={index < filledStars ? "fill-current text-brand-gold" : "fill-current text-brand-gold/25"}
+          />
+        ))}
       </div>
       {hasRating && showValue && <span className="text-xs text-muted-foreground">{formatRating(safeRating)}</span>}
       {!hasRating && showFallbackText && <span className="text-xs text-muted-foreground">Sem avaliacao</span>}
@@ -101,7 +96,7 @@ export function StarRatingInput({
       <div className="flex items-center gap-1">
         {Array.from({ length: max }).map((_, index) => {
           const fillRatio = Math.min(1, Math.max(0, activeValue - index));
-          const fillPercent = `${fillRatio * 100}%`;
+          const isFilled = fillRatio >= (allowHalfSteps ? 0.5 : 1);
 
           return (
             <button
@@ -115,15 +110,8 @@ export function StarRatingInput({
               aria-label={`Avaliar com ${allowHalfSteps ? `${index + 0.5} ou ${index + 1}` : index + 1} estrela${index > 0 ? "s" : ""}`}
               aria-pressed={safeValue >= index + 1}
             >
-              <span className="relative block text-[#9CA3AF]">
+              <span className={isFilled ? "block text-[#FFD700]" : "block text-[#9CA3AF]"}>
                 <Star size={iconSize} className="fill-current" />
-                <span
-                  className="absolute inset-y-0 left-0 overflow-hidden text-[#FFD700]"
-                  style={{ width: fillPercent }}
-                  aria-hidden="true"
-                >
-                  <Star size={iconSize} className="fill-current" />
-                </span>
               </span>
             </button>
           );

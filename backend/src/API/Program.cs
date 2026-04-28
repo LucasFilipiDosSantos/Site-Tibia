@@ -104,6 +104,7 @@ public partial class Program
             "http://127.0.0.1"
         };
         var allowedFrontendOrigins = (builder.Environment.IsDevelopment() ? defaultFrontendOrigins : Array.Empty<string>())
+            .Concat(GetProductionFrontendOrigins())
             .Concat(frontendOrigins)
             .Where(origin => !string.IsNullOrWhiteSpace(origin))
             .Select(origin => origin.Trim().TrimEnd('/'))
@@ -387,6 +388,15 @@ public partial class Program
             .Concat(SplitOrigins(frontendUrl))
             .Concat(SplitOrigins(corsOrigins))
             .ToArray();
+    }
+
+    private static string[] GetProductionFrontendOrigins()
+    {
+        return
+        [
+            "https://lootera.com.br",
+            "https://www.lootera.com.br"
+        ];
     }
 
     private static IEnumerable<string> SplitOrigins(string? value)
