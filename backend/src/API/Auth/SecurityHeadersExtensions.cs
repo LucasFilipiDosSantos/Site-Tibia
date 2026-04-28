@@ -34,7 +34,7 @@ public static class SecurityHeadersExtensions
 
                 headers["Content-Security-Policy"] = IsSwaggerRequest(context.Request.Path)
                     ? BuildSwaggerContentSecurityPolicy(connectSrc)
-                    : BuildDefaultContentSecurityPolicy(connectSrc, environment);
+                    : BuildDefaultContentSecurityPolicy(connectSrc);
 
                 ApplyCacheHeaders(context.Request.Path, headers);
                 return Task.CompletedTask;
@@ -45,10 +45,9 @@ public static class SecurityHeadersExtensions
     }
 
     private static string BuildDefaultContentSecurityPolicy(
-        IReadOnlyCollection<string> connectSrc,
-        IHostEnvironment environment)
+        IReadOnlyCollection<string> connectSrc)
     {
-        var directives = new List<string>
+        var directives = new[]
         {
             "default-src 'self'",
             "script-src 'self'",
@@ -61,11 +60,6 @@ public static class SecurityHeadersExtensions
             "form-action 'self'",
             "object-src 'none'"
         };
-
-        if (!environment.IsDevelopment() && !environment.IsEnvironment("Testing"))
-        {
-            directives.Add("upgrade-insecure-requests");
-        }
 
         return string.Join("; ", directives) + ";";
     }
@@ -110,6 +104,7 @@ public static class SecurityHeadersExtensions
             : Array.Empty<string>();
 
         return new[] { "'self'" }
+            .Concat(GetProductionConnectSources())
             .Concat(allowedFrontendOrigins)
             .Concat(developmentSources)
             .Concat(configuredSources)
@@ -123,7 +118,7 @@ public static class SecurityHeadersExtensions
     {
         source = source.Trim().TrimEnd('/');
 
-        if (source is "'self'" or "data:" or "https:" or "http:" or "ws:" or "wss:")
+        if (source is "'self'")
         {
             return source;
         }
@@ -141,6 +136,16 @@ public static class SecurityHeadersExtensions
         return uri.IsDefaultPort
             ? $"{uri.Scheme}://{uri.Host}"
             : $"{uri.Scheme}://{uri.Host}:{uri.Port}";
+    }
+
+    private static string[] GetProductionConnectSources()
+    {
+        return
+        [
+            "https://lootera.com.br",
+            "https://www.lootera.com.br",
+            "https://api.lootera.com.br"
+        ];
     }
 
     private static bool IsSwaggerRequest(PathString path)
