@@ -1,5 +1,6 @@
 using Application.Catalog.Contracts;
 using Application.Checkout.Contracts;
+using Application.Identity.Contracts;
 using Domain.Catalog;
 using Microsoft.Extensions.Logging;
 
@@ -10,17 +11,20 @@ public sealed class ProductReviewService
     private readonly IProductRepository _productRepository;
     private readonly IProductReviewRepository _productReviewRepository;
     private readonly IOrderLifecycleRepository _orderRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ILogger<ProductReviewService> _logger;
 
     public ProductReviewService(
         IProductRepository productRepository,
         IProductReviewRepository productReviewRepository,
         IOrderLifecycleRepository orderRepository,
+        IUserRepository userRepository,
         ILogger<ProductReviewService> logger)
     {
         _productRepository = productRepository;
         _productReviewRepository = productReviewRepository;
         _orderRepository = orderRepository;
+        _userRepository = userRepository;
         _logger = logger;
     }
 
@@ -88,8 +92,11 @@ public sealed class ProductReviewService
             product.Id,
             normalizedSlug);
 
+        var userEmail = (await _userRepository.GetByIdAsync(request.UserId, cancellationToken))?.Email;
+
         var hasPaidOrder = await _orderRepository.HasPaidOrderForProductAsync(
             request.UserId,
+            userEmail,
             product.Id,
             cancellationToken);
 
@@ -97,17 +104,26 @@ public sealed class ProductReviewService
         {
             var diagnostics = await _orderRepository.GetReviewOrderDiagnosticsAsync(
                 request.UserId,
+                userEmail,
                 product.Id,
                 cancellationToken);
 
+            var blockReason = BuildReviewBlockReason(diagnostics);
+
             _logger.LogWarning(
-                "Review blocked because no eligible order was found for user {UserId}, product {ProductId}. Matching orders: {@Orders}. Eligible statuses: {EligibleStatuses}",
+                "Review blocked because no eligible order was found for user {UserId}, userEmail {UserEmail}, product {ProductId}, slug {ProductSlug}. Reason: {Reason}. Matching order count: {OrderCount}. Matching orders: {@Orders}. Eligible statuses: {EligibleStatuses}",
                 request.UserId,
+                userEmail,
                 product.Id,
+                normalizedSlug,
+                blockReason,
+                diagnostics.Count,
                 diagnostics.Select(order => new
                 {
                     order.OrderId,
                     order.OrderIntentKey,
+                    order.CustomerId,
+                    order.CustomerEmail,
                     Status = order.Status.ToString(),
                     order.IsHidden,
                     order.ItemCount,
@@ -118,7 +134,7 @@ public sealed class ProductReviewService
                     }).ToArray()
                 }).ToArray(),
                 string.Join(", ", Domain.Checkout.OrderStatusExtensions.GetReviewEligibleStatuses()));
-            throw new ProductReviewPurchaseRequiredException();
+            throw new ProductReviewPurchaseRequiredException(blockReason);
         }
 
         var existing = await _productReviewRepository.GetByUserAndProductAsync(
@@ -161,5 +177,29 @@ public sealed class ProductReviewService
         }
 
         return slug.Trim().ToLowerInvariant();
+    }
+
+    private static string BuildReviewBlockReason(IReadOnlyList<ReviewOrderDiagnostic> diagnostics)
+    {
+        if (diagnostics.Count == 0)
+        {
+            return "Nenhum pedido deste produto foi encontrado para o usuario autenticado.";
+        }
+
+        var visibleOrders = diagnostics.Where(order => !order.IsHidden).ToList();
+        if (visibleOrders.Count == 0)
+        {
+            return "Os pedidos encontrados para este produto estao ocultos e nao podem ser usados para avaliacao.";
+        }
+
+        var eligibleStatuses = Domain.Checkout.OrderStatusExtensions.GetReviewEligibleStatuses().ToHashSet();
+        var eligibleOrders = visibleOrders.Where(order => eligibleStatuses.Contains(order.Status)).ToList();
+        if (eligibleOrders.Count == 0)
+        {
+            var rawStatuses = string.Join(", ", visibleOrders.Select(order => order.Status.ToString()).Distinct());
+            return $"O pedido encontrado para este produto nao esta com status elegivel para avaliacao. Status atuais: {rawStatuses}.";
+        }
+
+        return "Nao foi possivel validar um pedido elegivel para avaliacao.";
     }
 }

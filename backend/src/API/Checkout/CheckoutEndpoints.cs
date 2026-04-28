@@ -1,6 +1,7 @@
 using API.Auth;
 using Application.Catalog.Contracts;
 using Application.Checkout.Contracts;
+using Application.Identity.Contracts;
 using Application.Checkout.Services;
 using Application.Payments.Contracts;
 using Application.Payments.Services;
@@ -19,6 +20,7 @@ public static class CheckoutEndpoints
             SupportPendingCheckoutDto request,
             IProductRepository productRepository,
             ICheckoutRepository checkoutRepository,
+            IUserRepository userRepository,
             ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
@@ -35,14 +37,29 @@ public static class CheckoutEndpoints
             }
 
             var customerId = ResolveOptionalCustomerId(httpContext.User) ?? Guid.NewGuid();
+            var authenticatedUser = httpContext.User.Identity?.IsAuthenticated == true
+                ? await userRepository.GetByIdAsync(customerId, ct)
+                : null;
+            if (httpContext.User.Identity?.IsAuthenticated == true && authenticatedUser is null)
+            {
+                logger.LogWarning(
+                    "Authenticated support-pending checkout could not find user snapshot for customer {CustomerId}. Falling back to request contact data.",
+                    customerId);
+            }
+
             logger.LogInformation(
-                "Creating support-pending order for customer {CustomerId}. Authenticated={IsAuthenticated}, Email={Email}",
+                "Creating support-pending order for customer {CustomerId}. Authenticated={IsAuthenticated}, RequestEmail={Email}, UserEmail={UserEmail}",
                 customerId,
                 httpContext.User.Identity?.IsAuthenticated ?? false,
-                request.Email);
+                request.Email,
+                authenticatedUser?.Email);
 
             var order = new Order(Guid.NewGuid(), customerId, $"support-{Guid.NewGuid():N}");
-            order.SetCustomerContact(request.Name, request.Email, request.Discord, request.PaymentMethod);
+            order.SetCustomerContact(
+                authenticatedUser?.Name ?? request.Name,
+                authenticatedUser?.Email ?? request.Email,
+                request.Discord,
+                request.PaymentMethod);
             order.SetNotificationMetadata(null, available: false, failedReason: "support-checkout");
 
             foreach (var item in request.Items)
@@ -75,6 +92,13 @@ public static class CheckoutEndpoints
             }
 
             await checkoutRepository.SaveOrderAsync(order, ct);
+
+            logger.LogInformation(
+                "Support-pending order {OrderId} created for customer {CustomerId} email {CustomerEmail} with intent {OrderIntentKey}.",
+                order.Id,
+                order.CustomerId,
+                order.CustomerEmail,
+                order.OrderIntentKey);
 
             return Results.Ok(new SupportPendingCheckoutResponseDto(
                 order.Id,
@@ -115,8 +139,7 @@ public static class CheckoutEndpoints
             return Results.Ok(ToCartDto(cart));
         });
 
-        var ordersGroup = app.MapGroup("/orders")
-            .RequireAuthorization(AuthPolicies.VerifiedForSensitiveActions);
+        var ordersGroup = app.MapGroup("/orders");
 
         ordersGroup.MapPost("/submit", async (ClaimsPrincipal user, SubmitCheckoutDto request, CheckoutService checkoutService, CancellationToken ct) =>
         {
@@ -134,13 +157,18 @@ public static class CheckoutEndpoints
                 ct);
 
             return Results.Ok(ToSubmitResponseDto(response));
-        });
+        })
+        .RequireAuthorization(AuthPolicies.VerifiedForSensitiveActions);
 
-        ordersGroup.MapGet("/{orderId:guid}", async (ClaimsPrincipal user, Guid orderId, ICheckoutRepository checkoutRepository, CancellationToken ct) =>
+        ordersGroup.MapGet("/{orderId:guid}", async (ClaimsPrincipal user, Guid orderId, ICheckoutRepository checkoutRepository, IUserRepository userRepository, CancellationToken ct) =>
         {
             var customerId = ResolveCustomerId(user);
+            var customerEmail = (await userRepository.GetByIdAsync(customerId, ct))?.Email;
             var order = await checkoutRepository.GetOrderByIdAsync(orderId, ct);
-            if (order is null || order.CustomerId != customerId)
+            var emailMatches = customerEmail is not null
+                && order?.CustomerEmail is not null
+                && string.Equals(order.CustomerEmail, customerEmail, StringComparison.OrdinalIgnoreCase);
+            if (order is null || (order.CustomerId != customerId && !emailMatches))
             {
                 return Results.NotFound();
             }
@@ -171,7 +199,8 @@ public static class CheckoutEndpoints
                     x.DeliveryChannelOrContact,
                     x.RequestBrief,
                     x.ContactHandle)).ToList()));
-        });
+        })
+        .RequireAuthorization();
 
         ordersGroup.MapPost("/{orderId:guid}/payments/preference", async (
             ClaimsPrincipal user,
@@ -192,15 +221,23 @@ public static class CheckoutEndpoints
             {
                 return Results.NotFound();
             }
-        });
+        })
+        .RequireAuthorization(AuthPolicies.VerifiedForSensitiveActions);
 
         // Per D-09, D-12: Customer order history list with pagination
-        ordersGroup.MapGet("", async (ClaimsPrincipal user, int page, int pageSize, IOrderLifecycleRepository repository, CancellationToken ct) =>
+        ordersGroup.MapGet("", async (ClaimsPrincipal user, int page, int pageSize, IOrderLifecycleRepository repository, IUserRepository userRepository, ILoggerFactory loggerFactory, CancellationToken ct) =>
         {
+            var logger = loggerFactory.CreateLogger("CustomerOrders");
             var customerId = ResolveCustomerId(user);
+            var customerEmail = (await userRepository.GetByIdAsync(customerId, ct))?.Email;
             pageSize = Math.Clamp(pageSize, 1, 50);
             
-            var orders = await repository.GetCustomerOrdersAsync(customerId, page, pageSize, ct);
+            var orders = await repository.GetCustomerOrdersAsync(customerId, customerEmail, page, pageSize, ct);
+            logger.LogInformation(
+                "Loaded {OrderCount} order(s) for customer {CustomerId} email {CustomerEmail}.",
+                orders.Count,
+                customerId,
+                customerEmail);
             
             var items = orders.Select(o => new OrderListItemDto(
                 o.Id,
@@ -216,7 +253,8 @@ public static class CheckoutEndpoints
                 o.Items.Sum(item => item.Quantity))).ToList();
                 
             return Results.Ok(new PaginatedOrderListDto(items, page, pageSize, items.Count));
-        });
+        })
+        .RequireAuthorization();
 
         return app;
     }

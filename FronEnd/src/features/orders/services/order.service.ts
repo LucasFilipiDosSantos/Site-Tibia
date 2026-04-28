@@ -1,26 +1,40 @@
-import { orders as mockOrders } from "@/data/mockData";
+import { apiRequest } from "@/lib/api";
 import type { Order } from "../types/order.types";
 
+type OrderListResponse = {
+  items: Array<{
+    orderId: string;
+    orderIntentKey: string;
+    createdAtUtc: string;
+    statusCode: string;
+    statusLabel: string;
+    paymentMethod?: string | null;
+    totalAmount?: number;
+    itemCount?: number;
+  }>;
+  page: number;
+  pageSize: number;
+  totalCount: number;
+};
+
+const mapOrder = (order: OrderListResponse["items"][number]): Order => ({
+  id: order.orderId,
+  userId: "",
+  items: [],
+  total: order.totalAmount ?? 0,
+  status: order.statusCode.toLowerCase(),
+  statusLabel: order.statusLabel,
+  createdAt: order.createdAtUtc,
+  paymentMethod: order.paymentMethod,
+  orderIntentKey: order.orderIntentKey,
+});
+
 export const orderService = {
-  getOrders: (): Order[] => {
-    return mockOrders;
-  },
+  async getMyOrders(): Promise<Order[]> {
+    const response = await apiRequest<OrderListResponse>("/orders?page=1&pageSize=100", {
+      auth: true,
+    });
 
-  getOrderById: (id: string): Order | undefined => {
-    return mockOrders.find(o => o.id === id);
-  },
-
-  getOrdersByUserId: (userId: string): Order[] => {
-    return mockOrders.filter(o => o.userId === userId);
-  },
-
-  createOrder: (order: Omit<Order, "id" | "createdAt">): Order => {
-    const newOrder: Order = {
-      ...order,
-      id: `ORD-${Date.now()}`,
-      createdAt: new Date().toISOString(),
-    };
-    // In mock, just return; in real, save to backend
-    return newOrder;
+    return response.items.map(mapOrder);
   },
 };

@@ -51,8 +51,8 @@ public sealed record CreateProductReviewRequest(string ProductSlug, Guid UserId,
 
 public sealed class ProductReviewPurchaseRequiredException : InvalidOperationException
 {
-    public ProductReviewPurchaseRequiredException()
-        : base("Você só pode avaliar produtos comprados.")
+    public ProductReviewPurchaseRequiredException(string? reason = null)
+        : base(reason ?? "Voce so pode avaliar produtos comprados.")
     {
     }
 }
@@ -60,7 +60,7 @@ public sealed class ProductReviewPurchaseRequiredException : InvalidOperationExc
 public sealed class DuplicateProductReviewException : InvalidOperationException
 {
     public DuplicateProductReviewException()
-        : base("Você já avaliou este produto.")
+        : base("Voce ja avaliou este produto.")
     {
     }
 }

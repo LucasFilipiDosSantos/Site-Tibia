@@ -3,7 +3,6 @@ using Application.Checkout.Services;
 using Domain.Checkout;
 using Infrastructure.Notifications;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
 
 namespace IntegrationTests;
 

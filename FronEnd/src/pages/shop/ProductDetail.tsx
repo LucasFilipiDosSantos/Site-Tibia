@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Minus, Plus, Shield, ShoppingCart } from "lucide-react";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { ProductImage } from "@/components/lootera/ProductImage";
-import { StarRating } from "@/components/lootera/StarRating";
+import { StarRating, StarRatingInput } from "@/components/lootera/StarRating";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { useProduct, useProducts } from "@/features/products/hooks/useProducts";
@@ -47,7 +47,7 @@ const ProductDetail = () => {
   const { isAuthenticated } = useAuth();
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
-  const [reviewRating, setReviewRating] = useState("5");
+  const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const { data: product, isLoading, isError } = useProduct(slug);
   const { data: myReview } = useQuery({
@@ -83,8 +83,12 @@ const ProductDetail = () => {
         throw new Error("Faça login para avaliar este produto.");
       }
 
+      if (reviewRating < 1) {
+        throw new Error("Selecione de 1 a 5 estrelas para enviar sua avaliacao.");
+      }
+
       return productService.createReview(slug, {
-        rating: Number(reviewRating),
+        rating: reviewRating,
         comment: reviewComment.trim() || null,
       });
     },
@@ -229,14 +233,11 @@ const ProductDetail = () => {
                 >
                   <div>
                     <label className="text-xs text-muted-foreground">Nota</label>
-                    <input
-                      type="number"
-                      min="0"
-                      max="5"
-                      step="0.001"
+                    <StarRatingInput
                       value={reviewRating}
-                      onChange={(event) => setReviewRating(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                      onChange={setReviewRating}
+                      className="mt-2"
+                      showValue
                     />
                   </div>
                   <div>
@@ -250,7 +251,7 @@ const ProductDetail = () => {
                   </div>
                   <button
                     type="submit"
-                    disabled={submitReview.isPending}
+                    disabled={submitReview.isPending || reviewRating < 1}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
                   >
                     {submitReview.isPending ? "Enviando..." : "Enviar avaliacao"}

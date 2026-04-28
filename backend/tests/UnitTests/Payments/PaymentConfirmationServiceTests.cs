@@ -44,17 +44,17 @@ public sealed class PaymentConfirmationServiceTests
             return Task.CompletedTask;
         }
 
-        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, string? customerEmail, int page, int pageSize, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyList<Order>>([]);
         }
 
-        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(false);
         }
 
-        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>([]);
         }

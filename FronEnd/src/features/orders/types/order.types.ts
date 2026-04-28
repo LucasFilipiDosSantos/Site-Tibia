@@ -4,10 +4,11 @@ export interface Order {
   items: OrderItem[];
   total: number;
   status: OrderStatus;
-  paymentStatus?: PaymentStatus;
+  statusLabel?: string;
   createdAt: string;
   updatedAt?: string;
-  paymentMethod: string;
+  paymentMethod?: string | null;
+  orderIntentKey?: string;
 }
 
 export interface OrderItem {
@@ -17,6 +18,4 @@ export interface OrderItem {
   price: number;
 }
 
-export type OrderStatus = "pending" | "processing" | "completed" | "cancelled" | "refunded";
-
-export type PaymentStatus = "pending" | "paid" | "failed" | "refunded";
+export type OrderStatus = "pending" | "paid" | "cancelled" | string;

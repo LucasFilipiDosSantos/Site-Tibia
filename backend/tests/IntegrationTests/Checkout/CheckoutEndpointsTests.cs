@@ -1,7 +1,9 @@
 using API.Checkout;
 using Application.Checkout.Contracts;
+using Application.Identity.Contracts;
 using Application.Inventory.Contracts;
 using Domain.Checkout;
+using Domain.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Testing;
@@ -199,6 +201,8 @@ public sealed class CheckoutEndpointsTests
         public InMemoryProductGateway ProductGateway { get; } = new();
         private readonly InMemoryAvailabilityGateway _availabilityGateway = new();
         private readonly InMemoryCheckoutInventoryGateway _inventoryGateway = new();
+        private readonly InMemoryUserRepository _userRepository = new();
+        private readonly InMemoryCustomerRepository _customerRepository = new();
         public InMemoryCheckoutInventoryGateway InventoryGateway => _inventoryGateway;
 
         public Guid CustomerId { get; } = Guid.NewGuid();
@@ -235,12 +239,16 @@ public sealed class CheckoutEndpointsTests
             {
                 services.RemoveAll<ICartRepository>();
                 services.RemoveAll<ICheckoutRepository>();
+                services.RemoveAll<ICustomerRepository>();
+                services.RemoveAll<IUserRepository>();
                 services.RemoveAll<ICartProductAvailabilityGateway>();
                 services.RemoveAll<ICheckoutProductCatalogGateway>();
                 services.RemoveAll<ICheckoutInventoryGateway>();
 
                 services.AddSingleton<ICartRepository>(_cartRepository);
                 services.AddSingleton<ICheckoutRepository>(CheckoutRepository);
+                services.AddSingleton<ICustomerRepository>(_customerRepository);
+                services.AddSingleton<IUserRepository>(_userRepository);
                 services.AddSingleton<ICartProductAvailabilityGateway>(_availabilityGateway);
                 services.AddSingleton<ICheckoutProductCatalogGateway>(ProductGateway);
                 services.AddSingleton<ICheckoutInventoryGateway>(_inventoryGateway);
@@ -249,6 +257,7 @@ public sealed class CheckoutEndpointsTests
 
         public HttpClient CreateAuthenticatedClient()
         {
+            _userRepository.Upsert(new UserAccount(CustomerId, "Checkout Customer", "customer@test.com", "hash"));
             var client = CreateClient();
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", BuildJwt(CustomerId));
             return client;
@@ -434,5 +443,50 @@ public sealed class CheckoutEndpointsTests
                 ? quantity
                 : 0;
         }
+    }
+
+    private sealed class InMemoryCustomerRepository : ICustomerRepository
+    {
+        public Task<string?> GetNotificationPhoneAsync(Guid customerId, CancellationToken ct = default)
+            => Task.FromResult<string?>(null);
+    }
+
+    private sealed class InMemoryUserRepository : IUserRepository
+    {
+        private readonly Dictionary<Guid, UserAccount> _usersById = [];
+        private readonly Dictionary<string, UserAccount> _usersByEmail = [];
+
+        public void Upsert(UserAccount user)
+        {
+            _usersById[user.Id] = user;
+            _usersByEmail[user.Email] = user;
+        }
+
+        public Task<UserAccount?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+        {
+            _usersByEmail.TryGetValue(email.Trim().ToLowerInvariant(), out var user);
+            return Task.FromResult(user);
+        }
+
+        public Task<UserAccount?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+        {
+            _usersById.TryGetValue(userId, out var user);
+            return Task.FromResult(user);
+        }
+
+        public Task AddAsync(UserAccount user, CancellationToken cancellationToken = default)
+        {
+            Upsert(user);
+            return Task.CompletedTask;
+        }
+
+        public Task UpdateAsync(UserAccount user, CancellationToken cancellationToken = default)
+        {
+            Upsert(user);
+            return Task.CompletedTask;
+        }
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
     }
 }

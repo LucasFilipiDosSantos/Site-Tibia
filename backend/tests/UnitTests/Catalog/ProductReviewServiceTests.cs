@@ -1,8 +1,10 @@
 using Application.Catalog.Contracts;
 using Application.Catalog.Services;
 using Application.Checkout.Contracts;
+using Application.Identity.Contracts;
 using Domain.Catalog;
 using Domain.Checkout;
+using Domain.Identity;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace UnitTests.Catalog;
@@ -24,12 +26,13 @@ public sealed class ProductReviewServiceTests
             productRepository,
             reviewRepository,
             orderRepository,
+            new InMemoryUserRepository(userId, "reviewer@test.com"),
             NullLogger<ProductReviewService>.Instance);
 
         var exception = await Assert.ThrowsAsync<DuplicateProductReviewException>(() =>
             service.CreateReviewAsync(new CreateProductReviewRequest("gold-starter", userId, 5m, "Nova tentativa")));
 
-        Assert.Equal("Você já avaliou este produto.", exception.Message);
+        Assert.Equal("Voce ja avaliou este produto.", exception.Message);
     }
 
     [Fact]
@@ -46,6 +49,7 @@ public sealed class ProductReviewServiceTests
             productRepository,
             reviewRepository,
             orderRepository,
+            new InMemoryUserRepository(userId, "reviewer@test.com"),
             NullLogger<ProductReviewService>.Instance);
 
         var created = await service.CreateReviewAsync(new CreateProductReviewRequest("gold-starter", userId, 4.25m, "Gostei"));
@@ -57,7 +61,7 @@ public sealed class ProductReviewServiceTests
     }
 
     [Fact]
-    public async Task CreateReview_BlocksUserWithoutPaidPurchase()
+    public async Task CreateReview_BlocksUserWithoutMatchingPurchase()
     {
         var productRepository = new InMemoryProductRepository();
         var reviewRepository = new InMemoryProductReviewRepository();
@@ -70,12 +74,48 @@ public sealed class ProductReviewServiceTests
             productRepository,
             reviewRepository,
             orderRepository,
+            new InMemoryUserRepository(userId, "reviewer@test.com"),
             NullLogger<ProductReviewService>.Instance);
 
         var exception = await Assert.ThrowsAsync<ProductReviewPurchaseRequiredException>(() =>
             service.CreateReviewAsync(new CreateProductReviewRequest("gold-starter", userId, 4.25m, "Gostei")));
 
-        Assert.Equal("Você só pode avaliar produtos comprados.", exception.Message);
+        Assert.Equal("Nenhum pedido deste produto foi encontrado para o usuario autenticado.", exception.Message);
+    }
+
+    [Fact]
+    public async Task CreateReview_ExplainsWhenOrderStatusIsNotEligible()
+    {
+        var productRepository = new InMemoryProductRepository();
+        var reviewRepository = new InMemoryProductReviewRepository();
+        var product = new Product("Gold Starter", "gold-starter", "Starter pack", 10m, Guid.NewGuid(), "gold", "Lobera");
+        var userId = Guid.NewGuid();
+        productRepository.Seed(product);
+        var diagnostics = new[]
+        {
+            new ReviewOrderDiagnostic(
+                Guid.NewGuid(),
+                "support-123",
+                userId,
+                "reviewer@test.com",
+                OrderStatus.Pending,
+                false,
+                1,
+                new[] { new ReviewOrderItemDiagnostic(product.Id, product.Slug) })
+        };
+        var orderRepository = new InMemoryOrderLifecycleRepository(hasPaidOrder: false, diagnostics);
+
+        var service = new ProductReviewService(
+            productRepository,
+            reviewRepository,
+            orderRepository,
+            new InMemoryUserRepository(userId, "reviewer@test.com"),
+            NullLogger<ProductReviewService>.Instance);
+
+        var exception = await Assert.ThrowsAsync<ProductReviewPurchaseRequiredException>(() =>
+            service.CreateReviewAsync(new CreateProductReviewRequest("gold-starter", userId, 4.25m, "Gostei")));
+
+        Assert.Equal("O pedido encontrado para este produto nao esta com status elegivel para avaliacao. Status atuais: Pending.", exception.Message);
     }
 
     private sealed class InMemoryProductRepository : IProductRepository
@@ -145,13 +185,37 @@ public sealed class ProductReviewServiceTests
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 
+    private sealed class InMemoryUserRepository : IUserRepository
+    {
+        private readonly UserAccount _user;
+
+        public InMemoryUserRepository(Guid fixedUserId, string fixedEmail)
+        {
+            _user = new UserAccount(fixedUserId, "Reviewer", fixedEmail, "hash");
+        }
+
+        public Task<UserAccount?> GetByEmailAsync(string requestedEmail, CancellationToken cancellationToken = default)
+            => Task.FromResult<UserAccount?>(string.Equals(_user.Email, UserAccount.NormalizeEmail(requestedEmail), StringComparison.Ordinal) ? _user : null);
+
+        public Task<UserAccount?> GetByIdAsync(Guid requestedUserId, CancellationToken cancellationToken = default)
+            => Task.FromResult<UserAccount?>(_user.Id == requestedUserId ? _user : null);
+
+        public Task AddAsync(UserAccount user, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task UpdateAsync(UserAccount user, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
     private sealed class InMemoryOrderLifecycleRepository : IOrderLifecycleRepository
     {
         private readonly bool _hasPaidOrder;
+        private readonly IReadOnlyList<ReviewOrderDiagnostic> _diagnostics;
 
-        public InMemoryOrderLifecycleRepository(bool hasPaidOrder)
+        public InMemoryOrderLifecycleRepository(bool hasPaidOrder, IReadOnlyList<ReviewOrderDiagnostic>? diagnostics = null)
         {
             _hasPaidOrder = hasPaidOrder;
+            _diagnostics = diagnostics ?? [];
         }
 
         public Task<Order?> GetByIdAsync(Guid orderId, CancellationToken cancellationToken = default)
@@ -159,13 +223,13 @@ public sealed class ProductReviewServiceTests
 
         public Task SaveAsync(Order order, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, string? customerEmail, int page, int pageSize, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Order>>([]);
 
-        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
             => Task.FromResult(_hasPaidOrder);
 
-        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
-            => Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>([]);
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_diagnostics);
     }
 }

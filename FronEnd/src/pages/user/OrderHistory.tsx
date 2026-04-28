@@ -1,29 +1,31 @@
+import { useQuery } from "@tanstack/react-query";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { useAuth } from "@/features/auth/context/AuthContext";
 import { orderService } from "@/features/orders/services/order.service";
 
 const statusColors: Record<string, string> = {
   pending: "bg-brand-gold/15 text-brand-gold",
-  processing: "bg-primary/15 text-primary",
-  completed: "bg-green-500/15 text-green-400",
+  paid: "bg-green-500/15 text-green-400",
   cancelled: "bg-destructive/15 text-destructive",
-  refunded: "bg-muted text-muted-foreground",
 };
 
 const statusLabels: Record<string, string> = {
   pending: "Pendente",
-  processing: "Processando",
-  completed: "Concluído",
+  paid: "Pago",
   cancelled: "Cancelado",
-  refunded: "Reembolsado",
 };
 
 const OrderHistory = () => {
   const { user } = useAuth();
+  const { data: userOrders = [], isLoading, isError, error } = useQuery({
+    queryKey: ["my-orders"],
+    queryFn: () => orderService.getMyOrders(),
+    enabled: Boolean(user),
+  });
 
-  if (!user) return null;
-
-  const userOrders = orderService.getOrdersByUserId(user.id);
+  if (!user) {
+    return null;
+  }
 
   return (
     <PublicLayout>
@@ -33,6 +35,24 @@ const OrderHistory = () => {
         </h1>
 
         <div className="space-y-4">
+          {isLoading && (
+            <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+              Carregando pedidos...
+            </div>
+          )}
+
+          {isError && (
+            <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">
+              {error instanceof Error ? error.message : "Nao foi possivel carregar seus pedidos."}
+            </div>
+          )}
+
+          {!isLoading && !isError && userOrders.length === 0 && (
+            <div className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">
+              Voce ainda nao possui pedidos.
+            </div>
+          )}
+
           {userOrders.map((order) => (
             <div
               key={order.id}
@@ -46,16 +66,16 @@ const OrderHistory = () => {
                     </h3>
                     <span
                       className={`rounded-md px-2 py-0.5 text-xs font-medium ${
-                        statusColors[order.status]
+                        statusColors[order.status] ?? "bg-muted text-muted-foreground"
                       }`}
                     >
-                      {statusLabels[order.status]}
+                      {order.statusLabel ?? statusLabels[order.status] ?? order.status}
                     </span>
                   </div>
 
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {new Date(order.createdAt).toLocaleDateString("pt-BR")} ·{" "}
-                    {order.paymentMethod}
+                    {new Date(order.createdAt).toLocaleDateString("pt-BR")}
+                    {order.paymentMethod ? ` · ${order.paymentMethod}` : ""}
                   </p>
                 </div>
 
@@ -65,19 +85,10 @@ const OrderHistory = () => {
               </div>
 
               <div className="mt-3 border-t border-border pt-3">
-                {order.items.map((item) => (
-                  <div
-                    key={item.productId}
-                    className="flex justify-between text-sm"
-                  >
-                    <span className="text-muted-foreground">
-                      {item.name} x{item.quantity}
-                    </span>
-                    <span className="text-foreground">
-                      R$ {(item.price * item.quantity).toFixed(2)}
-                    </span>
-                  </div>
-                ))}
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Referencia</span>
+                  <span className="text-foreground">{order.orderIntentKey ?? order.id}</span>
+                </div>
               </div>
             </div>
           ))}

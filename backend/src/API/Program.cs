@@ -203,6 +203,7 @@ public partial class Program
         using (var scope = app.Services.CreateScope())
         {
             var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var orderRepairService = scope.ServiceProvider.GetRequiredService<LegacyOrderCustomerLinkRepairService>();
             if (app.Environment.IsEnvironment("Testing"))
             {
                 // Test hosts replace repositories/services and should not touch the real database.
@@ -220,10 +221,12 @@ public partial class Program
                 }
 
                 DevelopmentDataSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
+                orderRepairService.RepairAsync().GetAwaiter().GetResult();
             }
             else
             {
                 dbContext.Database.Migrate();
+                orderRepairService.RepairAsync().GetAwaiter().GetResult();
             }
         }
 

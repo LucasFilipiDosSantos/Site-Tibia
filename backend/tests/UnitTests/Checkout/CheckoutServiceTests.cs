@@ -1,6 +1,8 @@
 using Application.Checkout.Contracts;
+using Application.Identity.Contracts;
 using Application.Inventory.Contracts;
 using Domain.Checkout;
+using Domain.Identity;
 using Microsoft.Extensions.Logging.Abstractions;
 
 namespace UnitTests.Checkout;
@@ -200,6 +202,7 @@ public sealed class CheckoutServiceTests
             cartRepository,
             checkoutRepository,
             customerRepository,
+            new MockUserRepository(),
             inventoryGateway,
             catalogGateway,
             NullLogger<Application.Checkout.Services.CheckoutService>.Instance);
@@ -419,5 +422,20 @@ public sealed class CheckoutServiceTests
         {
             return Task.FromResult(_phone);
         }
+    }
+
+    private sealed class MockUserRepository : IUserRepository
+    {
+        public Task<UserAccount?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+            => Task.FromResult<UserAccount?>(null);
+
+        public Task<UserAccount?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<UserAccount?>(new UserAccount(userId, "Checkout User", "checkout@test.com", "hash"));
+
+        public Task AddAsync(UserAccount user, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task UpdateAsync(UserAccount user, CancellationToken cancellationToken = default) => Task.CompletedTask;
+
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

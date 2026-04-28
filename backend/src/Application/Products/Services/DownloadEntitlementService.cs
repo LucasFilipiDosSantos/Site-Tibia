@@ -93,7 +93,8 @@ public sealed class DownloadEntitlementService : IDownloadEntitlementService
     private async Task<bool> CheckPurchaseEntitlementAsync(Guid productId, Guid userId, CancellationToken ct)
     {
         // Check if user has any paid order containing this product
-        var orders = await _orderRepository.GetCustomerOrdersAsync(userId, 1, 100, ct);
+        var userEmail = (await _userRepository.GetByIdAsync(userId, ct))?.Email;
+        var orders = await _orderRepository.GetCustomerOrdersAsync(userId, userEmail, 1, 100, ct);
         return orders.Any(o => o.Status == Domain.Checkout.OrderStatus.Paid 
             && o.Items.Any(i => i.ProductId == productId));
     }

@@ -1,4 +1,5 @@
 using Application.Checkout.Contracts;
+using Application.Identity.Contracts;
 using Domain.Checkout;
 using Microsoft.Extensions.Logging;
 
@@ -9,6 +10,7 @@ public sealed class CheckoutService
     private readonly ICartRepository _cartRepository;
     private readonly ICheckoutRepository _checkoutRepository;
     private readonly ICustomerRepository _customerRepository;
+    private readonly IUserRepository _userRepository;
     private readonly ICheckoutInventoryGateway _inventoryGateway;
     private readonly ICheckoutProductCatalogGateway _catalogGateway;
     private readonly ILogger<CheckoutService> _logger;
@@ -17,6 +19,7 @@ public sealed class CheckoutService
         ICartRepository cartRepository,
         ICheckoutRepository checkoutRepository,
         ICustomerRepository customerRepository,
+        IUserRepository userRepository,
         ICheckoutInventoryGateway inventoryGateway,
         ICheckoutProductCatalogGateway catalogGateway,
         ILogger<CheckoutService> logger)
@@ -24,6 +27,7 @@ public sealed class CheckoutService
         _cartRepository = cartRepository ?? throw new ArgumentNullException(nameof(cartRepository));
         _checkoutRepository = checkoutRepository ?? throw new ArgumentNullException(nameof(checkoutRepository));
         _customerRepository = customerRepository ?? throw new ArgumentNullException(nameof(customerRepository));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
         _inventoryGateway = inventoryGateway ?? throw new ArgumentNullException(nameof(inventoryGateway));
         _catalogGateway = catalogGateway ?? throw new ArgumentNullException(nameof(catalogGateway));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -84,11 +88,13 @@ public sealed class CheckoutService
         }
 
         var order = new Order(orderId, request.CustomerId, orderIntentKey);
+        await SetCustomerSnapshotAsync(order, request.CustomerId, cancellationToken);
 
         _logger.LogInformation(
-            "Creating checkout order {OrderId} for customer {CustomerId} with intent {OrderIntentKey}",
+            "Creating checkout order {OrderId} for customer {CustomerId} email {CustomerEmail} with intent {OrderIntentKey}",
             orderId,
             request.CustomerId,
+            order.CustomerEmail,
             orderIntentKey);
 
         // D-08: Snapshot notification phone at order creation time (D-07, D-09, D-10)
@@ -178,6 +184,21 @@ public sealed class CheckoutService
         // E.164 format: starts with + followed by 1-15 digits
         return phone.StartsWith("+") && phone.Length >= 3 && phone.Length <= 16 
                && phone.Skip(1).All(char.IsDigit);
+    }
+
+    private async Task SetCustomerSnapshotAsync(Order order, Guid customerId, CancellationToken ct)
+    {
+        var user = await _userRepository.GetByIdAsync(customerId, ct);
+        if (user is null)
+        {
+            _logger.LogWarning(
+                "Checkout order {OrderId} is being created for customer {CustomerId}, but no user snapshot was found.",
+                order.Id,
+                customerId);
+            return;
+        }
+
+        order.SetCustomerContact(user.Name, user.Email, null, null);
     }
 
     private async Task CompensateReservationsOrThrowAsync(string orderIntentKey, CancellationToken cancellationToken)

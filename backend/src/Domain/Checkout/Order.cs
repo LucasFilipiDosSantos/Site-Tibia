@@ -74,6 +74,13 @@ public sealed class Order
         Status = status;
     }
 
+    public void RelinkCustomer(Guid customerId)
+    {
+        CustomerId = customerId == Guid.Empty
+            ? throw new ArgumentException("Customer id is required.", nameof(customerId))
+            : customerId;
+    }
+
     public void Hide()
     {
         IsHidden = true;

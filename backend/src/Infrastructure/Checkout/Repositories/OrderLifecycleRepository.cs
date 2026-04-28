@@ -1,5 +1,6 @@
 using Domain.Checkout;
 using Application.Checkout.Contracts;
+using Domain.Identity;
 using Microsoft.EntityFrameworkCore;
 
 namespace Infrastructure.Checkout.Repositories;
@@ -21,14 +22,18 @@ public sealed class OrderLifecycleRepository : IOrderLifecycleRepository
             .FirstOrDefaultAsync(o => o.Id == orderId, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, string? customerEmail, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         // Per D-10: Default sort is newest-first by CreatedAtUtc
         var offset = Math.Max(page - 1, 0) * pageSize;
+        var normalizedEmail = NormalizeEmail(customerEmail);
 
         return await _context.Orders
             .AsNoTracking()
-            .Where(o => o.CustomerId == customerId && !o.IsHidden)
+            .Where(o => !o.IsHidden && (o.CustomerId == customerId
+                || (normalizedEmail != null
+                    && o.CustomerEmail != null
+                    && o.CustomerEmail.ToLower() == normalizedEmail)))
             .OrderByDescending(o => o.CreatedAtUtc)
             .Skip(offset)
             .Take(pageSize)
@@ -37,25 +42,39 @@ public sealed class OrderLifecycleRepository : IOrderLifecycleRepository
             .ToListAsync(cancellationToken);
     }
 
-    public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+    public Task<bool> HasPaidOrderForProductAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
     {
         var eligibleStatuses = OrderStatusExtensions.GetReviewEligibleStatuses();
+        var normalizedEmail = NormalizeEmail(customerEmail);
 
         return _context.Orders
             .AsNoTracking()
-            .Where(o => o.CustomerId == customerId && !o.IsHidden && eligibleStatuses.Contains(o.Status))
+            .Where(o => (o.CustomerId == customerId
+                || (normalizedEmail != null
+                    && o.CustomerEmail != null
+                    && o.CustomerEmail.ToLower() == normalizedEmail))
+                && !o.IsHidden
+                && eligibleStatuses.Contains(o.Status))
             .AnyAsync(o => o.Items.Any(i => i.ProductId == productId), cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
     {
+        var normalizedEmail = NormalizeEmail(customerEmail);
+
         return await _context.Orders
             .AsNoTracking()
-            .Where(o => o.CustomerId == customerId && o.Items.Any(i => i.ProductId == productId))
+            .Where(o => (o.CustomerId == customerId
+                || (normalizedEmail != null
+                    && o.CustomerEmail != null
+                    && o.CustomerEmail.ToLower() == normalizedEmail))
+                && o.Items.Any(i => i.ProductId == productId))
             .OrderByDescending(o => o.CreatedAtUtc)
             .Select(o => new ReviewOrderDiagnostic(
                 o.Id,
                 o.OrderIntentKey,
+                o.CustomerId,
+                o.CustomerEmail,
                 o.Status,
                 o.IsHidden,
                 o.Items.Count,
@@ -64,6 +83,11 @@ public sealed class OrderLifecycleRepository : IOrderLifecycleRepository
                     .Select(i => new ReviewOrderItemDiagnostic(i.ProductId, i.ProductSlug))
                     .ToList()))
             .ToListAsync(cancellationToken);
+    }
+
+    private static string? NormalizeEmail(string? email)
+    {
+        return string.IsNullOrWhiteSpace(email) ? null : UserAccount.NormalizeEmail(email);
     }
 
     public async Task SaveAsync(Order order, CancellationToken cancellationToken = default)

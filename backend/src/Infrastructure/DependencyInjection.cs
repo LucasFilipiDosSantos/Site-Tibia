@@ -94,6 +94,7 @@ public static class DependencyInjection
         services.AddScoped<ICustomOrderRepository, CustomOrderRepository>();
         services.AddScoped<ICustomOrderService, CustomOrderService>();
         services.AddScoped<PaymentConfirmationService>();
+        services.AddScoped<LegacyOrderCustomerLinkRepairService>();
         services.AddScoped<PaymentPreferenceSettings>(sp =>
         {
             var options = sp.GetRequiredService<IOptions<MercadoPagoOptions>>().Value;

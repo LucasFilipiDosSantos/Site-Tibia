@@ -248,21 +248,23 @@ public sealed class LoginCheckoutPurchaseFlowTests
 
         public Task SaveAsync(Order order, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
-        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, string? customerEmail, int page, int pageSize, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Order>>(StoredOrders.Where(order => order.CustomerId == customerId).ToList());
 
-        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
             => Task.FromResult(StoredOrders.Any(order =>
-                order.CustomerId == customerId &&
+                (order.CustomerId == customerId || (customerEmail is not null && string.Equals(order.CustomerEmail, customerEmail, StringComparison.OrdinalIgnoreCase))) &&
                 order.Status.IsReviewEligible() &&
                 order.Items.Any(item => item.ProductId == productId)));
 
-        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid productId, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>(StoredOrders
-                .Where(order => order.CustomerId == customerId && order.Items.Any(item => item.ProductId == productId))
+                .Where(order => (order.CustomerId == customerId || (customerEmail is not null && string.Equals(order.CustomerEmail, customerEmail, StringComparison.OrdinalIgnoreCase))) && order.Items.Any(item => item.ProductId == productId))
                 .Select(order => new ReviewOrderDiagnostic(
                     order.Id,
                     order.OrderIntentKey,
+                    order.CustomerId,
+                    order.CustomerEmail,
                     order.Status,
                     false,
                     order.Items.Count,

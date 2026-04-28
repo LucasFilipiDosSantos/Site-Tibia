@@ -9,6 +9,7 @@ using Application.Inventory.Services;
 using Infrastructure.Checkout;
 using Infrastructure.Persistence;
 using Infrastructure.Checkout.Repositories;
+using Infrastructure.Identity.Repositories;
 using Infrastructure.Inventory.Repositories;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,7 @@ public sealed class CheckoutPersistenceContractTests
         var customerId = Guid.NewGuid();
         var productA = await fixture.SeedCatalogProductAsync("bundle-a", 10m);
         var productB = await fixture.SeedCatalogProductAsync("bundle-b", 20m);
+        await fixture.SeedUserAsync(customerId, "checkout-a@test.com");
 
         db.InventoryStocks.Add(new InventoryStock(productA, totalQuantity: 10, reservedQuantity: 0, now));
         db.InventoryStocks.Add(new InventoryStock(productB, totalQuantity: 10, reservedQuantity: 0, now));
@@ -46,6 +48,8 @@ public sealed class CheckoutPersistenceContractTests
         var checkoutService = new CheckoutService(
             cartRepository,
             checkoutRepository,
+            new CustomerRepository(db),
+            new UserRepository(db),
             new CheckoutInventoryGateway(inventoryService),
             new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)),
             NullLogger<CheckoutService>.Instance);
@@ -88,6 +92,7 @@ public sealed class CheckoutPersistenceContractTests
         var customerId = Guid.NewGuid();
         var productA = await fixture.SeedCatalogProductAsync("line-a", 10m);
         var productB = await fixture.SeedCatalogProductAsync("line-b", 20m);
+        await fixture.SeedUserAsync(customerId, "checkout-b@test.com");
 
         db.InventoryStocks.Add(new InventoryStock(productA, totalQuantity: 5, reservedQuantity: 0, now));
         db.InventoryStocks.Add(new InventoryStock(productB, totalQuantity: 1, reservedQuantity: 0, now));
@@ -100,6 +105,8 @@ public sealed class CheckoutPersistenceContractTests
         var checkoutService = new CheckoutService(
             cartRepository,
             checkoutRepository,
+            new CustomerRepository(db),
+            new UserRepository(db),
             new CheckoutInventoryGateway(inventoryService),
             new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)),
             NullLogger<CheckoutService>.Instance);
@@ -201,6 +208,7 @@ public sealed class CheckoutPersistenceContractTests
         var productA = await fixture.SeedCatalogProductAsync("line-3a", 10m);
         var productB = await fixture.SeedCatalogProductAsync("line-3b", 20m);
         var productC = await fixture.SeedCatalogProductAsync("line-3c", 30m);
+        await fixture.SeedUserAsync(customerId, "checkout-c@test.com");
 
         db.InventoryStocks.Add(new InventoryStock(productA, totalQuantity: 5, reservedQuantity: 0, now));
         db.InventoryStocks.Add(new InventoryStock(productB, totalQuantity: 5, reservedQuantity: 0, now));
@@ -214,6 +222,8 @@ public sealed class CheckoutPersistenceContractTests
         var checkoutService = new CheckoutService(
             cartRepository,
             checkoutRepository,
+            new CustomerRepository(db),
+            new UserRepository(db),
             new CheckoutInventoryGateway(inventoryService),
             new CheckoutProductCatalogGateway(new Infrastructure.Catalog.Repositories.ProductRepository(db)),
             NullLogger<CheckoutService>.Instance);
@@ -417,11 +427,23 @@ public sealed class CheckoutPersistenceContractTests
             return product.Id;
         }
 
+        public async Task SeedUserAsync(Guid userId, string email, string name = "Checkout User")
+        {
+            await using var db = CreateDbContext();
+            if (await db.Users.AnyAsync(x => x.Id == userId))
+            {
+                return;
+            }
+
+            db.Users.Add(new Domain.Identity.UserAccount(userId, name, email, "hash"));
+            await db.SaveChangesAsync();
+        }
+
         public async Task MutateProductAsync(Guid productId, string newName, decimal newPrice, string newSlug)
         {
             await using var db = CreateDbContext();
             var product = await db.Products.SingleAsync(x => x.Id == productId);
-            product.ReplaceDetails(newName, "mutated description", newPrice, product.CategoryId, product.CategorySlug);
+            product.ReplaceDetails(newName, "mutated description", newPrice, product.CategoryId, product.CategorySlug, product.Server, product.ImageUrl);
             var slugProperty = typeof(Product).GetProperty(nameof(Product.Slug));
             slugProperty!.SetValue(product, newSlug);
             await db.SaveChangesAsync();

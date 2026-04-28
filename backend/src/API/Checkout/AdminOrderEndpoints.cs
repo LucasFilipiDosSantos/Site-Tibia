@@ -1,9 +1,11 @@
 using API.Auth;
 using Application.Checkout.Contracts;
 using Application.Checkout.Services;
+using Application.Identity.Contracts;
 using Domain.Checkout;
 using Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 
 namespace API.Checkout;
@@ -98,8 +100,11 @@ public static class AdminOrderEndpoints
             AdminUpdateOrderDto request,
             AppDbContext dbContext,
             ICheckoutInventoryGateway inventoryGateway,
+            IUserRepository userRepository,
+            ILoggerFactory loggerFactory,
             CancellationToken ct) =>
         {
+            var logger = loggerFactory.CreateLogger("AdminOrderUpdate");
             var order = await dbContext.Orders
                 .Include(x => x.Items)
                 .SingleOrDefaultAsync(x => x.Id == orderId, ct);
@@ -109,7 +114,7 @@ public static class AdminOrderEndpoints
                 return Results.NotFound();
             }
 
-            if (!Enum.TryParse<OrderStatus>(request.Status, ignoreCase: true, out var status))
+            if (!TryParseOrderStatus(request.Status, out var status))
             {
                 return Results.BadRequest(new { message = "Status invalido." });
             }
@@ -121,6 +126,28 @@ public static class AdminOrderEndpoints
                 request.CustomerDiscord,
                 request.PaymentMethod,
                 status);
+
+            var matchedUser = await userRepository.GetByEmailAsync(request.CustomerEmail, ct);
+            if (matchedUser is not null && order.CustomerId != matchedUser.Id)
+            {
+                logger.LogInformation(
+                    "Admin update relinked order {OrderId} intent {OrderIntentKey} from customer {PreviousCustomerId} to {CustomerId} using email {CustomerEmail}.",
+                    order.Id,
+                    order.OrderIntentKey,
+                    order.CustomerId,
+                    matchedUser.Id,
+                    request.CustomerEmail);
+                order.RelinkCustomer(matchedUser.Id);
+            }
+            else if (matchedUser is null)
+            {
+                logger.LogWarning(
+                    "Admin update could not relink order {OrderId} intent {OrderIntentKey} because no user was found for email {CustomerEmail}. CustomerId remains {CustomerId}.",
+                    order.Id,
+                    order.OrderIntentKey,
+                    request.CustomerEmail,
+                    order.CustomerId);
+            }
 
             await dbContext.SaveChangesAsync(ct);
 
@@ -194,4 +221,23 @@ public static class AdminOrderEndpoints
         OrderStatus.Cancelled => "Cancelado",
         _ => status.ToString()
     };
+
+    private static bool TryParseOrderStatus(string rawStatus, out OrderStatus status)
+    {
+        var normalized = rawStatus.Trim().ToLowerInvariant();
+
+        return normalized switch
+        {
+            "pending" or "pendente" => Match(OrderStatus.Pending, out status),
+            "paid" or "pago" => Match(OrderStatus.Paid, out status),
+            "cancelled" or "canceled" or "cancelado" => Match(OrderStatus.Cancelled, out status),
+            _ => Enum.TryParse(rawStatus, ignoreCase: true, out status)
+        };
+    }
+
+    private static bool Match(OrderStatus value, out OrderStatus status)
+    {
+        status = value;
+        return true;
+    }
 }

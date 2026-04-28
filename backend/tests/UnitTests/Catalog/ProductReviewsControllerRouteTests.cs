@@ -244,13 +244,13 @@ public sealed class ProductReviewsControllerRouteTests
         public Task SaveAsync(Order order, CancellationToken cancellationToken = default)
             => Task.CompletedTask;
 
-        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, int page, int pageSize, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, string? customerEmail, int page, int pageSize, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<Order>>([]);
 
-        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, Guid requestedProductId, CancellationToken cancellationToken = default)
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, string? customerEmail, Guid requestedProductId, CancellationToken cancellationToken = default)
             => Task.FromResult(requestedProductId == productId);
 
-        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, Guid requestedProductId, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, string? customerEmail, Guid requestedProductId, CancellationToken cancellationToken = default)
             => Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>([]);
     }
 }

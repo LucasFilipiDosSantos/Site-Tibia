@@ -1,6 +1,10 @@
 using API.Auth;
 using Application.Catalog.Contracts;
+using Application.Checkout.Contracts;
+using Application.Identity.Contracts;
 using Domain.Catalog;
+using Domain.Checkout;
+using Domain.Identity;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -31,7 +35,7 @@ public sealed class ProductReviewEndpointsTests
 
         var response = await client.PostAsJsonAsync(
             "/api/products/teste-imagem/reviews",
-            new ApiCatalog.CreateProductReviewRequest(4.25m, "texto opcional"));
+            new ApiCatalog.CreateProductReviewRequest { Rating = 4.25m, Comment = "texto opcional" });
 
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var payload = await response.Content.ReadFromJsonAsync<ApiCatalog.ProductReviewResponse>();
@@ -52,11 +56,11 @@ public sealed class ProductReviewEndpointsTests
 
         await client.PostAsJsonAsync(
             "/api/products/teste-imagem/reviews",
-            new ApiCatalog.CreateProductReviewRequest(4.25m, "primeira"));
+            new ApiCatalog.CreateProductReviewRequest { Rating = 4.25m, Comment = "primeira" });
 
         var duplicate = await client.PostAsJsonAsync(
             "/api/products/teste-imagem/reviews",
-            new ApiCatalog.CreateProductReviewRequest(5m, "segunda"));
+            new ApiCatalog.CreateProductReviewRequest { Rating = 5m, Comment = "segunda" });
 
         Assert.Equal(HttpStatusCode.BadRequest, duplicate.StatusCode);
         var body = await duplicate.Content.ReadAsStringAsync();
@@ -119,6 +123,8 @@ public sealed class ProductReviewEndpointsTests
     {
         private readonly InMemoryProductRepository _products = new();
         private readonly InMemoryCategoryRepository _categories = new();
+        private readonly InMemoryOrderLifecycleRepository _orders = new();
+        private readonly InMemoryUserRepository _users = new();
         public InMemoryProductReviewRepository Reviews { get; } = new();
         public Product Product { get; } = new("Teste Imagem", "teste-imagem", "Produto com review", 10m, Guid.NewGuid(), "items", "Lobera");
 
@@ -143,10 +149,14 @@ public sealed class ProductReviewEndpointsTests
                 services.RemoveAll<IProductRepository>();
                 services.RemoveAll<ICategoryRepository>();
                 services.RemoveAll<IProductReviewRepository>();
+                services.RemoveAll<IOrderLifecycleRepository>();
+                services.RemoveAll<IUserRepository>();
 
                 services.AddSingleton<IProductRepository>(_products);
                 services.AddSingleton<ICategoryRepository>(_categories);
                 services.AddSingleton<IProductReviewRepository>(Reviews);
+                services.AddSingleton<IOrderLifecycleRepository>(_orders);
+                services.AddSingleton<IUserRepository>(_users);
             });
         }
     }
@@ -169,6 +179,39 @@ public sealed class ProductReviewEndpointsTests
             return Task.CompletedTask;
         }
 
+        public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+    }
+
+    private sealed class InMemoryOrderLifecycleRepository(Guid? seededProductId = null) : IOrderLifecycleRepository
+    {
+        private readonly Guid? _seededProductId = seededProductId;
+
+        public Task<Order?> GetByIdAsync(Guid orderId, CancellationToken cancellationToken = default)
+            => Task.FromResult<Order?>(null);
+
+        public Task SaveAsync(Order order, CancellationToken cancellationToken = default)
+            => Task.CompletedTask;
+
+        public Task<IReadOnlyList<Order>> GetCustomerOrdersAsync(Guid customerId, string? customerEmail, int page, int pageSize, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<Order>>([]);
+
+        public Task<bool> HasPaidOrderForProductAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult(_seededProductId is null || _seededProductId == productId);
+
+        public Task<IReadOnlyList<ReviewOrderDiagnostic>> GetReviewOrderDiagnosticsAsync(Guid customerId, string? customerEmail, Guid productId, CancellationToken cancellationToken = default)
+            => Task.FromResult<IReadOnlyList<ReviewOrderDiagnostic>>([]);
+    }
+
+    private sealed class InMemoryUserRepository : IUserRepository
+    {
+        public Task<UserAccount?> GetByEmailAsync(string email, CancellationToken cancellationToken = default)
+            => Task.FromResult<UserAccount?>(new UserAccount("Customer", email, "hash"));
+
+        public Task<UserAccount?> GetByIdAsync(Guid userId, CancellationToken cancellationToken = default)
+            => Task.FromResult<UserAccount?>(new UserAccount(userId, "Customer", "customer@test.com", "hash"));
+
+        public Task AddAsync(UserAccount user, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task UpdateAsync(UserAccount user, CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task SaveChangesAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 

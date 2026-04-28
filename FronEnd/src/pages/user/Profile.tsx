@@ -1,11 +1,18 @@
 import { Link, useNavigate } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { useAuth } from "@/features/auth/context/AuthContext";
+import { orderService } from "@/features/orders/services/order.service";
+import { useQuery } from "@tanstack/react-query";
 import { User, Package, LogOut } from "lucide-react";
 
 const Profile = () => {
   const { user, isAuthenticated, logout } = useAuth();
   const navigate = useNavigate();
+  const { data: userOrders = [] } = useQuery({
+    queryKey: ["my-orders"],
+    queryFn: () => orderService.getMyOrders(),
+    enabled: isAuthenticated,
+  });
 
   if (!isAuthenticated) {
     navigate("/login");
@@ -42,7 +49,7 @@ const Profile = () => {
                 <Package size={24} className="text-primary" />
                 <div>
                   <p className="text-sm font-medium text-foreground">Meus Pedidos</p>
-                  <p className="text-xs text-muted-foreground">{user?.ordersCount} pedidos</p>
+                  <p className="text-xs text-muted-foreground">{userOrders.length} pedidos</p>
                 </div>
               </Link>
               <button onClick={() => { logout(); navigate("/"); }} className="flex items-center gap-3 rounded-xl border border-border bg-card p-6 transition-all hover:border-destructive/30">
