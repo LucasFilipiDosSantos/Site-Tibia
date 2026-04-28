@@ -207,7 +207,7 @@ public partial class Program
                         ),
                         ValidateLifetime = true,
                         NameClaimType = ClaimTypes.Name,
-                        RoleClaimType = ClaimTypes.Role,
+                        RoleClaimType = "role",
                         ClockSkew = TimeSpan.Zero,
                     };
                 }
