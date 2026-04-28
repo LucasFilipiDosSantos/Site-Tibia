@@ -8,4 +8,16 @@ public sealed record VerificationConfirmRequest(string Token);
 public sealed record PasswordResetRequest(string Email);
 public sealed record PasswordResetConfirmRequest(string Token, string NewPassword);
 
-public sealed record AuthResponse(string AccessToken, string RefreshToken, DateTimeOffset AccessTokenExpiresAtUtc, DateTimeOffset RefreshTokenExpiresAtUtc);
+public sealed record AuthUserResponse(
+    Guid Id,
+    string Name,
+    string Email,
+    string Role,
+    bool EmailVerified);
+
+public sealed record AuthResponse(
+    string AccessToken,
+    string RefreshToken,
+    DateTimeOffset AccessTokenExpiresAtUtc,
+    DateTimeOffset RefreshTokenExpiresAtUtc,
+    AuthUserResponse User);

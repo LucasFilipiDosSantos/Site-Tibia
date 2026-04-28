@@ -30,10 +30,8 @@ const FloatingSupport = () => {
 
   return (
     <>
-      {/* Chat panel */}
       {open && (
         <div className="fixed bottom-24 right-6 z-50 w-[340px] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-2xl animate-in slide-in-from-bottom-4 fade-in duration-300">
-          {/* Header */}
           <div className="flex items-center justify-between bg-primary px-4 py-3">
             <div className="flex items-center gap-2">
               <MessageCircle size={18} className="text-primary-foreground" />
@@ -44,14 +42,12 @@ const FloatingSupport = () => {
             </button>
           </div>
 
-          {/* Welcome message */}
           <div className="border-b border-border bg-secondary/50 px-4 py-3">
             <p className="text-xs text-muted-foreground">
               👋 Olá! Envie sua mensagem com seus dados de contato e nossa equipe responderá o mais rápido possível.
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-3 p-4">
             <input
               type="text"
@@ -99,7 +95,6 @@ const FloatingSupport = () => {
         </div>
       )}
 
-      {/* FAB */}
       <button
         onClick={() => setOpen(!open)}
         className="fixed bottom-6 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all hover:scale-105 animate-pulse-glow"

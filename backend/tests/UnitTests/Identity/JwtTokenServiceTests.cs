@@ -1,6 +1,8 @@
 using Domain.Identity;
 using Infrastructure.Identity.Services;
 using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using Microsoft.IdentityModel.Tokens;
 
 namespace UnitTests.Identity;
 
@@ -21,11 +23,25 @@ public sealed class JwtTokenServiceTests
             now));
 
         var handler = new JwtSecurityTokenHandler();
-        var token = handler.ReadJwtToken(result.Token);
+        handler.MapInboundClaims = false;
+        Assert.Equal(5, result.Token.Split('.').Length);
 
-        Assert.Contains(token.Claims, c => c.Type == "role" && c.Value == "Admin");
-        Assert.Contains(token.Claims, c => c.Type == "name" && c.Value == "Claims User");
-        Assert.Contains(token.Claims, c => c.Type == "email_verified" && c.Value == "true");
+        var principal = handler.ValidateToken(result.Token, new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = "tests",
+            ValidateAudience = true,
+            ValidAudience = "tests",
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestSigningKey)),
+            TokenDecryptionKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(TestEncryptionKey)),
+            ValidateLifetime = false,
+            ClockSkew = TimeSpan.Zero
+        }, out _);
+
+        Assert.Contains(principal.Claims, c => c.Type == "role" && c.Value == "Admin");
+        Assert.Contains(principal.Claims, c => c.Type == "name" && c.Value == "Claims User");
+        Assert.Contains(principal.Claims, c => c.Type == "email_verified" && c.Value == "true");
     }
 
     [Fact]
@@ -51,7 +67,11 @@ public sealed class JwtTokenServiceTests
         {
             Issuer = "tests",
             Audience = "tests",
-            SigningKey = "01234567890123456789012345678901"
+            SigningKey = TestSigningKey,
+            EncryptionKey = TestEncryptionKey
         });
     }
+
+    private const string TestSigningKey = "01234567890123456789012345678901";
+    private const string TestEncryptionKey = "12345678901234567890123456789012";
 }

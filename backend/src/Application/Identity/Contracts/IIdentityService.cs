@@ -16,4 +16,16 @@ public sealed record LoginCommand(string Email, string Password, string? IpAddre
 
 public sealed record RegisterResult(Guid UserId, string Name, string Email);
 
-public sealed record LoginResult(string AccessToken, string RefreshToken, DateTimeOffset AccessTokenExpiresAtUtc, DateTimeOffset RefreshTokenExpiresAtUtc);
+public sealed record AuthenticatedUserResult(
+    Guid Id,
+    string Name,
+    string Email,
+    string Role,
+    bool EmailVerified);
+
+public sealed record LoginResult(
+    string AccessToken,
+    string RefreshToken,
+    DateTimeOffset AccessTokenExpiresAtUtc,
+    DateTimeOffset RefreshTokenExpiresAtUtc,
+    AuthenticatedUserResult User);

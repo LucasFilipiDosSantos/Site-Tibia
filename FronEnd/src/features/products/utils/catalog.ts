@@ -18,5 +18,5 @@ export const removeAureraFromText = (value: string): string =>
   value
     .replace(/\bAurera\b/g, "")
     .replace(/\s{2,}/g, " ")
-    .replace(/\s+([,.-])/g, "$1")
+    .replace(/\s+([,.])/g, "$1")
     .trim();

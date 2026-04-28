@@ -57,6 +57,11 @@ public sealed class TokenRotationService
         var access = _tokenService.IssueAccessToken(new AccessTokenRequest(user.Id, user.Name, user.Email, user.Role, user.EmailVerified, now));
         _audit?.Record(SecurityAuditService.RefreshRotated, user.Id, user.Email, ipAddress);
 
-        return new LoginResult(access.Token, nextRefresh.RawToken, access.ExpiresAtUtc, nextRefresh.ExpiresAtUtc);
+        return new LoginResult(
+            access.Token,
+            nextRefresh.RawToken,
+            access.ExpiresAtUtc,
+            nextRefresh.ExpiresAtUtc,
+            IdentityService.ToAuthenticatedUserResult(user));
     }
 }

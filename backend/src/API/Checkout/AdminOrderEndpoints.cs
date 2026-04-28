@@ -23,7 +23,6 @@ public static class AdminOrderEndpoints
         var group = app.MapGroup("/admin/orders")
             .RequireAuthorization(AuthPolicies.AdminOnly);
 
-        // Per D-13: Admin search endpoint
         group.MapGet("", async (
             OrderStatus? status,
             Guid? customerId,
@@ -34,7 +33,6 @@ public static class AdminOrderEndpoints
             ICheckoutRepository repository,
             CancellationToken ct) =>
         {
-            // TODO: Implement full filtering - D-13
             var orders = await repository.SearchOrdersAsync(status, customerId, createdFromUtc, createdToUtc, page, pageSize, ct);
             
             var items = orders.Select(o => new OrderListItemDto(
@@ -53,7 +51,6 @@ public static class AdminOrderEndpoints
             return Results.Ok(new PaginatedOrderListDto(items, page, pageSize, items.Count));
         });
 
-        // Per D-10, D-11: Admin force-complete delivery
         group.MapPost("/deliveries/complete", async (
             ForceCompleteDeliveryDto request,
             IAdminFulfillmentService service,
@@ -65,7 +62,6 @@ public static class AdminOrderEndpoints
         .WithName("ForceCompleteDelivery")
         .WithTags("Admin");
 
-        // Per D-14, D-16: Admin explicit cancel action
         group.MapPost("/{orderId:guid}/actions/cancel", async (
             ClaimsPrincipal user,
             Guid orderId,
@@ -83,7 +79,6 @@ public static class AdminOrderEndpoints
             }
             catch (ForbiddenStatusTransitionException ex)
             {
-                // Per D-15: 409 Conflict with currentStatus and allowedTransitions
                 return Results.Conflict(new
                 {
                     type = "https://tools.ietf.org/html/rfc7807",

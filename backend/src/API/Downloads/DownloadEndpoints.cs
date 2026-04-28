@@ -15,11 +15,9 @@ public static class DownloadEndpoints
         var group = app.MapGroup("/downloads")
             .WithTags("Downloads");
 
-        // Generate signed download URL (requires auth + purchase)
         group.MapPost("/generate-url", GenerateDownloadUrl)
             .RequireAuthorization();
 
-        // Download file via signed URL token (public endpoint with token validation)
         group.MapGet("/file/{token}", DownloadFile)
             .AllowAnonymous();
 
@@ -46,7 +44,6 @@ public static class DownloadEndpoints
         ISystemClock clock,
         ISigningKeyProvider signingKeyProvider)
     {
-        // Validate signed token
         var isValid = DownloadEntitlementService.ValidateSignedToken(
             token,
             signingKeyProvider.GetKey(),
@@ -59,15 +56,12 @@ public static class DownloadEndpoints
             return Results.BadRequest(new { error = "Invalid or expired download token" });
         }
 
-        // Get download metadata
         var download = await downloadRepository.GetByIdAsync(downloadId);
         if (download is null)
         {
             return Results.NotFound(new { error = "Download not found" });
         }
 
-        // TODO: Load file from storage and stream with proper content type
-        // For now, return 501 Not Implemented until storage is configured
         return Results.Json(
             new
             {

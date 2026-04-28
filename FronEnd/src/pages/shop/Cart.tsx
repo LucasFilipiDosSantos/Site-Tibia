@@ -49,7 +49,6 @@ const Cart = () => {
             <button onClick={clearCart} className="text-sm text-muted-foreground hover:text-destructive transition-colors">Limpar carrinho</button>
           </div>
 
-          {/* Summary */}
           <div className="rounded-xl border border-border bg-card p-6">
             <h2 className="mb-4 font-display text-lg font-semibold text-foreground">Resumo</h2>
             <div className="space-y-2 text-sm">

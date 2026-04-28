@@ -180,8 +180,19 @@ public sealed class IdentityService : IIdentityService
             access.Token,
             refresh.RawToken,
             access.ExpiresAtUtc,
-            refresh.ExpiresAtUtc
+            refresh.ExpiresAtUtc,
+            ToAuthenticatedUserResult(user)
         );
+    }
+
+    internal static AuthenticatedUserResult ToAuthenticatedUserResult(UserAccount user)
+    {
+        return new AuthenticatedUserResult(
+            user.Id,
+            user.Name,
+            user.Email,
+            user.Role.ToAuthorizationRole(),
+            user.EmailVerified);
     }
 
     public async Task RequestEmailVerificationAsync(

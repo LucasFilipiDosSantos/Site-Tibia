@@ -38,21 +38,18 @@ public sealed class DownloadEntitlementService : IDownloadEntitlementService
 
     public async Task<SignedUrlResponse?> GenerateSignedUrlAsync(Guid productId, Guid userId, CancellationToken ct = default)
     {
-        // 1. Get product download metadata
         var download = await _downloadRepository.GetByProductIdAsync(productId, ct);
         if (download is null)
         {
             return null;
         }
 
-        // 2. Check if user has purchased (entitlement)
         var hasPurchased = await CheckPurchaseEntitlementAsync(productId, userId, ct);
         if (!hasPurchased)
         {
             return null;
         }
 
-        // 3. Generate signed token with embedded expiration
         var expiresAt = _clock.UtcNow.AddMinutes(SignedUrlExpirationMinutes);
         var token = GenerateSignedToken(download.Id, expiresAt, _signingKeyProvider.GetKey());
 
@@ -69,30 +66,23 @@ public sealed class DownloadEntitlementService : IDownloadEntitlementService
 
     public async Task<bool> CanAccessFreeDownloadAsync(Guid productId, Guid userId, CancellationToken ct = default)
     {
-        // Get user account to check role
         var user = await _userRepository.GetByIdAsync(userId, ct);
         if (user is null)
         {
             return false;
         }
 
-        // Check if product has free download access policy (by category or global)
-        // For now, we implement simple product-based free access check
         var download = await _downloadRepository.GetByProductIdAsync(productId, ct);
         if (download is null)
         {
             return false;
         }
 
-        // Check user's role against policy
-        // TODO: Load DownloadAccessPolicy from repository
-        // For now, return true for Admin role (can access all free downloads)
         return user.Role == UserRole.Admin || user.Role == UserRole.Costumer;
     }
 
     private async Task<bool> CheckPurchaseEntitlementAsync(Guid productId, Guid userId, CancellationToken ct)
     {
-        // Check if user has any paid order containing this product
         var userEmail = (await _userRepository.GetByIdAsync(userId, ct))?.Email;
         var orders = await _orderRepository.GetCustomerOrdersAsync(userId, userEmail, 1, 100, ct);
         return orders.Any(o => o.Status == Domain.Checkout.OrderStatus.Paid 
@@ -135,7 +125,6 @@ public sealed class DownloadEntitlementService : IDownloadEntitlementService
             var payload = parts[0].Replace("-", "+").Replace("_", "/");
             var signature = parts[1].Replace("-", "+").Replace("_", "/");
 
-            // Decode payload
             var padLength = (4 - payload.Length % 4) % 4;
             var payloadPadded = payload + new string('=', padLength);
             var payloadBytes = Convert.FromBase64String(payloadPadded);
@@ -152,13 +141,11 @@ public sealed class DownloadEntitlementService : IDownloadEntitlementService
                 return false;
             }
 
-            // Check expiration
             if (expiresAt <= currentTime)
             {
                 return false;
             }
 
-            // Verify HMAC
             var keyBytes = Encoding.UTF8.GetBytes(secretKey);
             using var hmac = new HMACSHA256(keyBytes);
             var expectedHash = hmac.ComputeHash(payloadBytes);

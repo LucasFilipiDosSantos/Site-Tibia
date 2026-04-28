@@ -19,7 +19,6 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
 
   return (
     <div className="min-h-screen flex bg-background">
-      {/* Sidebar Desktop */}
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-secondary lg:flex">
         <div className="flex items-center gap-2 border-b border-border px-4 py-3">
           <Link to="/" aria-label="Ir para a home da loja" className="rounded transition-opacity hover:opacity-85">
@@ -49,7 +48,6 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
         </div>
       </aside>
 
-      {/* Mobile header */}
       <div className="flex flex-1 flex-col">
         <header className="flex items-center justify-between border-b border-border bg-secondary px-4 py-3 lg:hidden">
           <div className="flex items-center gap-2">
@@ -63,7 +61,6 @@ const AdminLayout = ({ children }: { children: ReactNode }) => {
           </button>
         </header>
 
-        {/* Mobile sidebar overlay */}
         {sidebarOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
             <div className="absolute inset-0 bg-background/80" onClick={() => setSidebarOpen(false)} />

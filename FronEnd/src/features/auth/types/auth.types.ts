@@ -35,4 +35,12 @@ export type AuthTokens = {
   refreshTokenExpiresAtUtc: string;
 };
 
-export type AuthApiResponse = AuthTokens;
+export type AuthApiResponse = AuthTokens & {
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    emailVerified: boolean;
+  };
+};

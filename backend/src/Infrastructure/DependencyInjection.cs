@@ -139,7 +139,8 @@ public static class DependencyInjection
             {
                 Issuer = cfg["Jwt:Issuer"] ?? "tibia-webstore",
                 Audience = cfg["Jwt:Audience"] ?? "tibia-webstore-client",
-                SigningKey = cfg["Jwt:SigningKey"] ?? "01234567890123456789012345678901"
+                SigningKey = cfg["Jwt:SigningKey"] ?? "01234567890123456789012345678901",
+                EncryptionKey = cfg["Jwt:EncryptionKey"] ?? cfg["Jwt:SigningKey"] ?? "01234567890123456789012345678901"
             });
         });
 

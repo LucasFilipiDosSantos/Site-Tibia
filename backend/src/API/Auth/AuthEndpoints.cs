@@ -20,14 +20,14 @@ public static class AuthEndpoints
             context.Request.Headers["X-Auth-Identifier"] = request.Email;
             var ip = context.Connection.RemoteIpAddress?.ToString();
             var result = await identityService.LoginAsync(new LoginCommand(request.Email, request.Password, ip), ct);
-            return Results.Ok(new AuthResponse(result.AccessToken, result.RefreshToken, result.AccessTokenExpiresAtUtc, result.RefreshTokenExpiresAtUtc));
+            return Results.Ok(ToAuthResponse(result));
         }).WithTags("Auth");
 
         group.MapPost("/refresh", async (HttpContext context, RefreshRequest request, TokenRotationService rotationService, CancellationToken ct) =>
         {
             var ip = context.Connection.RemoteIpAddress?.ToString();
             var result = await rotationService.RotateAsync(request.RefreshToken, ip, ct);
-            return Results.Ok(new AuthResponse(result.AccessToken, result.RefreshToken, result.AccessTokenExpiresAtUtc, result.RefreshTokenExpiresAtUtc));
+            return Results.Ok(ToAuthResponse(result));
         }).WithTags("Auth");
 
         group.MapPost("/verify-email/request", async (VerificationRequest request, IIdentityService identityService, CancellationToken ct) =>
@@ -64,5 +64,20 @@ public static class AuthEndpoints
             .RequireAuthorization(AuthPolicies.VerifiedForSensitiveActions);
 
         return group;
+    }
+
+    private static AuthResponse ToAuthResponse(LoginResult result)
+    {
+        return new AuthResponse(
+            result.AccessToken,
+            result.RefreshToken,
+            result.AccessTokenExpiresAtUtc,
+            result.RefreshTokenExpiresAtUtc,
+            new AuthUserResponse(
+                result.User.Id,
+                result.User.Name,
+                result.User.Email,
+                result.User.Role,
+                result.User.EmailVerified));
     }
 }

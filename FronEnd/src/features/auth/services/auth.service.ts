@@ -54,15 +54,32 @@ const extractTokens = (payload: AuthApiResponse): AuthTokens => ({
   refreshTokenExpiresAtUtc: payload.refreshTokenExpiresAtUtc,
 });
 
-const toSession = (tokens: AuthTokens, previousSession?: AuthSession | null): AuthSession => {
-  const user = buildUserFromAccessToken(tokens.accessToken, previousSession?.user);
+const buildUserFromPayload = (payload: AuthApiResponse, previousSession?: AuthSession | null): AuthSession["user"] | null => {
+  if (!payload.user) {
+    return buildUserFromAccessToken(payload.accessToken, previousSession?.user);
+  }
+
+  return {
+    id: payload.user.id,
+    name: payload.user.name,
+    email: payload.user.email,
+    role: payload.user.role === "Admin" ? "admin" : "customer",
+    createdAt: previousSession?.user.createdAt ?? new Date().toISOString(),
+    totalSpent: previousSession?.user.totalSpent ?? 0,
+    ordersCount: previousSession?.user.ordersCount ?? 0,
+    emailVerified: payload.user.emailVerified,
+  };
+};
+
+const toSession = (payload: AuthApiResponse, previousSession?: AuthSession | null): AuthSession => {
+  const user = buildUserFromPayload(payload, previousSession);
 
   if (!user) {
     throw new Error("Nao foi possivel identificar o usuario autenticado.");
   }
 
   return {
-    ...tokens,
+    ...extractTokens(payload),
     user,
   };
 };
@@ -82,7 +99,7 @@ export const authService = {
 
   async login(input: LoginInput): Promise<AuthSession> {
     const payload = await postJson<AuthApiResponse>("/auth/login", input);
-    const session = toSession(extractTokens(payload), getStoredAuthSession());
+    const session = toSession(payload, getStoredAuthSession());
     saveAuthSession(session);
     return session;
   },
@@ -99,7 +116,7 @@ export const authService = {
       refreshToken: nextRefreshToken,
     });
 
-    const session = toSession(extractTokens(payload), currentSession);
+    const session = toSession(payload, currentSession);
     saveAuthSession(session);
     return session;
   },

@@ -20,8 +20,13 @@ public sealed class JwtTokenService : ITokenService
     public AccessTokenResult IssueAccessToken(AccessTokenRequest request)
     {
         var expiresAtUtc = request.NowUtc.AddMinutes(SecurityPolicy.AccessTokenLifetimeMinutes);
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.SigningKey));
+        var encryptionKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.EncryptionKeyOrFallback));
+        var signingCredentials = new SigningCredentials(signingKey, SecurityAlgorithms.HmacSha256);
+        var encryptingCredentials = new EncryptingCredentials(
+            encryptionKey,
+            SecurityAlgorithms.Aes256KW,
+            SecurityAlgorithms.Aes256CbcHmacSha512);
 
         var claims = new[]
         {
@@ -35,15 +40,18 @@ public sealed class JwtTokenService : ITokenService
             new Claim("email_verified", request.EmailVerified ? "true" : "false")
         };
 
-        var jwt = new JwtSecurityToken(
-            issuer: _options.Issuer,
-            audience: _options.Audience,
-            claims: claims,
-            notBefore: request.NowUtc.UtcDateTime,
-            expires: expiresAtUtc.UtcDateTime,
-            signingCredentials: creds);
+        var descriptor = new SecurityTokenDescriptor
+        {
+            Issuer = _options.Issuer,
+            Audience = _options.Audience,
+            Subject = new ClaimsIdentity(claims),
+            NotBefore = request.NowUtc.UtcDateTime,
+            Expires = expiresAtUtc.UtcDateTime,
+            SigningCredentials = signingCredentials,
+            EncryptingCredentials = encryptingCredentials
+        };
 
-        var token = new JwtSecurityTokenHandler().WriteToken(jwt);
+        var token = new JwtSecurityTokenHandler().CreateEncodedJwt(descriptor);
         return new AccessTokenResult(token, expiresAtUtc);
     }
 
@@ -67,4 +75,8 @@ public sealed class JwtTokenServiceOptions
     public string Issuer { get; init; } = string.Empty;
     public string Audience { get; init; } = string.Empty;
     public string SigningKey { get; init; } = string.Empty;
+    public string EncryptionKey { get; init; } = string.Empty;
+
+    internal string EncryptionKeyOrFallback =>
+        string.IsNullOrWhiteSpace(EncryptionKey) ? SigningKey : EncryptionKey;
 }

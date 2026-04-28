@@ -24,6 +24,8 @@ services:
         sync: false
       - key: Jwt__SigningKey
         generateValue: true
+      - key: Jwt__EncryptionKey
+        generateValue: true
       - key: Hangfire__Enabled
         value: "true"
       - key: Hangfire__WorkerCount

@@ -114,7 +114,6 @@ const Checkout = () => {
 
         <form onSubmit={handleSubmit} className="grid gap-8 lg:grid-cols-3">
           <div className="space-y-6 lg:col-span-2">
-            {/* Contact info */}
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="mb-4 font-display text-base font-semibold text-foreground">Informações de contato</h2>
               <div className="space-y-4">
@@ -133,7 +132,6 @@ const Checkout = () => {
               </div>
             </div>
 
-            {/* Payment */}
             <div className="rounded-xl border border-border bg-card p-6">
               <h2 className="mb-4 font-display text-base font-semibold text-foreground">Pagamento</h2>
               <div className="mb-4 flex gap-3 rounded-lg border border-primary/30 bg-primary/10 p-4 text-sm text-foreground">
@@ -162,7 +160,6 @@ const Checkout = () => {
             </div>
           </div>
 
-          {/* Summary */}
           <div className="rounded-xl border border-border bg-card p-6 self-start">
             <h2 className="mb-4 font-display text-base font-semibold text-foreground">Resumo do pedido</h2>
             <div className="space-y-3 mb-4">

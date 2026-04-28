@@ -2,7 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 
-// https://vitejs.dev/config/
 export default defineConfig(() => ({
   base: process.env.VITE_APP_BASE_PATH || "/",
   envPrefix: ["VITE_", "NEXT_PUBLIC_"],

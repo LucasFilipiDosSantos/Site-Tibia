@@ -91,7 +91,6 @@ public sealed class GlobalExceptionHandler(
             }).ToArray();
         }
 
-        // Per D-15: ForbiddenStatusTransitionException includes currentStatus and allowedTransitions
         if (exception is ForbiddenStatusTransitionException transitionException)
         {
             problem.Extensions["currentStatus"] = transitionException.CurrentStatus.ToString();

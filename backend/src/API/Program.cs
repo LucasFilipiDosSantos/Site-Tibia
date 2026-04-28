@@ -50,8 +50,6 @@ public partial class Program
             });
         }
 
-        // Add services to the container.
-        // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
         builder.Services.AddOpenApi();
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
@@ -62,6 +60,7 @@ public partial class Program
             options.Providers.Add<BrotliCompressionProvider>();
             options.Providers.Add<GzipCompressionProvider>();
         });
+        builder.Services.AddHsts(HttpsSecurityExtensions.ConfigureHstsOptions);
         builder.Services.Configure<BrotliCompressionProviderOptions>(options =>
         {
             options.Level = CompressionLevel.Fastest;
@@ -137,14 +136,19 @@ public partial class Program
         var jwtOptions =
             builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
             ?? new JwtOptions();
+        var jwtEncryptionKey = string.IsNullOrWhiteSpace(jwtOptions.EncryptionKey)
+            && builder.Environment.IsEnvironment("Testing")
+                ? jwtOptions.SigningKey
+                : jwtOptions.EncryptionKey;
         if (
             string.IsNullOrWhiteSpace(jwtOptions.Issuer)
             || string.IsNullOrWhiteSpace(jwtOptions.Audience)
             || string.IsNullOrWhiteSpace(jwtOptions.SigningKey)
+            || string.IsNullOrWhiteSpace(jwtEncryptionKey)
         )
         {
             throw new InvalidOperationException(
-                "Jwt settings Issuer, Audience and SigningKey are required."
+                "Jwt settings Issuer, Audience, SigningKey and EncryptionKey are required."
             );
         }
 
@@ -155,12 +159,28 @@ public partial class Program
             );
         }
 
+        if (jwtEncryptionKey.Length < 32)
+        {
+            throw new InvalidOperationException(
+                "Jwt encryption key must be at least 32 characters for AES-256 key wrapping."
+            );
+        }
+
         if (!builder.Environment.IsDevelopment()
             && !builder.Environment.IsEnvironment("Testing")
             && string.Equals(jwtOptions.SigningKey, "01234567890123456789012345678901", StringComparison.Ordinal))
         {
             throw new InvalidOperationException(
                 "Jwt signing key is still using the development placeholder. Set Jwt:SigningKey from a production secret."
+            );
+        }
+
+        if (!builder.Environment.IsDevelopment()
+            && !builder.Environment.IsEnvironment("Testing")
+            && string.Equals(jwtEncryptionKey, "12345678901234567890123456789012", StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Jwt encryption key is still using the development placeholder. Set Jwt:EncryptionKey from a production secret."
             );
         }
 
@@ -180,6 +200,9 @@ public partial class Program
                         ValidateIssuerSigningKey = true,
                         IssuerSigningKey = new SymmetricSecurityKey(
                             Encoding.UTF8.GetBytes(jwtOptions.SigningKey)
+                        ),
+                        TokenDecryptionKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(jwtEncryptionKey)
                         ),
                         ValidateLifetime = true,
                         NameClaimType = ClaimTypes.Name,
@@ -230,26 +253,42 @@ public partial class Program
             }
         }
 
-        // Configure the HTTP request pipeline.
         Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
         app.UseExceptionHandler();
         app.UseForwardedHeaders();
         app.UseResponseCompression();
+        app.UseHttpsSecurity();
+        app.UseSecurityHeaders(allowedFrontendOrigins);
+        app.MapOpenApi("/api/openapi/{documentName}.json").AllowAnonymous();
+        app.MapOpenApi("/openapi/{documentName}.json").AllowAnonymous();
+        app.UseSwagger(options =>
+        {
+            options.RouteTemplate = "api/swagger/{documentName}/swagger.json";
+        });
+        app.UseSwagger(options =>
+        {
+            options.RouteTemplate = "swagger/{documentName}/swagger.json";
+        });
+        app.UseSwaggerUI(options =>
+        {
+            options.RoutePrefix = "api/swagger";
+            options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "Tibia Webstore API v1");
+        });
+        app.UseSwaggerUI(options =>
+        {
+            options.RoutePrefix = "swagger";
+            options.SwaggerEndpoint("/swagger/v1/swagger.json", "Tibia Webstore API v1");
+        });
+
         if (app.Environment.IsDevelopment())
         {
-            app.MapOpenApi("/api/openapi/{documentName}.json");
-            app.UseSwagger(options =>
-            {
-                options.RouteTemplate = "api/swagger/{documentName}/swagger.json";
-            });
             app.UseSwaggerUI(options =>
             {
-                options.RoutePrefix = "api/swagger";
+                options.RoutePrefix = string.Empty;
                 options.SwaggerEndpoint("/api/swagger/v1/swagger.json", "Tibia Webstore API v1");
             });
         }
 
-        app.UseHttpsSecurity();
         app.UseCors("Frontend");
         app.UseRateLimiter();
         app.UseAuthentication();
