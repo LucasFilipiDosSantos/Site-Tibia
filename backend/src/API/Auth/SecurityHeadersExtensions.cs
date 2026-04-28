@@ -52,7 +52,7 @@ public static class SecurityHeadersExtensions
             "default-src 'self'",
             "script-src 'self'",
             "style-src 'self'",
-            "img-src 'self' data: https:",
+            "img-src 'self' data: https://lootera.com.br https://www.lootera.com.br https://api.lootera.com.br https://cdnb.artstation.com",
             "font-src 'self' data:",
             $"connect-src {string.Join(' ', connectSrc)}",
             "frame-ancestors 'none'",

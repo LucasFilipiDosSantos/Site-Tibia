@@ -24,7 +24,7 @@ const ProductCard = ({ title, server, price, originalPrice, rating, reviewCount 
         : "bg-card border border-border hover:border-primary/30 shadow-md shadow-black/20"
       }`}
     >
-      <div className={`relative h-36 lg:h-44 ${isFantasy ? "bg-brand-purple/30" : "bg-secondary"}`}>
+      <div className={`relative h-36 w-full lg:h-44 ${isFantasy ? "bg-brand-purple/30" : "bg-secondary"}`}>
         <ProductImage src={image} alt={title} fallbackLabel="Produto" className="h-full rounded-none" />
         {tag && (
           <span className={`absolute left-3 top-3 rounded-md px-2 py-0.5 text-xs font-semibold
