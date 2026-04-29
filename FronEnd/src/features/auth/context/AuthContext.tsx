@@ -24,9 +24,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const restore = async () => {
       try {
-        const session = await authService.restoreSession();
+        authService.clearLegacyAuthStorage();
+        const currentUser = await authService.restoreSession();
         if (mounted) {
-          setUser(session?.user ?? null);
+          setUser(currentUser);
         }
       } catch (error) {
         authService.clearSession();
@@ -50,9 +51,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = async (email: string, password: string): Promise<boolean> => {
     try {
-      const session = await authService.login({ email, password });
-      setUser(session.user);
-      toast.success(`Bem-vindo, ${session.user.name}!`);
+      const currentUser = await authService.login({ email, password });
+      setUser(currentUser);
+      toast.success(`Bem-vindo, ${currentUser.name}!`);
       return true;
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Nao foi possivel entrar.");
@@ -63,8 +64,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (name: string, email: string, password: string): Promise<boolean> => {
     try {
       await authService.register({ name, email, password });
-      const session = await authService.login({ email, password });
-      setUser(session.user);
+      setUser(await authService.login({ email, password }));
       toast.success("Conta criada com sucesso!");
       return true;
     } catch (error) {

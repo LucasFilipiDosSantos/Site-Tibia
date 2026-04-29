@@ -46,7 +46,11 @@ public partial class Program
             builder.Logging.ClearProviders();
             builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["Hangfire:Enabled"] = "false"
+                ["Hangfire:Enabled"] = "false",
+                ["Jwt:Issuer"] = "tibia-webstore",
+                ["Jwt:Audience"] = "tibia-webstore-client",
+                ["Jwt:SigningKey"] = "01234567890123456789012345678901",
+                ["Jwt:EncryptionKey"] = "01234567890123456789012345678901"
             });
         }
 
@@ -138,9 +142,8 @@ public partial class Program
             builder.Configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
             ?? new JwtOptions();
         var jwtEncryptionKey = string.IsNullOrWhiteSpace(jwtOptions.EncryptionKey)
-            && builder.Environment.IsEnvironment("Testing")
-                ? jwtOptions.SigningKey
-                : jwtOptions.EncryptionKey;
+            ? jwtOptions.SigningKey
+            : jwtOptions.EncryptionKey;
         if (
             string.IsNullOrWhiteSpace(jwtOptions.Issuer)
             || string.IsNullOrWhiteSpace(jwtOptions.Audience)
@@ -192,6 +195,14 @@ public partial class Program
                 options =>
                 {
                     options.MapInboundClaims = false;
+                    options.Events = new JwtBearerEvents
+                    {
+                        OnMessageReceived = context =>
+                        {
+                            context.Token = context.Request.Cookies["auth"];
+                            return Task.CompletedTask;
+                        }
+                    };
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,

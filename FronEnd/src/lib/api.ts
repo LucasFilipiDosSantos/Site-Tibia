@@ -1,5 +1,4 @@
 import { authService } from "@/features/auth/services/auth.service";
-import { getStoredAuthSession } from "@/features/auth/utils/auth.session";
 import { API_BASE_URL } from "@/lib/api-base-url";
 
 type ApiRequestOptions = RequestInit & {
@@ -17,18 +16,11 @@ export class ApiError extends Error {
   }
 }
 
-const buildHeaders = (headers?: HeadersInit, auth = false): Headers => {
+const buildHeaders = (headers?: HeadersInit): Headers => {
   const nextHeaders = new Headers(headers);
 
   if (!nextHeaders.has("Content-Type")) {
     nextHeaders.set("Content-Type", "application/json");
-  }
-
-  if (auth) {
-    const session = getStoredAuthSession();
-    if (session?.accessToken) {
-      nextHeaders.set("Authorization", `Bearer ${session.accessToken}`);
-    }
   }
 
   return nextHeaders;
@@ -47,8 +39,9 @@ export const apiRequest = async <T>(path: string, options: ApiRequestOptions = {
   const { auth = false, retryOnUnauthorized = auth, headers, ...rest } = options;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
+    credentials: "include",
     ...rest,
-    headers: buildHeaders(headers, auth),
+    headers: buildHeaders(headers),
   });
 
   if (response.status === 401 && auth && retryOnUnauthorized) {

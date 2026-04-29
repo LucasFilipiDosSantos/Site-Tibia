@@ -5,7 +5,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Security.Claims;
 using System.Text;
 
@@ -28,7 +27,7 @@ public sealed class AdminJwtAuthorizationTests
             role: "Admin",
             emailVerified: true);
 
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        SetAuthCookie(client, token);
         var response = await client.GetAsync("/auth/admin/probe");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -47,7 +46,7 @@ public sealed class AdminJwtAuthorizationTests
             role: "Admin",
             emailVerified: true);
 
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        SetAuthCookie(client, token);
         var response = await client.GetAsync("/auth/admin/probe");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -66,7 +65,7 @@ public sealed class AdminJwtAuthorizationTests
             role: "Admin",
             emailVerified: true);
 
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", wrongIssuerToken);
+        SetAuthCookie(client, wrongIssuerToken);
         var wrongIssuerResponse = await client.GetAsync("/auth/admin/probe");
         Assert.Equal(HttpStatusCode.Unauthorized, wrongIssuerResponse.StatusCode);
     }
@@ -84,7 +83,7 @@ public sealed class AdminJwtAuthorizationTests
             role: "Admin",
             emailVerified: true);
 
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", wrongAudienceToken);
+        SetAuthCookie(client, wrongAudienceToken);
         var wrongAudienceResponse = await client.GetAsync("/auth/admin/probe");
         Assert.Equal(HttpStatusCode.Unauthorized, wrongAudienceResponse.StatusCode);
     }
@@ -102,7 +101,7 @@ public sealed class AdminJwtAuthorizationTests
             role: "Customer",
             emailVerified: true);
 
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+        SetAuthCookie(client, token);
         var response = await client.GetAsync("/auth/admin/probe");
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
@@ -114,10 +113,16 @@ public sealed class AdminJwtAuthorizationTests
         using var factory = new ApiFactory();
         using var client = factory.CreateClient();
 
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", "not.a.valid.jwt");
+        SetAuthCookie(client, "not.a.valid.jwt");
         var response = await client.GetAsync("/auth/admin/probe");
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+    }
+
+    private static void SetAuthCookie(HttpClient client, string token)
+    {
+        client.DefaultRequestHeaders.Remove("Cookie");
+        client.DefaultRequestHeaders.Add("Cookie", $"auth={token}");
     }
 
     private static string BuildJwt(string issuer, string audience, string signingKey, string role, bool emailVerified)

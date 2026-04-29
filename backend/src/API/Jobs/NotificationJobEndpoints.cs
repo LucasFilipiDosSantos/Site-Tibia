@@ -1,7 +1,7 @@
+using API.Auth;
 using Application.Notifications;
 using Hangfire;
 using Infrastructure.Notifications;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace API.Jobs;
@@ -10,7 +10,7 @@ public static class NotificationJobEndpoints
 {
     public static void MapNotificationJobEndpoints(this IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/jobs/notifications").RequireAuthorization("Admin");
+        var group = app.MapGroup("/jobs/notifications").RequireAuthorization(AuthPolicies.AdminOnly);
 
         group.MapPost("/trigger", TriggerNotification);
         group.MapPost("/retry/{orderId}", RetryNotification);

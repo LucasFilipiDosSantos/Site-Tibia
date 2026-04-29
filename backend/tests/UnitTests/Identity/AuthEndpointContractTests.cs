@@ -9,27 +9,29 @@ public sealed class AuthEndpointContractTests
     {
         _ = new RegisterRequest("Test User", "u@test.com", "ValidPass123!");
         _ = new LoginRequest("u@test.com", "ValidPass123!");
-        _ = new RefreshRequest("refresh-token");
         _ = new VerificationRequest("u@test.com");
         _ = new VerificationConfirmRequest("verification-token");
         _ = new PasswordResetRequest("u@test.com");
         _ = new PasswordResetConfirmRequest("reset-token", "NewPass123!");
+        _ = new AuthUserResponse(Guid.NewGuid(), "Test User", "u@test.com", "Customer", true);
+        _ = new AuthMeResponse(Guid.NewGuid(), "Test User", "u@test.com", "Customer", true, DateTimeOffset.UtcNow);
     }
 
     [Fact]
-    public void AuthEndpointMappings_ExposeSevenRoutesUnderAuth()
+    public void AuthEndpointMappings_ExposeEightRoutesUnderAuth()
     {
         var routeNames = new[]
         {
             "/auth/register",
             "/auth/login",
             "/auth/refresh",
+            "/auth/logout",
             "/auth/verify-email/request",
             "/auth/verify-email/confirm",
             "/auth/password-reset/request",
             "/auth/password-reset/confirm"
         };
 
-        Assert.Equal(7, routeNames.Length);
+        Assert.Equal(8, routeNames.Length);
     }
 }

@@ -12,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace UnitTests.E2E;
@@ -43,12 +42,13 @@ public sealed class LoginCheckoutPurchaseFlowTests
         });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
 
-        var auth = await login.Content.ReadFromJsonAsync<AuthResponse>();
+        var auth = await login.Content.ReadFromJsonAsync<AuthUserResponse>();
         Assert.NotNull(auth);
-        Assert.False(string.IsNullOrWhiteSpace(auth!.AccessToken));
-        Assert.False(string.IsNullOrWhiteSpace(auth.RefreshToken));
-
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth.AccessToken);
+        Assert.Equal("Customer", auth!.Role);
+        Assert.DoesNotContain("accessToken", await login.Content.ReadAsStringAsync(), StringComparison.OrdinalIgnoreCase);
+        Assert.True(login.Headers.TryGetValues("Set-Cookie", out var cookies));
+        Assert.Contains(cookies!, cookie => cookie.StartsWith("auth=", StringComparison.OrdinalIgnoreCase));
+        Assert.Contains(cookies!, cookie => cookie.StartsWith("refresh=", StringComparison.OrdinalIgnoreCase));
 
         var addToCart = await client.PostAsJsonAsync("/api/cart/items", new AddCartItemDto(productId, 2));
         Assert.Equal(HttpStatusCode.OK, addToCart.StatusCode);

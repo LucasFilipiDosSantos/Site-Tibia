@@ -9,14 +9,6 @@ export type AuthUser = {
   emailVerified: boolean;
 };
 
-export type AuthSession = {
-  accessToken: string;
-  refreshToken: string;
-  accessTokenExpiresAtUtc: string;
-  refreshTokenExpiresAtUtc: string;
-  user: AuthUser;
-};
-
 export type LoginInput = {
   email: string;
   password: string;
@@ -28,19 +20,19 @@ export type RegisterInput = {
   password: string;
 };
 
-export type AuthTokens = {
-  accessToken: string;
-  refreshToken: string;
-  accessTokenExpiresAtUtc: string;
-  refreshTokenExpiresAtUtc: string;
-};
-
-export type AuthApiResponse = AuthTokens & {
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    role: string;
-    emailVerified: boolean;
-  };
+export type AuthMeResponse = {
+  id?: string;
+  Id?: string;
+  userId?: string;
+  UserId?: string;
+  name?: string;
+  Name?: string;
+  email?: string;
+  Email?: string;
+  role?: string;
+  Role?: string;
+  emailVerified?: boolean;
+  EmailVerified?: boolean;
+  createdAtUtc?: string;
+  CreatedAtUtc?: string;
 };

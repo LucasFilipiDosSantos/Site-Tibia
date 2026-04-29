@@ -12,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using System.Net;
-using System.Net.Http.Headers;
 using System.Net.Http.Json;
 
 namespace UnitTests.Catalog;
@@ -57,10 +56,9 @@ public sealed class ProductReviewsControllerRouteTests
         });
         Assert.Equal(HttpStatusCode.OK, login.StatusCode);
 
-        var auth = await login.Content.ReadFromJsonAsync<AuthResponse>();
+        var auth = await login.Content.ReadFromJsonAsync<AuthUserResponse>();
         Assert.NotNull(auth);
-
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
+        Assert.Equal("Customer", auth!.Role);
 
         var response = await client.PostAsJsonAsync("/api/products/teste-imagem/reviews", new
         {

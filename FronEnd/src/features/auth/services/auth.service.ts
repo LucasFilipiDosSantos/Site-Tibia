@@ -1,7 +1,15 @@
 import { API_BASE_URL } from "@/lib/api-base-url";
-import type { AuthApiResponse, AuthSession, AuthTokens, LoginInput, RegisterInput } from "../types/auth.types";
-import { getStoredAuthSession, isTokenExpired, saveAuthSession } from "../utils/auth.session";
-import { buildUserFromAccessToken } from "../utils/jwt";
+import type { AuthMeResponse, AuthUser, LoginInput, RegisterInput } from "../types/auth.types";
+
+const LEGACY_AUTH_SESSION_KEY = "lootera_auth_session";
+
+const clearLegacyAuthStorage = (): void => {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return;
+  }
+
+  window.localStorage.removeItem(LEGACY_AUTH_SESSION_KEY);
+};
 
 const getErrorMessage = async (response: Response, fallback: string): Promise<string> => {
   try {
@@ -34,10 +42,11 @@ const getErrorMessage = async (response: Response, fallback: string): Promise<st
 const postJson = async <TResponse>(path: string, body: unknown): Promise<TResponse> => {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(body),
+    body: body === undefined ? undefined : JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -47,47 +56,42 @@ const postJson = async <TResponse>(path: string, body: unknown): Promise<TRespon
   return response.json() as Promise<TResponse>;
 };
 
-const extractTokens = (payload: AuthApiResponse): AuthTokens => ({
-  accessToken: payload.accessToken,
-  refreshToken: payload.refreshToken,
-  accessTokenExpiresAtUtc: payload.accessTokenExpiresAtUtc,
-  refreshTokenExpiresAtUtc: payload.refreshTokenExpiresAtUtc,
-});
+const getJson = async <TResponse>(path: string): Promise<TResponse> => {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    credentials: "include",
+  });
 
-const buildUserFromPayload = (payload: AuthApiResponse, previousSession?: AuthSession | null): AuthSession["user"] | null => {
-  if (!payload.user) {
-    return buildUserFromAccessToken(payload.accessToken, previousSession?.user);
+  if (!response.ok) {
+    throw new Error(await getErrorMessage(response, "Nao foi possivel validar sua sessao."));
   }
 
-  return {
-    id: payload.user.id,
-    name: payload.user.name,
-    email: payload.user.email,
-    role: payload.user.role === "Admin" ? "admin" : "customer",
-    createdAt: previousSession?.user.createdAt ?? new Date().toISOString(),
-    totalSpent: previousSession?.user.totalSpent ?? 0,
-    ordersCount: previousSession?.user.ordersCount ?? 0,
-    emailVerified: payload.user.emailVerified,
-  };
+  return response.json() as Promise<TResponse>;
 };
 
-const toSession = (payload: AuthApiResponse, previousSession?: AuthSession | null): AuthSession => {
-  const user = buildUserFromPayload(payload, previousSession);
+const toUser = (payload: AuthMeResponse): AuthUser => {
+  const id = payload.id ?? payload.Id ?? payload.userId ?? payload.UserId ?? "";
+  const name = payload.name ?? payload.Name ?? "";
+  const email = payload.email ?? payload.Email ?? "";
+  const role = payload.role ?? payload.Role ?? "Customer";
 
-  if (!user) {
-    throw new Error("Nao foi possivel identificar o usuario autenticado.");
+  if (!id || !name || !email) {
+    throw new Error("Resposta de sessao invalida.");
   }
 
   return {
-    ...extractTokens(payload),
-    user,
+    id,
+    name,
+    email,
+    role: role === "Admin" || role === "admin" ? "admin" : "customer",
+    createdAt: payload.createdAtUtc ?? payload.CreatedAtUtc ?? new Date().toISOString(),
+    totalSpent: 0,
+    ordersCount: 0,
+    emailVerified: payload.emailVerified ?? payload.EmailVerified ?? false,
   };
 };
 
 export const authService = {
-  getStoredSession(): AuthSession | null {
-    return getStoredAuthSession();
-  },
+  clearLegacyAuthStorage,
 
   async register(input: RegisterInput): Promise<void> {
     await postJson<{ message: string }>("/auth/register", {
@@ -97,49 +101,33 @@ export const authService = {
     });
   },
 
-  async login(input: LoginInput): Promise<AuthSession> {
-    const payload = await postJson<AuthApiResponse>("/auth/login", input);
-    const session = toSession(payload, getStoredAuthSession());
-    saveAuthSession(session);
-    return session;
+  async login(input: LoginInput): Promise<AuthUser> {
+    await postJson<AuthMeResponse>("/auth/login", input);
+    return this.getCurrentUser();
   },
 
-  async refresh(refreshToken?: string): Promise<AuthSession> {
-    const currentSession = getStoredAuthSession();
-    const nextRefreshToken = refreshToken ?? currentSession?.refreshToken;
-
-    if (!nextRefreshToken) {
-      throw new Error("Sessao expirada. Faca login novamente.");
-    }
-
-    const payload = await postJson<AuthApiResponse>("/auth/refresh", {
-      refreshToken: nextRefreshToken,
-    });
-
-    const session = toSession(payload, currentSession);
-    saveAuthSession(session);
-    return session;
+  async refresh(): Promise<AuthUser> {
+    return toUser(await postJson<AuthMeResponse>("/auth/refresh", undefined));
   },
 
-  async restoreSession(): Promise<AuthSession | null> {
-    const session = getStoredAuthSession();
-    if (!session) {
-      return null;
+  async restoreSession(): Promise<AuthUser | null> {
+    try {
+      return await this.getCurrentUser();
+    } catch {
+      try {
+        return await this.refresh();
+      } catch {
+        return null;
+      }
     }
+  },
 
-    if (isTokenExpired(session.refreshTokenExpiresAtUtc)) {
-      saveAuthSession(null);
-      return null;
-    }
-
-    if (!isTokenExpired(session.accessTokenExpiresAtUtc)) {
-      return session;
-    }
-
-    return this.refresh(session.refreshToken);
+  async getCurrentUser(): Promise<AuthUser> {
+    return toUser(await getJson<AuthMeResponse>("/auth/me"));
   },
 
   clearSession(): void {
-    saveAuthSession(null);
+    clearLegacyAuthStorage();
+    void postJson<void>("/auth/logout", undefined).catch(() => undefined);
   },
 };
