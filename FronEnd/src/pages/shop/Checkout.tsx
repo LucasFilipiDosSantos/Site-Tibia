@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import PublicLayout from "@/components/lootera/PublicLayout";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/features/auth/context/AuthContext";
-import { apiRequest } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import { toast } from "sonner";
 import { CreditCard, QrCode, Loader2, CheckCircle2, MessageCircle, TriangleAlert } from "lucide-react";
 
@@ -67,10 +67,7 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      const pendingOrder = await apiRequest<PendingCheckoutResponse>("/orders/support-pending", {
-        auth: true,
-        method: "POST",
-        body: JSON.stringify({
+      const pendingOrder = await apiClient.post<PendingCheckoutResponse>("/orders/support-pending", {
           name: form.name,
           email: form.email,
           discord: form.discord || null,
@@ -82,7 +79,6 @@ const Checkout = () => {
             price: item.price,
             server: item.server,
           })),
-        }),
       });
 
       toast.info("Compra registrada como pendente. Vamos te encaminhar para o suporte via WhatsApp.");

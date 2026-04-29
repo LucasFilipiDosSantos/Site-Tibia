@@ -9,6 +9,10 @@ import type { Product } from "@/features/products/types/product.types";
 import { Plus, Pencil, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
+const WORLD_OPTIONS = ["Aurera", "Eternia", "Antica", "Secura"];
+const ACCEPTED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+
 const createEmptyProduct = (): Product => ({
   id: "",
   slug: "",
@@ -35,20 +39,37 @@ const AdminProducts = () => {
   const [editing, setEditing] = useState<Product | null>(null);
   const [initialStock, setInitialStock] = useState(0);
   const [showForm, setShowForm] = useState(false);
+  const [imageMode, setImageMode] = useState<"url" | "upload">("url");
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+
+  const clearImageFile = () => {
+    if (imagePreviewUrl) {
+      URL.revokeObjectURL(imagePreviewUrl);
+    }
+
+    setImagePreviewUrl(null);
+    setImageFile(null);
+  };
 
   const openNewProductForm = () => {
+    clearImageFile();
+    setImageMode("url");
     setEditing(createEmptyProduct());
     setInitialStock(0);
     setShowForm(true);
   };
 
   const openEditProductForm = (product: Product) => {
+    clearImageFile();
+    setImageMode(product.image && product.image !== "/placeholder.svg" ? "url" : "upload");
     setEditing(product);
     setInitialStock(product.stock);
     setShowForm(true);
   };
 
   const closeForm = () => {
+    clearImageFile();
     setShowForm(false);
     setEditing(null);
     setSearchParams({});
@@ -77,14 +98,27 @@ const AdminProducts = () => {
     mutationFn: async (product: Product) => {
       const slug = product.slug || adminService.buildSlug(product.name);
       const categorySlug = product.categorySlug ?? "coin";
+      const server = product.server.trim();
+      if (categorySlug === "gold" && !server) {
+        throw new Error("Mundo e obrigatorio para produtos da categoria Gold.");
+      }
+
+      const imageUrl = !imageFile && product.image && product.image !== "/placeholder.svg"
+        ? product.image
+        : null;
+      if (!product.id && !imageUrl && !imageFile) {
+        throw new Error("Informe uma URL de imagem ou envie um arquivo.");
+      }
+
       const payload = {
         slug,
         name: product.name,
         description: product.description,
         price: product.price,
         categorySlug,
-        server: product.server,
-        imageUrl: product.image && product.image !== "/placeholder.svg" ? product.image : null,
+        server,
+        imageUrl: imageFile ? null : imageUrl,
+        imageFile,
       };
 
       const saved = product.id
@@ -154,22 +188,72 @@ const AdminProducts = () => {
               <div><label className="text-xs text-muted-foreground">Slug</label><input value={editing.slug ?? ""} onChange={(event) => setEditing({ ...editing, slug: event.target.value })} required disabled={Boolean(editing.id)} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-primary" /></div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-xs text-muted-foreground">Categoria</label><select value={editing.categorySlug ?? "coin"} onChange={(event) => setEditing({ ...editing, categorySlug: event.target.value })} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary">{CATEGORY_OPTIONS.map((category) => <option key={category.slug} value={category.slug}>{category.label}</option>)}</select></div>
-                <div><label className="text-xs text-muted-foreground">Servidor</label><input value={editing.server} onChange={(event) => setEditing({ ...editing, server: event.target.value })} required className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" /></div>
+                <div>
+                  <label className="text-xs text-muted-foreground">Mundo</label>
+                  <input
+                    value={editing.server}
+                    onChange={(event) => setEditing({ ...editing, server: event.target.value })}
+                    list="product-world-options"
+                    required={editing.categorySlug === "gold"}
+                    placeholder="Aurera"
+                    className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <datalist id="product-world-options">
+                    {WORLD_OPTIONS.map((world) => <option key={world} value={world} />)}
+                  </datalist>
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div><label className="text-xs text-muted-foreground">Preco (R$)</label><input type="number" step="0.01" value={editing.price} onChange={(event) => setEditing({ ...editing, price: Number(event.target.value) })} required className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" /></div>
                 <div><label className="text-xs text-muted-foreground">Estoque disponivel</label><input type="number" min="0" value={editing.stock} onChange={(event) => setEditing({ ...editing, stock: Number(event.target.value) })} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" /></div>
               </div>
               <div>
-                <label className="text-xs text-muted-foreground">Imagem do produto (URL)</label>
-                <input
-                  type="url"
-                  value={editing.image === "/placeholder.svg" ? "" : editing.image}
-                  onChange={(event) => setEditing({ ...editing, image: event.target.value })}
-                  placeholder="https://exemplo.com/imagem-produto.png"
-                  className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                />
-                <ProductImage src={editing.image} alt={editing.name || "Imagem do produto"} fallbackLabel={editing.category} className="mt-3 h-28 w-full" />
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label className="text-xs text-muted-foreground">Imagem do produto</label>
+                  <div className="flex rounded-lg border border-border p-1 text-xs">
+                    <button type="button" onClick={() => { setImageMode("url"); clearImageFile(); }} className={`rounded-md px-3 py-1 ${imageMode === "url" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>URL</button>
+                    <button type="button" onClick={() => setImageMode("upload")} className={`rounded-md px-3 py-1 ${imageMode === "upload" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>Upload</button>
+                  </div>
+                </div>
+                {imageMode === "url" ? (
+                  <input
+                    type="url"
+                    value={editing.image === "/placeholder.svg" ? "" : editing.image}
+                    onChange={(event) => setEditing({ ...editing, image: event.target.value })}
+                    placeholder="https://exemplo.com/imagem-produto.png"
+                    className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                ) : (
+                  <input
+                    type="file"
+                    accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0] ?? null;
+                      clearImageFile();
+                      if (!file) {
+                        return;
+                      }
+
+                      if (!ACCEPTED_IMAGE_TYPES.includes(file.type) || !/\.(png|jpe?g|webp)$/i.test(file.name)) {
+                        toast.error("Envie uma imagem PNG, JPG, JPEG ou WEBP.");
+                        event.target.value = "";
+                        return;
+                      }
+
+                      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+                        toast.error("A imagem deve ter no maximo 5MB.");
+                        event.target.value = "";
+                        return;
+                      }
+
+                      const previewUrl = URL.createObjectURL(file);
+                      setImageFile(file);
+                      setImagePreviewUrl(previewUrl);
+                    }}
+                    className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary file:px-3 file:py-1.5 file:text-primary-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                )}
+                <ProductImage src={imagePreviewUrl ?? editing.image} alt={editing.name || "Imagem do produto"} fallbackLabel={editing.category} className="mt-3 h-28 w-full" />
               </div>
               <div><label className="text-xs text-muted-foreground">Descricao</label><textarea value={editing.description} onChange={(event) => setEditing({ ...editing, description: event.target.value })} rows={3} className="mt-1 w-full rounded-lg border border-border bg-input px-4 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary" /></div>
               <button type="submit" disabled={saveProduct.isPending} className="w-full rounded-lg bg-primary py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">{saveProduct.isPending ? "Salvando..." : "Salvar"}</button>
@@ -185,7 +269,7 @@ const AdminProducts = () => {
               <th className="px-4 py-3">Nome</th>
               <th className="px-4 py-3">Imagem</th>
               <th className="px-4 py-3">Categoria</th>
-              <th className="px-4 py-3">Servidor</th>
+              <th className="px-4 py-3">Mundo</th>
               <th className="px-4 py-3 text-right">Preco</th>
               <th className="px-4 py-3 text-right">Estoque</th>
               <th className="px-4 py-3 text-right">Acoes</th>

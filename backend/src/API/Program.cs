@@ -217,8 +217,8 @@ public partial class Program
                             Encoding.UTF8.GetBytes(jwtEncryptionKey)
                         ),
                         ValidateLifetime = true,
-                        NameClaimType = ClaimTypes.Name,
-                        RoleClaimType = "role",
+                        NameClaimType = ClaimTypes.NameIdentifier,
+                        RoleClaimType = ClaimTypes.Role,
                         ClockSkew = TimeSpan.Zero,
                     };
                 }
@@ -266,9 +266,11 @@ public partial class Program
         }
 
         Console.WriteLine($"Environment: {app.Environment.EnvironmentName}");
+        EnsureProductUploadsDirectory(app.Environment);
         app.UseExceptionHandler();
         app.UseForwardedHeaders();
         app.UseResponseCompression();
+        app.UseStaticFiles();
         app.UseHttpsSecurity();
         app.UseSecurityHeaders(allowedFrontendOrigins);
         app.MapOpenApi("/api/openapi/{documentName}.json").AllowAnonymous();
@@ -381,6 +383,12 @@ public partial class Program
                 methods.Length == 0 ? "*" : string.Join(",", methods),
                 endpoint.RoutePattern.RawText);
         }
+    }
+
+    private static void EnsureProductUploadsDirectory(IWebHostEnvironment environment)
+    {
+        var webRoot = environment.WebRootPath ?? Path.Combine(environment.ContentRootPath, "wwwroot");
+        Directory.CreateDirectory(Path.Combine(webRoot, "uploads", "products"));
     }
 
     private static string[] GetFrontendOrigins(IConfiguration configuration, IWebHostEnvironment environment)

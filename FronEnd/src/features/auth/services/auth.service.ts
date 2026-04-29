@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "@/lib/api-base-url";
+import { apiClient } from "@/lib/api";
 import type { AuthMeResponse, AuthUser, LoginInput, RegisterInput } from "../types/auth.types";
 
 const LEGACY_AUTH_SESSION_KEY = "lootera_auth_session";
@@ -9,63 +9,6 @@ const clearLegacyAuthStorage = (): void => {
   }
 
   window.localStorage.removeItem(LEGACY_AUTH_SESSION_KEY);
-};
-
-const getErrorMessage = async (response: Response, fallback: string): Promise<string> => {
-  try {
-    const body = await response.json() as {
-      detail?: string;
-      title?: string;
-      message?: string;
-      errors?: Record<string, string[]>;
-    };
-
-    if (body.detail) {
-      return body.detail;
-    }
-
-    if (body.message) {
-      return body.message;
-    }
-
-    if (body.title) {
-      return body.title;
-    }
-
-    const firstError = Object.values(body.errors ?? {})[0]?.[0];
-    return firstError ?? fallback;
-  } catch {
-    return fallback;
-  }
-};
-
-const postJson = async <TResponse>(path: string, body: unknown): Promise<TResponse> => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method: "POST",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    throw new Error(await getErrorMessage(response, "Nao foi possivel completar a operacao."));
-  }
-
-  return response.json() as Promise<TResponse>;
-};
-
-const getJson = async <TResponse>(path: string): Promise<TResponse> => {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    credentials: "include",
-  });
-
-  if (!response.ok) {
-    throw new Error(await getErrorMessage(response, "Nao foi possivel validar sua sessao."));
-  }
-
-  return response.json() as Promise<TResponse>;
 };
 
 const toUser = (payload: AuthMeResponse): AuthUser => {
@@ -94,7 +37,7 @@ export const authService = {
   clearLegacyAuthStorage,
 
   async register(input: RegisterInput): Promise<void> {
-    await postJson<{ message: string }>("/auth/register", {
+    await apiClient.post<{ message: string }>("/auth/register", {
       name: input.name,
       email: input.email,
       password: input.password,
@@ -102,12 +45,12 @@ export const authService = {
   },
 
   async login(input: LoginInput): Promise<AuthUser> {
-    await postJson<AuthMeResponse>("/auth/login", input);
+    await apiClient.post<AuthMeResponse>("/auth/login", input);
     return this.getCurrentUser();
   },
 
   async refresh(): Promise<AuthUser> {
-    return toUser(await postJson<AuthMeResponse>("/auth/refresh", undefined));
+    return toUser(await apiClient.post<AuthMeResponse>("/auth/refresh", undefined, { retryOnUnauthorized: false }));
   },
 
   async restoreSession(): Promise<AuthUser | null> {
@@ -123,11 +66,11 @@ export const authService = {
   },
 
   async getCurrentUser(): Promise<AuthUser> {
-    return toUser(await getJson<AuthMeResponse>("/auth/me"));
+    return toUser(await apiClient.get<AuthMeResponse>("/auth/me", { retryOnUnauthorized: false }));
   },
 
   clearSession(): void {
     clearLegacyAuthStorage();
-    void postJson<void>("/auth/logout", undefined).catch(() => undefined);
+    void apiClient.post<void>("/auth/logout", undefined, { retryOnUnauthorized: false }).catch(() => undefined);
   },
 };

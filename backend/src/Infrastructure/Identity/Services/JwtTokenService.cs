@@ -31,6 +31,7 @@ public sealed class JwtTokenService : ITokenService
         var claims = new[]
         {
             new Claim("sub", request.UserId.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, request.UserId.ToString()),
             new Claim(ClaimTypes.Name, request.Name),
             new Claim("name", request.Name),
             new Claim(ClaimTypes.Email, request.Email),

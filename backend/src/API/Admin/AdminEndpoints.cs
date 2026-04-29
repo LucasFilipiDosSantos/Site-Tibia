@@ -31,6 +31,7 @@ public static class AdminEndpoints
         admin.MapGet("/users", GetUsers);
         admin.MapGet("/users/{id:guid}", GetUser);
         admin.MapPut("/users/{id:guid}", UpdateUser);
+        admin.MapDelete("/users/{id:guid}", DeleteUser);
 
         return app;
     }
@@ -64,6 +65,29 @@ public static class AdminEndpoints
         return user is null
             ? Results.NotFound()
             : Results.Ok(ToAdminUserDto(user));
+    }
+
+    private static async Task<IResult> DeleteUser(
+        Guid id,
+        ClaimsPrincipal principal,
+        AppDbContext dbContext,
+        CancellationToken ct)
+    {
+        var adminId = ResolveAdminUserId(principal);
+        if (id == adminId)
+        {
+            return Results.BadRequest(new { message = "Nao e possivel excluir o proprio usuario administrador." });
+        }
+
+        var user = await dbContext.Users.SingleOrDefaultAsync(x => x.Id == id, ct);
+        if (user is null)
+        {
+            return Results.NotFound();
+        }
+
+        dbContext.Users.Remove(user);
+        await dbContext.SaveChangesAsync(ct);
+        return Results.NoContent();
     }
 
     private static async Task<IResult> UpdateUser(

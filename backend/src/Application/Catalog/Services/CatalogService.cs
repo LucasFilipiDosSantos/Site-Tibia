@@ -76,6 +76,8 @@ public sealed class CatalogService
             throw new ArgumentException("Product slug already exists.", nameof(request.Slug));
         }
 
+        EnsureRequiredServerForGold(normalizedCategorySlug, request.Server);
+
         var product = new Product(
             request.Name,
             normalizedSlug,
@@ -123,6 +125,8 @@ public sealed class CatalogService
         {
             throw new ArgumentException("Category slug does not exist.", nameof(request.CategorySlug));
         }
+
+        EnsureRequiredServerForGold(normalizedCategorySlug, request.Server);
 
         var product = await _productRepository.GetBySlugAsync(routeSlug, cancellationToken)
             ?? throw new ArgumentException("Product slug not found.", nameof(request.RouteSlug));
@@ -203,6 +207,14 @@ public sealed class CatalogService
         }
 
         return slug.Trim().ToLowerInvariant();
+    }
+
+    private static void EnsureRequiredServerForGold(string categorySlug, string? server)
+    {
+        if (categorySlug == "gold" && string.IsNullOrWhiteSpace(server))
+        {
+            throw new ArgumentException("Server is required for gold products.", nameof(server));
+        }
     }
 
     private static ProductSummary ToProductSummary(CatalogProductProjection projection)

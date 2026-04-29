@@ -1,4 +1,5 @@
-import { ApiError, apiRequest } from "@/lib/api";
+import { ApiError, apiClient } from "@/lib/api";
+import { buildApiAssetUrl } from "@/lib/api-base-url";
 import type { Product } from "../types/product.types";
 import { getCategoryLabel, removeAureraFromText } from "../utils/catalog";
 
@@ -65,7 +66,7 @@ const toProduct = (product: ProductListItemResponse | ProductResponse): Product 
   categorySlug: product.categorySlug,
   price: product.price,
   description: removeAureraFromText(product.description),
-  image: product.imageUrl || "/placeholder.svg",
+  image: buildApiAssetUrl(product.imageUrl) || "/placeholder.svg",
   stock: product.availableStock ?? 0,
   rating: product.rating ?? 0,
   reviewCount: product.reviewCount ?? 0,
@@ -93,18 +94,18 @@ const buildQueryString = (filters: ProductListFilters = {}): string => {
 
 export const productService = {
   async getProducts(filters: ProductListFilters = {}): Promise<Product[]> {
-    const response = await apiRequest<ProductListResponse>(`/products${buildQueryString(filters)}`);
+    const response = await apiClient.get<ProductListResponse>(`/products${buildQueryString(filters)}`);
     return response.items.map(toProduct);
   },
 
   async getProductBySlug(slug: string): Promise<Product> {
-    const response = await apiRequest<ProductResponse>(`/products/${slug}`);
+    const response = await apiClient.get<ProductResponse>(`/products/${slug}`);
     return toProduct(response);
   },
 
   async getMyReview(slug: string): Promise<ProductReview | null> {
     try {
-      return await apiRequest<ProductReview>(`/products/${slug}/reviews/me`, { auth: true });
+      return await apiClient.get<ProductReview>(`/products/${slug}/reviews/me`);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         return null;
@@ -115,14 +116,10 @@ export const productService = {
   },
 
   async getReviews(slug: string): Promise<ProductReview[]> {
-    return apiRequest<ProductReview[]>(`/products/${slug}/reviews`);
+    return apiClient.get<ProductReview[]>(`/products/${slug}/reviews`);
   },
 
   async createReview(slug: string, input: { rating: number; comment?: string | null }): Promise<ProductReview> {
-    return apiRequest<ProductReview>(`/products/${slug}/reviews`, {
-      auth: true,
-      method: "POST",
-      body: JSON.stringify(input),
-    });
+    return apiClient.post<ProductReview>(`/products/${slug}/reviews`, input);
   },
 };

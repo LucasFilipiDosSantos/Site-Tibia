@@ -1,4 +1,4 @@
-import { apiRequest } from "@/lib/api";
+import { apiClient } from "@/lib/api";
 import type { Order } from "../types/order.types";
 
 type OrderListResponse = {
@@ -31,9 +31,7 @@ const mapOrder = (order: OrderListResponse["items"][number]): Order => ({
 
 export const orderService = {
   async getMyOrders(): Promise<Order[]> {
-    const response = await apiRequest<OrderListResponse>("/orders?page=1&pageSize=100", {
-      auth: true,
-    });
+    const response = await apiClient.get<OrderListResponse>("/orders?page=1&pageSize=100");
 
     return response.items.map(mapOrder);
   },

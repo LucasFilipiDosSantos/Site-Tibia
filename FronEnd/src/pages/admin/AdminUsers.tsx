@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import AdminLayout from "@/components/lootera/AdminLayout";
 import { adminService, type AdminUser } from "@/features/admin/services/admin.service";
-import { Pencil, Shield, User, X } from "lucide-react";
+import { Pencil, Shield, Trash2, User, X } from "lucide-react";
 import { toast } from "sonner";
 
 type EditingUser = AdminUser & {
@@ -33,6 +33,17 @@ const AdminUsers = () => {
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Nao foi possivel atualizar o usuario.");
+    },
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: adminService.deleteUser,
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      toast.success("Usuario excluido");
+    },
+    onError: (error) => {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel excluir o usuario.");
     },
   });
 
@@ -104,9 +115,22 @@ const AdminUsers = () => {
                 <td className="px-4 py-3 text-muted-foreground">{user.emailVerified ? "Sim" : "Nao"}</td>
                 <td className="px-4 py-3 text-muted-foreground">{new Date(user.createdAt).toLocaleDateString("pt-BR")}</td>
                 <td className="px-4 py-3 text-right">
-                  <button onClick={() => openEditor(user)} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary">
-                    <Pencil size={14} /> Editar
-                  </button>
+                  <div className="flex justify-end gap-2">
+                    <button onClick={() => openEditor(user)} className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary">
+                      <Pencil size={14} /> Editar
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Excluir usuario ${user.email}?`)) {
+                          deleteUser.mutate(user.id);
+                        }
+                      }}
+                      disabled={deleteUser.isPending}
+                      className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 px-3 py-1.5 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-60"
+                    >
+                      <Trash2 size={14} /> Excluir
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

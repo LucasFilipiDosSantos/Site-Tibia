@@ -40,6 +40,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+    volumes:
+      - api-uploads:/app/wwwroot/uploads
     restart: unless-stopped
     networks:
       - lootera-net
@@ -81,6 +83,7 @@ services:
 
 volumes:
   postgres-data:
+  api-uploads:
 
 networks:
   lootera-net:

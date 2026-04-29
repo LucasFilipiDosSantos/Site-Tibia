@@ -19,17 +19,20 @@ public static class DevelopmentDataSeeder
             return;
         }
 
-        var coin = new Category("Coin Aurera", "coin", "Pacotes de coin no servidor Aurera.");
+        var gold = new Category("Gold", "gold", "Gold por mundo com entrega segura.");
+        var coin = new Category("Coin", "coin", "Pacotes de coin por mundo.");
         var items = new Category("Itens", "items", "Itens raros e equipamentos.");
         var characters = new Category("Personagens", "characters", "Personagens prontos para evoluir ou war.");
+        var tibiaCoins = new Category("Tibia Coins", "tibia-coins", "Tibia Coins oficiais e transferencias.");
         var scripts = new Category("Scripts", "scripts", "Scripts e automacoes.");
         var macros = new Category("Macros", "macros", "Macros para gameplay assistida.");
         var services = new Category("Servicos", "services", "Servicos manuais e assistidos.");
 
-        await dbContext.Categories.AddRangeAsync([coin, items, characters, scripts, macros, services], cancellationToken);
+        await dbContext.Categories.AddRangeAsync([gold, coin, items, characters, tibiaCoins, scripts, macros, services], cancellationToken);
 
         var products = new[]
         {
+            new Product("Gold Aurera 100kk", "gold-aurera-100kk", "Entrega rapida de 100kk de gold no mundo Aurera.", 89.90m, gold.Id, gold.Slug, "Aurera", rating: 4.9m, salesCount: 1240),
             new Product("Coin Aurera 100kk", "coin-aurera-100kk", "Entrega rapida de 100kk de coin no servidor Aurera.", 89.90m, coin.Id, coin.Slug, "Aurera", rating: 4.9m, salesCount: 1240),
             new Product("Coin Aurera 50kk", "coin-aurera-50kk", "Entrega rapida de 50kk de coin no servidor Aurera.", 49.90m, coin.Id, coin.Slug, "Aurera", rating: 4.8m, salesCount: 890),
             new Product("Itens Aurera - Magic Sword", "itens-aurera-magic-sword", "Magic Sword no servidor Aurera para hunts e colecao.", 49.90m, items.Id, items.Slug, "Aurera", rating: 4.7m, salesCount: 320),
@@ -56,9 +59,11 @@ public static class DevelopmentDataSeeder
     {
         var categories = new[]
         {
-            new Category("Coin Aurera", "coin", "Pacotes de coin no servidor Aurera."),
+            new Category("Gold", "gold", "Gold por mundo com entrega segura."),
+            new Category("Coin", "coin", "Pacotes de coin por mundo."),
             new Category("Itens", "items", "Itens raros e equipamentos."),
             new Category("Personagens", "characters", "Personagens prontos para evoluir ou war."),
+            new Category("Tibia Coins", "tibia-coins", "Tibia Coins oficiais e transferencias."),
             new Category("Scripts", "scripts", "Scripts e automacoes."),
             new Category("Macros", "macros", "Macros para gameplay assistida."),
             new Category("Servicos", "services", "Servicos manuais e assistidos.")
@@ -74,16 +79,6 @@ public static class DevelopmentDataSeeder
         }
 
         await dbContext.SaveChangesAsync(cancellationToken);
-
-        var coin = await dbContext.Categories.SingleAsync(category => category.Slug == "coin", cancellationToken);
-        var legacyGoldProducts = await dbContext.Products
-            .Where(product => product.CategorySlug == "gold")
-            .ToListAsync(cancellationToken);
-
-        foreach (var product in legacyGoldProducts)
-        {
-            product.ReplaceDetails(product.Name, product.Description, product.Price, coin.Id, coin.Slug, product.Server);
-        }
 
         var now = DateTimeOffset.UtcNow;
         var productsWithoutStock = await dbContext.Products

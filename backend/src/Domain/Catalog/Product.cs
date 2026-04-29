@@ -113,10 +113,15 @@ public sealed class Product
             return null;
         }
 
+        if (normalized.StartsWith("/uploads/products/", StringComparison.Ordinal))
+        {
+            return normalized;
+        }
+
         if (!Uri.TryCreate(normalized, UriKind.Absolute, out var uri)
             || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
         {
-            throw new ArgumentException("Image URL must be a valid absolute HTTP/HTTPS URL.", paramName);
+            throw new ArgumentException("Image URL must be a valid absolute HTTP/HTTPS URL or product upload path.", paramName);
         }
 
         return normalized;

@@ -1,4 +1,5 @@
-import { apiRequest } from "@/lib/api";
+import { apiClient } from "@/lib/api";
+import { buildApiAssetUrl, normalizeApiAssetUrl } from "@/lib/api-base-url";
 import type { Product } from "@/features/products/types/product.types";
 import { getCategoryLabel, removeAureraFromText } from "@/features/products/utils/catalog";
 
@@ -97,6 +98,7 @@ export type AdminProductInput = {
   categorySlug: string;
   server: string;
   imageUrl?: string | null;
+  imageFile?: File | null;
 };
 
 export type AdminProductUpdateInput = AdminProductInput & {
@@ -112,7 +114,7 @@ const toProduct = (product: ProductResponse): Product => ({
   server: product.server ?? "",
   price: product.price,
   description: removeAureraFromText(product.description),
-  image: product.imageUrl || "/placeholder.svg",
+  image: buildApiAssetUrl(product.imageUrl) || "/placeholder.svg",
   stock: product.availableStock ?? 0,
   rating: product.rating ?? 0,
   reviewCount: product.reviewCount ?? 0,
@@ -128,48 +130,59 @@ const toSlug = (value: string) =>
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+const toProductFormData = (input: AdminProductInput): FormData => {
+  const form = new FormData();
+  form.set("slug", input.slug);
+  form.set("name", input.name);
+  form.set("description", input.description);
+  form.set("price", String(input.price));
+  form.set("categorySlug", input.categorySlug);
+  form.set("server", input.server);
+  const imageUrl = normalizeApiAssetUrl(input.imageUrl);
+  if (imageUrl) {
+    form.set("imageUrl", imageUrl);
+    form.set("currentImageUrl", imageUrl);
+  }
+
+  if (input.imageFile) {
+    form.set("imageFile", input.imageFile, input.imageFile.name);
+  }
+
+  return form;
+};
+
 export const adminService = {
   async getProducts(): Promise<Product[]> {
-    const response = await apiRequest<ProductListResponse>("/products?page=1&pageSize=100", { auth: true });
+    const response = await apiClient.get<ProductListResponse>("/products?page=1&pageSize=100");
     return response.items.map(toProduct);
   },
 
   async createProduct(input: AdminProductInput): Promise<Product> {
-    const response = await apiRequest<ProductResponse>("/admin/catalog/products", {
-      auth: true,
-      method: "POST",
-      body: JSON.stringify(input),
-    });
+    const payload = { ...input, imageUrl: normalizeApiAssetUrl(input.imageUrl) };
+    const response = input.imageFile
+      ? await apiClient.post<ProductResponse>("/admin/catalog/products/form", toProductFormData(payload))
+      : await apiClient.post<ProductResponse>("/admin/catalog/products", payload);
     return toProduct(response);
   },
 
   async updateProduct(input: AdminProductUpdateInput): Promise<Product> {
     const { routeSlug, ...payload } = input;
-    const response = await apiRequest<ProductResponse>(`/admin/catalog/products/${encodeURIComponent(routeSlug)}`, {
-      auth: true,
-      method: "PUT",
-      body: JSON.stringify(payload),
-    });
+    const response = input.imageFile
+      ? await apiClient.put<ProductResponse>(`/admin/catalog/products/form/${encodeURIComponent(routeSlug)}`, toProductFormData(payload))
+      : await apiClient.put<ProductResponse>(`/admin/catalog/products/${encodeURIComponent(routeSlug)}`, { ...payload, imageUrl: normalizeApiAssetUrl(payload.imageUrl) });
     return toProduct(response);
   },
 
   async deleteProduct(slug: string): Promise<void> {
-    await apiRequest(`/admin/catalog/products/${encodeURIComponent(slug)}`, {
-      auth: true,
-      method: "DELETE",
-    });
+    await apiClient.delete(`/admin/catalog/products/${encodeURIComponent(slug)}`);
   },
 
   async adjustInventory(productId: string, delta: number, reason: string): Promise<void> {
-    await apiRequest("/admin/inventory/adjustments", {
-      auth: true,
-      method: "POST",
-      body: JSON.stringify({ productId, delta, reason }),
-    });
+    await apiClient.post("/admin/inventory/adjustments", { productId, delta, reason });
   },
 
   async getOrders(): Promise<AdminOrder[]> {
-    const response = await apiRequest<OrderListResponse>("/admin/orders?page=1&pageSize=50", { auth: true });
+    const response = await apiClient.get<OrderListResponse>("/admin/orders?page=1&pageSize=50");
     return response.items.map((order) => ({
       id: order.orderId,
       orderIntentKey: order.orderIntentKey,
@@ -186,16 +199,12 @@ export const adminService = {
   },
 
   async updateOrder(input: AdminOrderInput): Promise<AdminOrder> {
-    const response = await apiRequest<OrderListResponse["items"][number]>(`/admin/orders/${encodeURIComponent(input.id)}`, {
-      auth: true,
-      method: "PUT",
-      body: JSON.stringify({
+    const response = await apiClient.put<OrderListResponse["items"][number]>(`/admin/orders/${encodeURIComponent(input.id)}`, {
         customerName: input.customerName,
         customerEmail: input.customerEmail,
         customerDiscord: input.customerDiscord || null,
         paymentMethod: input.paymentMethod || null,
         status: input.status,
-      }),
     });
 
     return {
@@ -214,14 +223,11 @@ export const adminService = {
   },
 
   async deleteOrder(orderId: string): Promise<void> {
-    await apiRequest(`/admin/orders/${encodeURIComponent(orderId)}`, {
-      auth: true,
-      method: "DELETE",
-    });
+    await apiClient.delete(`/admin/orders/${encodeURIComponent(orderId)}`);
   },
 
   async getUsers(): Promise<AdminUser[]> {
-    const response = await apiRequest<UserListResponse>("/admin/users?page=1&pageSize=100", { auth: true });
+    const response = await apiClient.get<UserListResponse>("/admin/users?page=1&pageSize=100");
     return response.items.map((user) => ({
       id: user.id,
       name: user.name,
@@ -233,16 +239,12 @@ export const adminService = {
   },
 
   async updateUser(input: AdminUserInput): Promise<AdminUser> {
-    const user = await apiRequest<UserListResponse["items"][number]>(`/admin/users/${encodeURIComponent(input.id)}`, {
-      auth: true,
-      method: "PUT",
-      body: JSON.stringify({
+    const user = await apiClient.put<UserListResponse["items"][number]>(`/admin/users/${encodeURIComponent(input.id)}`, {
         name: input.name,
         email: input.email,
         role: input.role,
         emailVerified: input.emailVerified,
         newPassword: input.newPassword || null,
-      }),
     });
 
     return {
@@ -253,6 +255,10 @@ export const adminService = {
       emailVerified: user.emailVerified,
       createdAt: user.createdAtUtc,
     };
+  },
+
+  async deleteUser(userId: string): Promise<void> {
+    await apiClient.delete(`/admin/users/${encodeURIComponent(userId)}`);
   },
 
   buildSlug: toSlug,

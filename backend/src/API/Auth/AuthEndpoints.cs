@@ -180,7 +180,7 @@ public static class AuthEndpoints
 
     private static CookieOptions BuildCookieOptions(HttpContext context, DateTimeOffset expiresAtUtc)
     {
-        var sameSite = IsCrossSiteRequest(context)
+        var sameSite = IsCrossSiteRequest(context) && !IsLocalDevelopmentRequest(context)
             ? SameSiteMode.None
             : SameSiteMode.Lax;
 
@@ -204,6 +204,25 @@ public static class AuthEndpoints
         }
 
         return !string.Equals(origin.Host, context.Request.Host.Host, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsLocalDevelopmentRequest(HttpContext context)
+    {
+        if (!context.Request.Headers.TryGetValue("Origin", out var originValues)
+            || !Uri.TryCreate(originValues.FirstOrDefault(), UriKind.Absolute, out var origin)
+            || !context.Request.Host.HasValue)
+        {
+            return IsLoopbackHost(context.Request.Host.Host);
+        }
+
+        return IsLoopbackHost(origin.Host) && IsLoopbackHost(context.Request.Host.Host);
+    }
+
+    private static bool IsLoopbackHost(string? host)
+    {
+        return string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(host, "127.0.0.1", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(host, "::1", StringComparison.OrdinalIgnoreCase);
     }
 }
 

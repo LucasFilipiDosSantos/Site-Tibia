@@ -1,7 +1,9 @@
 export const CATEGORY_LABELS: Record<string, string> = {
+  gold: "Gold",
   coin: "Coin",
-  items: "Itens",
-  characters: "Personagens",
+  items: "Item",
+  characters: "Personagem",
+  "tibia-coins": "Tibia Coins",
   scripts: "Scripts",
   macros: "Macros",
   services: "Servicos",

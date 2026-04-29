@@ -8,6 +8,21 @@ namespace API.Catalog;
 
 public static class CatalogEndpoints
 {
+    private const long MaxProductImageBytes = 5 * 1024 * 1024;
+    private static readonly Dictionary<string, string[]> AllowedProductImageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        [".png"] = ["image/png"],
+        [".jpg"] = ["image/jpeg"],
+        [".jpeg"] = ["image/jpeg"],
+        [".webp"] = ["image/webp"]
+    };
+    private static readonly Dictionary<string, string> ProductImageExtensionByContentType = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["image/png"] = ".png",
+        ["image/jpeg"] = ".jpg",
+        ["image/webp"] = ".webp"
+    };
+
     public static IEndpointRouteBuilder MapCatalogEndpoints(this IEndpointRouteBuilder app)
     {
         app.MapGet("/categories", async (AppDbContext dbContext, CancellationToken ct) =>
@@ -152,6 +167,26 @@ public static class CatalogEndpoints
         })
         .WithTags("Admin Catalog");
 
+        admin.MapPost("/products/form", async (HttpContext context, CatalogService catalogService, IWebHostEnvironment env, CancellationToken ct) =>
+        {
+            var form = await context.Request.ReadFormAsync(ct);
+            var imageUrl = await ResolveProductImageUrlAsync(form, env, null, ct);
+            var created = await catalogService.CreateProduct(
+                new Application.Catalog.Contracts.CreateProductRequest(
+                    RequiredFormValue(form, "name"),
+                    RequiredFormValue(form, "slug"),
+                    RequiredFormValue(form, "description"),
+                    decimal.Parse(RequiredFormValue(form, "price"), System.Globalization.CultureInfo.InvariantCulture),
+                    RequiredFormValue(form, "categorySlug"),
+                    OptionalFormValue(form, "server"),
+                    imageUrl),
+                ct);
+
+            return Results.Ok(ToProductResponse(created));
+        })
+        .Accepts<IFormFile>("multipart/form-data")
+        .WithTags("Admin Catalog");
+
         admin.MapPut("/products/{slug}", async (string slug, UpdateProductPutReplaceRequest request, CatalogService catalogService, CancellationToken ct) =>
         {
             var updated = await catalogService.UpdateProductPutReplace(
@@ -182,6 +217,20 @@ public static class CatalogEndpoints
         })
         .WithTags("Admin Catalog");
 
+        admin.MapPut("/products/{slug}/form", async (string slug, HttpContext context, CatalogService catalogService, IWebHostEnvironment env, CancellationToken ct) =>
+        {
+            return await UpdateProductFromFormAsync(slug, context, catalogService, env, ct);
+        })
+        .Accepts<IFormFile>("multipart/form-data")
+        .WithTags("Admin Catalog");
+
+        admin.MapPut("/products/form/{slug}", async (string slug, HttpContext context, CatalogService catalogService, IWebHostEnvironment env, CancellationToken ct) =>
+        {
+            return await UpdateProductFromFormAsync(slug, context, catalogService, env, ct);
+        })
+        .Accepts<IFormFile>("multipart/form-data")
+        .WithTags("Admin Catalog");
+
         admin.MapDelete("/products/{slug}", async (string slug, CatalogService catalogService, CancellationToken ct) =>
         {
             await catalogService.DeleteProduct(slug, ct);
@@ -190,5 +239,132 @@ public static class CatalogEndpoints
         .WithTags("Admin Catalog");
 
         return app;
+    }
+
+    private static async Task<IResult> UpdateProductFromFormAsync(
+        string slug,
+        HttpContext context,
+        CatalogService catalogService,
+        IWebHostEnvironment env,
+        CancellationToken ct)
+    {
+        var form = await context.Request.ReadFormAsync(ct);
+        var currentImageUrl = OptionalFormValue(form, "currentImageUrl");
+        var imageUrl = await ResolveProductImageUrlAsync(form, env, currentImageUrl, ct);
+        var updated = await catalogService.UpdateProductPutReplace(
+            new Application.Catalog.Contracts.UpdateProductPutReplaceRequest(
+                RouteSlug: slug,
+                PayloadSlug: RequiredFormValue(form, "slug"),
+                Name: RequiredFormValue(form, "name"),
+                Description: RequiredFormValue(form, "description"),
+                Price: decimal.Parse(RequiredFormValue(form, "price"), System.Globalization.CultureInfo.InvariantCulture),
+                CategorySlug: RequiredFormValue(form, "categorySlug"),
+                Server: OptionalFormValue(form, "server"),
+                ImageUrl: imageUrl),
+            ct);
+
+        DeleteOldUploadedProductImage(currentImageUrl, imageUrl, env);
+        return Results.Ok(ToProductResponse(updated));
+    }
+
+    private static ProductResponse ToProductResponse(Application.Catalog.Contracts.ProductBySlugResponse product)
+    {
+        return new ProductResponse(
+            product.Id,
+            product.Name,
+            product.Slug,
+            product.Description,
+            product.Price,
+            product.CategorySlug,
+            product.ImageUrl,
+            product.Server,
+            product.AvailableStock,
+            product.Rating,
+            product.ReviewCount,
+            product.SalesCount);
+    }
+
+    private static string RequiredFormValue(IFormCollection form, string key)
+    {
+        var value = OptionalFormValue(form, key);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            throw new ArgumentException($"{key} is required.", key);
+        }
+
+        return value;
+    }
+
+    private static string? OptionalFormValue(IFormCollection form, string key)
+    {
+        return form.TryGetValue(key, out var value) && !string.IsNullOrWhiteSpace(value)
+            ? value.ToString().Trim()
+            : null;
+    }
+
+    private static async Task<string?> ResolveProductImageUrlAsync(IFormCollection form, IWebHostEnvironment env, string? currentImageUrl, CancellationToken ct)
+    {
+        var imageFile = form.Files.GetFile("imageFile");
+        var imageUrl = OptionalFormValue(form, "imageUrl");
+
+        if (imageFile is not null && imageFile.Length > 0)
+        {
+            return await SaveProductImageAsync(imageFile, env, ct);
+        }
+
+        return !string.IsNullOrWhiteSpace(imageUrl) ? imageUrl : currentImageUrl;
+    }
+
+    private static async Task<string> SaveProductImageAsync(IFormFile file, IWebHostEnvironment env, CancellationToken ct)
+    {
+        if (file.Length > MaxProductImageBytes)
+        {
+            throw new ArgumentException("Product image must be 5MB or smaller.", nameof(file));
+        }
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (string.IsNullOrWhiteSpace(extension)
+            && ProductImageExtensionByContentType.TryGetValue(file.ContentType, out var extensionFromContentType))
+        {
+            extension = extensionFromContentType;
+        }
+
+        if (string.IsNullOrWhiteSpace(extension)
+            || !AllowedProductImageTypes.TryGetValue(extension, out var allowedTypes)
+            || !allowedTypes.Contains(file.ContentType, StringComparer.OrdinalIgnoreCase))
+        {
+            throw new ArgumentException("Product image must be PNG, JPG, JPEG, or WEBP.", nameof(file));
+        }
+
+        var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+        var uploadsRoot = Path.Combine(webRoot, "uploads", "products");
+        Directory.CreateDirectory(uploadsRoot);
+
+        var fileName = $"{Guid.NewGuid():N}{extension}";
+        var fullPath = Path.Combine(uploadsRoot, fileName);
+        await using var stream = File.Create(fullPath);
+        await file.CopyToAsync(stream, ct);
+
+        return $"/uploads/products/{fileName}";
+    }
+
+    private static void DeleteOldUploadedProductImage(string? oldImageUrl, string? newImageUrl, IWebHostEnvironment env)
+    {
+        if (string.IsNullOrWhiteSpace(oldImageUrl)
+            || string.Equals(oldImageUrl, newImageUrl, StringComparison.Ordinal)
+            || !oldImageUrl.StartsWith("/uploads/products/", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
+        var uploadsRoot = Path.Combine(webRoot, "uploads", "products");
+        var fileName = Path.GetFileName(oldImageUrl);
+        var fullPath = Path.GetFullPath(Path.Combine(uploadsRoot, fileName));
+        var safeRoot = Path.GetFullPath(uploadsRoot);
+        if (fullPath.StartsWith(safeRoot, StringComparison.OrdinalIgnoreCase) && File.Exists(fullPath))
+        {
+            File.Delete(fullPath);
+        }
     }
 }

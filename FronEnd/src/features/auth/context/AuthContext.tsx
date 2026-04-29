@@ -22,6 +22,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    const handleUnauthorized = () => {
+      setUser(null);
+    };
+
     const restore = async () => {
       try {
         authService.clearLegacyAuthStorage();
@@ -42,10 +46,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     };
 
+    window.addEventListener("lootera:auth:unauthorized", handleUnauthorized);
     void restore();
 
     return () => {
       mounted = false;
+      window.removeEventListener("lootera:auth:unauthorized", handleUnauthorized);
     };
   }, []);
 
